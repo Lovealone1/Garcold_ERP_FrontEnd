@@ -1,6 +1,6 @@
 "use client";
 
-import "../../../styles/login-circles.css";
+import "../../styles/login-circles.css";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { login } from "@/features/auth/services";
@@ -70,7 +70,7 @@ export default function LoginPage() {
               <div className="relative">
                 <label className="ml-3 text-sm font-bold text-gray-700 tracking-wide">Usuario</label>
                 <input
-                  className="w-full text-base px-4 py-2 border-b border-gray-300 focus:outline-none rounded-2xl focus:border-indigo-500"
+                  className="w-full text-base px-4 py-2 border-b border-gray-300 focus:outline-none focus:border-indigo-500"
                   type="text"
                   placeholder="Ingresa tu usuario"
                   value={username}
@@ -80,9 +80,9 @@ export default function LoginPage() {
               <div className="mt-8">
                 <label className="ml-3 text-sm font-bold text-gray-700 tracking-wide">Contraseña</label>
                 <input
-                  className="w-full text-base px-4 py-2 border-b rounded-2xl border-gray-300 focus:outline-none focus:border-indigo-500"
+                  className="w-full text-base px-4 py-2 border-b border-gray-300 focus:outline-none focus:border-indigo-500"
                   type="password"
-                  placeholder="••••••••"
+                  placeholder="Ingresa tu contraseña"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
@@ -96,9 +96,6 @@ export default function LoginPage() {
                   />
                   <span className="ml-2">Recordarme</span>
                 </label>
-                <a href="#" className="text-sm text-indigo-400 hover:text-blue-500">
-                  ¿Olvidaste tu contraseña?
-                </a>
               </div>
 
               <div>
@@ -115,13 +112,7 @@ export default function LoginPage() {
               )}
 
               <p className="flex flex-col items-center justify-center mt-10 text-center text-md text-gray-500">
-                <span>¿No tienes una cuenta?</span>
-                <a
-                  href="#"
-                  className="text-indigo-400 hover:text-blue-500 transition duration-300"
-                >
-                  Regístrate aquí
-                </a>
+                
               </p>
             </form>
           </div>

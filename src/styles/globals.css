@@ -1,0 +1,183 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* TG tokens – light */
+:root{
+  --tg-bg:#fafafa;
+  --tg-fg:#0b0b0d;
+  --tg-muted:#6b7280;
+  --tg-border:#e5e7eb;
+  --tg-primary:#16a34a;
+  --tg-primary-fg:#ffffff;
+  --tg-sidebar-bg:#f0fdf4;
+  --tg-sidebar-fg:#111827;
+  --tg-sidebar-muted:#64748b;
+  --tg-sidebar-border:#16a34a;
+  --tg-sidebar-item-bg:#dcfce7;
+  --tg-sidebar-item-fg:#14532d;
+  --tg-card-bg:#ffffff;
+  --tg-card-fg:#0b0b0d;
+
+  /* panel pequeño (tabla) */
+  --panel-bg: color-mix(in srgb, var(--tg-card-bg) 92%, black 8%);
+  --panel-border: var(--tg-border);
+  --table-head-bg:#0b0b0d;
+  --table-head-fg:#ffffff;
+
+  /* layout */
+  --topbar-h:64px;
+  --gap-top:14px;
+  --content-l: 84px;
+  --content-r: 24px;
+  --content-b:24px;
+}
+
+/* TG tokens – dark */
+html.dark{
+  --tg-bg:#101412;
+  --tg-fg:#e5e5e5;
+  --tg-muted:#a3a3a3;
+  --tg-border:#2a2f2a;
+  --tg-primary:#22c55e;
+  --tg-primary-fg:#0b0b0d;
+  --tg-sidebar-bg:#0b1d14;
+  --tg-sidebar-fg:#e5e5e5;
+  --tg-sidebar-muted:#b1b1b5;
+  --tg-sidebar-border:#22c55e;
+  --tg-sidebar-item-bg:#052e1c;
+  --tg-sidebar-item-fg:#e5e7eb;
+  --tg-card-bg:#141a17;
+  --tg-card-fg:#e5e7eb;
+
+  --panel-bg: color-mix(in srgb, var(--tg-card-bg) 85%, black 15%);
+  --panel-border: var(--tg-border);
+  --table-head-bg:#1b1b1f;
+  --table-head-fg:#e5e7eb;
+}
+
+
+/* Base */
+body {
+  background: var(--tg-bg);
+  color: var(--tg-fg);
+  font-family: Inter, ui-sans-serif, system-ui;
+}
+
+/* Utilities para usar en JSX */
+.bg-tg-bg {
+  background-color: var(--tg-bg)
+}
+
+.text-tg-fg {
+  color: var(--tg-fg)
+}
+
+.text-tg-muted {
+  color: var(--tg-muted)
+}
+
+.border-tg {
+  border-color: var(--tg-border)
+}
+
+.bg-tg-sidebar {
+  background-color: var(--tg-sidebar-bg)
+}
+
+.text-tg-sidebar {
+  color: var(--tg-sidebar-fg)
+}
+
+.text-tg-sidebar-muted {
+  color: var(--tg-sidebar-muted)
+}
+
+.border-tg-sidebar {
+  border-color: var(--tg-sidebar-border)
+}
+
+.bg-tg-primary {
+  background-color: var(--tg-primary)
+}
+
+.text-tg-primary {
+  color: var(--tg-primary)
+}
+
+.text-tg-on-primary {
+  color: var(--tg-primary-fg)
+}
+
+.bg-tg-item-selected {
+  background-color: var(--tg-sidebar-item-bg)
+}
+
+.text-tg-item-selected {
+  color: var(--tg-sidebar-item-fg)
+}
+
+.bg-tg-card {
+  background-color: var(--tg-card-bg)
+}
+
+.text-tg-card {
+  color: var(--tg-card-fg)
+}
+
+.app-shell {
+  min-height: 100vh;
+}
+
+@media (min-width:1024px) {
+  .app-shell__frame {
+    margin-left: var(--sidebar-w-current);
+    transition: margin-left 20ms ease;
+  }
+}
+
+.app-shell__topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  height: var(--topbar-h);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: var(--gap-top) var(--content-x) 0 var(--content-x);
+  background: var(--hera-bg);
+}
+
+.app-shell__topbar-left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.app-shell__topbar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.app-shell__topbar{
+  padding: var(--gap-top) var(--content-r) 0 var(--content-l);
+}
+.app-shell__content{
+  padding: 0 var(--content-r) var(--content-b) var(--content-l);
+}
+
+:root{
+  --panel-bg: color-mix(in srgb, var(--tg-card-bg) 92%, black 8%);
+  --panel-border: var(--tg-border);
+  --table-head-bg: #0b0b0d;
+  --table-head-fg: #ffffff;
+}
+html.dark{
+  --panel-bg: color-mix(in srgb, var(--tg-card-bg) 85%, black 15%);
+  --panel-border: var(--tg-border);
+  --table-head-bg: #1b1b1f;
+  --table-head-fg: #e5e7eb;
+}

@@ -3,6 +3,7 @@
 
 import { useEffect, useMemo, useState, CSSProperties } from "react";
 import { MaterialIcon } from "@/components/ui/material-icon";
+import ProveedorCreate, { type NuevoProveedor } from "@/features/proveedores/ProveedorCreate";
 
 type Proveedor = {
   id: number;
@@ -12,18 +13,22 @@ type Proveedor = {
   ciudad: string;
   celular?: string | null;
   correo?: string | null;
-  fecha_creacion?: string; // existe en DTO pero no se muestra
+  fecha_creacion?: string;
 };
 
 export default function ProveedoresPage() {
   const [rows, setRows] = useState<Proveedor[]>([]);
   const [q, setQ] = useState("");
-  const [page, setPage] = useState(1);   // 1-based
+  const [page, setPage] = useState(1);
   const [size] = useState(10);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
+  // modal
+  const [openCreate, setOpenCreate] = useState(false);
+  const [createKey, setCreateKey] = useState(0); // fuerza reset del form al abrir
+
+  const fetchList = () => {
     setLoading(true);
     fetch(`/api/proveedores?page=${page}&size=${size}&q=${encodeURIComponent(q)}`)
       .then((r) => r.json())
@@ -32,13 +37,26 @@ export default function ProveedoresPage() {
         setTotal(res.total);
       })
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchList();
   }, [page, size, q]);
+
+  const handleCreate = async (data: NuevoProveedor) => {
+    await fetch("/api/proveedores", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    setOpenCreate(false);
+    fetchList(); // refresca
+  };
 
   const from = useMemo(() => (total === 0 ? 0 : (page - 1) * size + 1), [page, size, total]);
   const to = useMemo(() => Math.min(page * size, total), [page, size, total]);
   const pageCount = useMemo(() => Math.max(1, Math.ceil(total / size)), [total, size]);
 
-  // contraste y padding lateral reducido localmente
   const frameVars: CSSProperties = {
     ["--content-x" as any]: "16px",
     ["--page-bg" as any]: "color-mix(in srgb, var(--tg-bg) 96%, white 4%)",
@@ -47,7 +65,6 @@ export default function ProveedoresPage() {
 
   return (
     <div className="app-shell__frame min-h-screen" style={frameVars}>
-      {/* superficie de página */}
       <div className="bg-[var(--page-bg)] rounded-xl px-[var(--content-x)] pb-[var(--content-b)] pt-3">
         {/* Barra superior */}
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
@@ -68,7 +85,7 @@ export default function ProveedoresPage() {
               />
             </label>
 
-            {/* Filtros de ejemplo (placeholders) */}
+            {/* Filtros dummy */}
             <button className="h-10 min-w-[140px] rounded-md border border-tg bg-tg-card px-3 text-left text-sm text-tg-muted">
               <span className="inline-flex items-center gap-2">
                 <MaterialIcon name="expand_more" size={18} /> Estado
@@ -86,7 +103,10 @@ export default function ProveedoresPage() {
             </button>
 
             <button
-              onClick={() => {}}
+              onClick={() => {
+                setCreateKey((k) => k + 1); // resetea el form
+                setOpenCreate(true);
+              }}
               className="h-10 rounded-md bg-tg-primary px-4 text-sm font-medium text-tg-on-primary shadow-sm"
             >
               Nuevo proveedor
@@ -112,23 +132,23 @@ export default function ProveedoresPage() {
               <tbody>
                 {loading
                   ? Array.from({ length: 10 }).map((_, i) => (
-                      <tr key={`sk-${i}`} className="border-t border-tg">
-                        {Array.from({ length: 7 }).map((__, j) => (
-                          <td key={j} className="px-4 py-3">
-                            <div className="h-4 w-full animate-pulse rounded bg-black/10 dark:bg-white/10" />
-                          </td>
-                        ))}
-                      </tr>
-                    ))
-                  : rows.length === 0
-                  ? (
-                    <tr>
-                      <td colSpan={7} className="px-4 py-10 text-center text-tg-muted">
-                        Sin registros
-                      </td>
+                    <tr key={`sk-${i}`} className="border-t border-tg">
+                      {Array.from({ length: 7 }).map((__, j) => (
+                        <td key={j} className="px-4 py-3">
+                          <div className="h-4 w-full animate-pulse rounded bg-black/10 dark:bg-white/10" />
+                        </td>
+                      ))}
                     </tr>
-                  )
-                  : rows.map((r) => (
+                  ))
+                  : rows.length === 0
+                    ? (
+                      <tr>
+                        <td colSpan={7} className="px-4 py-10 text-center text-tg-muted">
+                          Sin registros
+                        </td>
+                      </tr>
+                    )
+                    : rows.map((r) => (
                       <tr key={r.id} className="border-t border-tg hover:bg-black/5 dark:hover:bg-white/5">
                         <td className="px-4 py-3">{r.nombre}</td>
                         <td className="px-4 py-3">{r.cc_nit}</td>
@@ -183,9 +203,8 @@ export default function ProveedoresPage() {
                   <button
                     key={p}
                     onClick={() => setPage(p)}
-                    className={`h-8 min-w-8 rounded px-2 text-sm ${
-                      active ? "bg-tg-primary text-tg-on-primary" : "hover:bg-black/10 dark:hover:bg-white/10"
-                    }`}
+                    className={`h-8 min-w-8 rounded px-2 text-sm ${active ? "bg-tg-primary text-tg-on-primary" : "hover:bg-black/10 dark:hover:bg-white/10"
+                      }`}
                   >
                     {p}
                   </button>
@@ -205,6 +224,19 @@ export default function ProveedoresPage() {
           </div>
         </div>
       </div>
+
+      {/* Modal crear proveedor */}
+      {openCreate && (
+        <ProveedorCreate
+          key={createKey}
+          mode="modal"
+          open={openCreate}
+          onClose={() => setOpenCreate(false)}
+          onSubmit={handleCreate}
+          loading={false}
+          defaults={{}}
+        />
+      )}
     </div>
   );
 }

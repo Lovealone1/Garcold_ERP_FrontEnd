@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState, CSSProperties } from "react";
 import { MaterialIcon } from "@/components/ui/material-icon";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import ProductCreate, { NuevoProducto } from "@/features/productos/ProductoCreate";
 
 type Producto = {
   id: number;
@@ -26,12 +27,13 @@ const money = new Intl.NumberFormat("es-CO", {
 export default function ProductosPage() {
   const [rows, setRows] = useState<Producto[]>([]);
   const [q, setQ] = useState("");
-  const [page, setPage] = useState(1);   // 1-based
+  const [page, setPage] = useState(1);
   const [size] = useState(10);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [openCreate, setOpenCreate] = useState(false);
 
-  useEffect(() => {
+  const fetchList = () => {
     setLoading(true);
     fetch(`/api/productos?page=${page}&size=${size}&q=${encodeURIComponent(q)}`)
       .then((r) => r.json())
@@ -40,23 +42,33 @@ export default function ProductosPage() {
         setTotal(res.total);
       })
       .finally(() => setLoading(false));
-  }, [page, size, q]);
+  };
+
+  useEffect(() => { fetchList(); }, [page, size, q]);
 
   const from = useMemo(() => (total === 0 ? 0 : (page - 1) * size + 1), [page, size, total]);
   const to = useMemo(() => Math.min(page * size, total), [page, size, total]);
   const pageCount = useMemo(() => Math.max(1, Math.ceil(total / size)), [total, size]);
 
-  // contraste local
   const frameVars: CSSProperties = {
     ["--content-x" as any]: "16px",
     ["--page-bg" as any]: "color-mix(in srgb, var(--tg-bg) 96%, white 4%)",
     ["--panel-bg" as any]: "color-mix(in srgb, var(--tg-card-bg) 90%, black 10%)",
   };
 
+  const handleCreate = async (data: NuevoProducto) => {
+    await fetch("/api/productos", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    setOpenCreate(false);
+    fetchList();
+  };
+
   return (
     <div className="app-shell__frame min-h-screen" style={frameVars}>
       <div className="bg-[var(--page-bg)] rounded-xl px-[var(--content-x)] pb-[var(--content-b)] pt-3">
-        {/* Barra superior */}
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-2xl font-semibold text-tg-fg">Productos</h2>
 
@@ -74,7 +86,6 @@ export default function ProductosPage() {
               />
             </label>
 
-            {/* Filtros placeholder */}
             <button className="h-10 min-w-[140px] rounded-md border border-tg bg-tg-card px-3 text-left text-sm text-tg-muted">
               <span className="inline-flex items-center gap-2">
                 <MaterialIcon name="expand_more" size={18} /> Categoría
@@ -92,7 +103,7 @@ export default function ProductosPage() {
             </button>
 
             <button
-              onClick={() => {}}
+              onClick={() => setOpenCreate(true)}
               className="h-10 rounded-md bg-tg-primary px-4 text-sm font-medium text-tg-on-primary shadow-sm"
             >
               Nuevo producto
@@ -119,23 +130,23 @@ export default function ProductosPage() {
               <tbody>
                 {loading
                   ? Array.from({ length: 10 }).map((_, i) => (
-                      <tr key={`sk-${i}`} className="border-t border-tg">
-                        {Array.from({ length: 8 }).map((__, j) => (
-                          <td key={j} className="px-4 py-3">
-                            <div className="h-4 w-full animate-pulse rounded bg-black/10 dark:bg-white/10" />
-                          </td>
-                        ))}
-                      </tr>
-                    ))
-                  : rows.length === 0
-                  ? (
-                    <tr>
-                      <td colSpan={8} className="px-4 py-10 text-center text-tg-muted">
-                        Sin registros
-                      </td>
+                    <tr key={`sk-${i}`} className="border-t border-tg">
+                      {Array.from({ length: 8 }).map((__, j) => (
+                        <td key={j} className="px-4 py-3">
+                          <div className="h-4 w-full animate-pulse rounded bg-black/10 dark:bg-white/10" />
+                        </td>
+                      ))}
                     </tr>
-                  )
-                  : rows.map((r) => (
+                  ))
+                  : rows.length === 0
+                    ? (
+                      <tr>
+                        <td colSpan={8} className="px-4 py-10 text-center text-tg-muted">
+                          Sin registros
+                        </td>
+                      </tr>
+                    )
+                    : rows.map((r) => (
                       <tr key={r.id} className="border-t border-tg hover:bg-black/5 dark:hover:bg-white/5">
                         <td className="px-4 py-3">{r.referencia}</td>
                         <td className="px-4 py-3">{r.descripcion}</td>
@@ -177,7 +188,6 @@ export default function ProductosPage() {
             </table>
           </div>
 
-          {/* Pie */}
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-tg px-4 py-3">
             <div className="flex items-center gap-2">
               <span className="text-sm">Líneas por página</span>
@@ -201,9 +211,8 @@ export default function ProductosPage() {
                   <button
                     key={p}
                     onClick={() => setPage(p)}
-                    className={`h-8 min-w-8 rounded px-2 text-sm ${
-                      active ? "bg-tg-primary text-tg-on-primary" : "hover:bg-black/10 dark:hover:bg-white/10"
-                    }`}
+                    className={`h-8 min-w-8 rounded px-2 text-sm ${active ? "bg-tg-primary text-tg-on-primary" : "hover:bg-black/10 dark:hover:bg-white/10"
+                      }`}
                   >
                     {p}
                   </button>
@@ -223,6 +232,17 @@ export default function ProductosPage() {
           </div>
         </div>
       </div>
+
+      {/* Modal crear producto */}
+      {openCreate && (
+        <ProductCreate
+          mode="modal"
+          open={openCreate}
+          onClose={() => setOpenCreate(false)}
+          onSubmit={handleCreate}
+          loading={false}
+        />
+      )}
     </div>
   );
 }

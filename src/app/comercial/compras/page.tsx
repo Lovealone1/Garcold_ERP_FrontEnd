@@ -1,7 +1,7 @@
-// app/(comercial)/compras/page.tsx
 "use client";
 
 import { useEffect, useMemo, useState, CSSProperties } from "react";
+import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import IconButton from "@mui/material/IconButton";
@@ -19,12 +19,13 @@ type Compra = {
     estado: string;
     total: number;
     saldo_restante: number;
-    fecha: string; // ISO
+    fecha: string;
 };
 
 const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 
 export default function ComprasPage() {
+    const router = useRouter();
     const [rows, setRows] = useState<Compra[]>([]);
     const [q, setQ] = useState("");
     const [page, setPage] = useState(1);
@@ -74,7 +75,7 @@ export default function ComprasPage() {
                         <button className="h-10 min-w-[140px] rounded-md border border-tg bg-tg-card px-3 text-left text-sm text-tg-muted">Estado</button>
                         <button className="h-10 min-w-[140px] rounded-md border border-tg bg-tg-card px-3 text-left text-sm text-tg-muted">Banco</button>
                         <button className="h-10 min-w-[140px] rounded-md border border-tg bg-tg-card px-3 text-left text-sm text-tg-muted">Fecha</button>
-                        <button onClick={() => { }} className="h-10 rounded-md bg-tg-primary px-4 text-sm font-medium text-tg-on-primary shadow-sm">Nueva compra</button>
+                        <button onClick={() =>  router.push("/comercial/compras/crear")} className="h-10 rounded-md bg-tg-primary px-4 text-sm font-medium text-tg-on-primary shadow-sm">Nueva compra</button>
                     </div>
                 </div>
 

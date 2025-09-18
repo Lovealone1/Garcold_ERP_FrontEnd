@@ -11,7 +11,7 @@ import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
 import AttachMoneyOutlinedIcon from "@mui/icons-material/AttachMoneyOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-
+import { useRouter } from "next/navigation";  
 type Venta = {
     id: number;
     cliente: string;
@@ -25,6 +25,7 @@ type Venta = {
 const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 
 export default function VentasPage() {
+    const router = useRouter();    
     const [rows, setRows] = useState<Venta[]>([]);
     const [q, setQ] = useState("");
     const [page, setPage] = useState(1);
@@ -77,7 +78,7 @@ export default function VentasPage() {
                         <button className="h-10 min-w-[140px] rounded-md border border-tg bg-tg-card px-3 text-left text-sm text-tg-muted">Estado</button>
                         <button className="h-10 min-w-[140px] rounded-md border border-tg bg-tg-card px-3 text-left text-sm text-tg-muted">Banco</button>
                         <button className="h-10 min-w-[140px] rounded-md border border-tg bg-tg-card px-3 text-left text-sm text-tg-muted">Fecha</button>
-                        <button onClick={() => { }} className="h-10 rounded-md bg-tg-primary px-4 text-sm font-medium text-tg-on-primary shadow-sm">Nueva venta</button>
+                        <button onClick={() => router.push("/comercial/ventas/crear")} className="h-10 rounded-md bg-tg-primary px-4 text-sm font-medium text-tg-on-primary shadow-sm">Nueva venta</button>
                     </div>
                 </div>
 

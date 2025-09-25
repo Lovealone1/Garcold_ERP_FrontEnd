@@ -2,18 +2,15 @@
 "use client";
 
 import { useEffect, useMemo, useState, CSSProperties } from "react";
-import { format } from "date-fns";
+import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import { es } from "date-fns/locale";
-import IconButton from "@mui/material/IconButton";
-import Tooltip from "@mui/material/Tooltip";
-import SearchIcon from "@mui/icons-material/Search";
-import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
+import type { DateRange } from "react-day-picker";
 
-type Utilidad = {
-    venta_id: number;
-    utilidad: number;
-    fecha: string; // ISO
-};
+import { MaterialIcon } from "@/components/ui/material-icon";
+import { fetchAllUtilidades } from "@/services/sales/utilidades.api";
+import type { Utilidad } from "@/types/utilidades";
+import DateRangeInput from "@/components/ui/DateRangePicker/DateRangePicker";
+import UtilidadView from "@/features/utilidades/ViewDetalleUtilidades";
 
 const money = new Intl.NumberFormat("es-CO", {
     style: "currency",
@@ -22,90 +19,154 @@ const money = new Intl.NumberFormat("es-CO", {
 });
 
 export default function UtilidadesPage() {
-    const [rows, setRows] = useState<Utilidad[]>([]);
+    const [all, setAll] = useState<Utilidad[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    // filtros
     const [q, setQ] = useState("");
-    const [page, setPage] = useState(1); // 1-based
-    const [size] = useState(10);
-    const [total, setTotal] = useState(0);
-    const [loading, setLoading] = useState(false);
+    const [range, setRange] = useState<DateRange | undefined>(undefined);
+
+    // paginación
+    const pageSize = 10;
+    const [page, setPage] = useState(1);
+
+    // modal
+    const [openView, setOpenView] = useState(false);
+    const [ventaToView, setVentaToView] = useState<number | null>(null);
 
     useEffect(() => {
-        setLoading(true);
-        fetch(`/api/utilidades?page=${page}&size=${size}&q=${encodeURIComponent(q)}`)
-            .then((r) => r.json())
-            .then((res: { items: Utilidad[]; total: number }) => {
-                setRows(res.items);
-                setTotal(res.total);
-            })
-            .finally(() => setLoading(false));
-    }, [page, size, q]);
+        let alive = true;
+        (async () => {
+            setLoading(true);
+            try {
+                const data = await fetchAllUtilidades(Date.now());
+                if (alive) setAll(data);
+            } finally {
+                if (alive) setLoading(false);
+            }
+        })();
+        return () => {
+            alive = false;
+        };
+    }, []);
 
-    const from = useMemo(() => (total === 0 ? 0 : (page - 1) * size + 1), [page, size, total]);
-    const to = useMemo(() => Math.min(page * size, total), [page, size, total]);
-    const pageCount = useMemo(() => Math.max(1, Math.ceil(total / size)), [total, size]);
+    // filtros
+    const filtered = useMemo(() => {
+        const v = q.trim();
+        const byVenta = (u: Utilidad) => (v ? String(u.venta_id).includes(v) : true);
+        const byDate = (u: Utilidad) => {
+            if (!range?.from || !range?.to) return true;
+            const d = new Date(u.fecha);
+            const from = startOfDay(range.from);
+            const to = endOfDay(range.to);
+            return isWithinInterval(d, { start: from, end: to });
+        };
+        return all.filter((u) => byVenta(u) && byDate(u));
+    }, [all, q, range]);
 
-    const frameVars: CSSProperties = {
-        ["--content-x" as any]: "16px",
-        ["--page-bg" as any]: "color-mix(in srgb, var(--tg-bg) 96%, white 4%)",
-        ["--panel-bg" as any]: "color-mix(in srgb, var(--tg-card-bg) 90%, black 10%)",
-    };
+    useEffect(() => { setPage(1); }, [q, range]);
 
-    const onView = (u: Utilidad) => {
-        // TODO: abrir modal de detalle de utilidad
-    };
+    // paginado en memoria
+    const total = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    const safePage = Math.min(page, totalPages);
+    const rows = useMemo(() => {
+        const start = (safePage - 1) * pageSize;
+        return filtered.slice(start, start + pageSize);
+    }, [filtered, safePage, pageSize]);
+
+    const from = useMemo(() => (total === 0 ? 0 : (safePage - 1) * pageSize + 1), [safePage, pageSize, total]);
+    const to = useMemo(() => Math.min(safePage * pageSize, total), [safePage, pageSize, total]);
+
+    // ventana de números como en Productos
+    const [startNum, endNum] = useMemo(() => {
+        const win = 5;
+        if (totalPages <= win) return [1, totalPages] as const;
+        const s = Math.max(1, Math.min(safePage - 2, totalPages - (win - 1)));
+        return [s, s + (win - 1)] as const;
+    }, [safePage, totalPages]);
+
+    const frameVars: CSSProperties = { ["--content-x" as any]: "16px" };
+
+    function handleClearFilters() {
+        setQ("");
+        setRange(undefined);
+    }
+
+    function onView(ventaId: number) {
+        setVentaToView(ventaId);
+        setOpenView(true);
+    }
 
     return (
-        <div className="app-shell__frame min-h-screen" style={frameVars}>
-            <div className="bg-[var(--page-bg)] rounded-xl px-[var(--content-x)] pb-[var(--content-b)] pt-3">
-                {/* Barra superior */}
-                <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                    <h2 className="text-2xl font-semibold text-tg-fg">Utilidades</h2>
+        <>
+            <div className="app-shell__frame overflow-hidden" style={frameVars}>
+                <div className="bg-[var(--page-bg)] rounded-xl h-full flex flex-col px-[var(--content-x)] pt-3 pb-5">
+                    {/* Header + filtros */}
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                        <h2 className="text-2xl font-semibold text-tg-fg">Utilidades</h2>
 
-                    <div className="flex flex-wrap items-center gap-2">
-                        <label className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-tg-muted">
-                                <SearchIcon fontSize="small" />
-                            </span>
-                            <input
-                                type="search"
-                                placeholder="Buscar (venta, fecha)"
-                                className="h-10 w-[260px] rounded-md border border-tg bg-tg-card text-tg-card pl-9 pr-3 outline-none focus:ring-2 focus:ring-tg-primary"
-                                value={q}
-                                onChange={(e) => setQ(e.target.value)}
+                        <div className="flex flex-wrap items-center gap-2">
+                            {/* Buscar */}
+                            <label className="relative flex items-center flex-none h-10 w-[260px]">
+                                <span className="absolute inset-y-0 left-3 flex items-center text-tg-muted pointer-events-none">
+                                    <MaterialIcon name="search" size={18} />
+                                </span>
+                                <input
+                                    type="search"
+                                    placeholder="Buscar por Nro de venta"
+                                    className="h-10 w-full rounded-md border border-tg bg-tg-card text-tg-card pl-9 pr-3
+                             focus:outline-none focus:ring-tg-primary"
+                                    value={q}
+                                    onChange={(e) => setQ(e.target.value)}
+                                    inputMode="numeric"
+                                />
+                            </label>
+
+                            {/* Rango fechas */}
+                            <DateRangeInput
+                                value={range}
+                                onChange={setRange}
+                                className="ml-1"
+                                placeholder="dd/mm/aaaa / dd/mm/aaaa"
                             />
-                        </label>
 
-                        {/* Filtro placeholder (opcional) */}
-                        <button className="h-10 min-w-[140px] rounded-md border border-tg bg-tg-card px-3 text-left text-sm text-tg-muted">
-                            Fecha
-                        </button>
+                            {/* Limpiar */}
+                            <span
+                                onClick={handleClearFilters}
+                                className="cursor-pointer text-sm text-tg-primary hover:underline ml-2 mr-2 select-none"
+                                role="button"
+                                tabIndex={0}
+                            >
+                                Limpiar filtros
+                            </span>
+                        </div>
                     </div>
-                </div>
 
-                {/* Tabla */}
-                <div className="rounded-xl overflow-hidden border border-[var(--panel-border)] bg-[var(--panel-bg)] shadow-md">
-                    <div className="overflow-auto">
-                        <table className="w-full text-sm">
-                            <thead>
-                                <tr className="bg-[var(--table-head-bg)] text-[var(--table-head-fg)]">
-                                    <th className="px-4 py-3 text-left">Nro Venta</th>
-                                    <th className="px-4 py-3 text-right">Utilidad</th>
-                                    <th className="px-4 py-3 text-left">Fecha</th>
-                                    <th className="px-4 py-3 text-center">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {loading
-                                    ? Array.from({ length: 10 }).map((_, i) => (
-                                        <tr key={`sk-${i}`} className="border-t border-tg">
-                                            {Array.from({ length: 4 }).map((__, j) => (
-                                                <td key={j} className="px-4 py-3">
-                                                    <div className="h-4 w-full animate-pulse rounded bg-black/10 dark:bg-white/10" />
-                                                </td>
-                                            ))}
-                                        </tr>
-                                    ))
-                                    : rows.length === 0 ? (
+                    {/* Tabla */}
+                    <div className="rounded-xl border border-[var(--panel-border)] bg-[var(--panel-bg)] shadow-md flex-1 min-h-0 flex flex-col overflow-hidden">
+                        <div className="flex-1 min-h-0 overflow-auto">
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="bg-[var(--table-head-bg)] text-[var(--table-head-fg)]">
+                                        <th className="px-4 py-3 text-left">Nro Venta</th>
+                                        <th className="px-4 py-3 text-right">Utilidad</th>
+                                        <th className="px-4 py-3 text-left">Fecha</th>
+                                        <th className="px-4 py-3 text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {loading ? (
+                                        Array.from({ length: 10 }).map((_, i) => (
+                                            <tr key={`sk-${i}`} className="border-t border-tg">
+                                                {Array.from({ length: 4 }).map((__, j) => (
+                                                    <td key={j} className="px-4 py-3">
+                                                        <div className="h-4 w-full animate-pulse rounded bg-black/10 dark:bg-white/10" />
+                                                    </td>
+                                                ))}
+                                            </tr>
+                                        ))
+                                    ) : rows.length === 0 ? (
                                         <tr>
                                             <td colSpan={4} className="px-4 py-10 text-center text-tg-muted">
                                                 Sin registros
@@ -113,73 +174,119 @@ export default function UtilidadesPage() {
                                         </tr>
                                     ) : (
                                         rows.map((r) => (
-                                            <tr key={`${r.venta_id}-${r.fecha}`} className="border-t border-tg hover:bg-black/5 dark:hover:bg-white/5">
+                                            <tr
+                                                key={`${r.venta_id}-${r.fecha}`}
+                                                className="border-t border-tg hover:bg-black/5 dark:hover:bg-white/5"
+                                            >
                                                 <td className="px-4 py-3">{r.venta_id}</td>
                                                 <td className="px-4 py-3 text-right">{money.format(r.utilidad)}</td>
-                                                <td className="px-4 py-3">{format(new Date(r.fecha), "dd MMM yyyy", { locale: es })}</td>
+                                                <td className="px-4 py-3">
+                                                    {format(new Date(r.fecha), "dd MMM yyyy", { locale: es })}
+                                                </td>
                                                 <td className="px-2 py-2">
                                                     <div className="flex items-center justify-center">
-                                                        <Tooltip title="Ver detalle utilidad" arrow>
-                                                            <IconButton size="small" onClick={() => onView(r)} aria-label="ver detalle utilidad">
-                                                                <VisibilityOutlinedIcon fontSize="small" />
-                                                            </IconButton>
-                                                        </Tooltip>
+                                                        <button
+                                                            className="p-2 rounded-full text-tg-primary hover:bg-[color-mix(in_srgb,var(--tg-primary)_22%,transparent)]"
+                                                            aria-label="ver detalle utilidad"
+                                                            title="Ver detalle de utilidad"
+                                                            onClick={() => onView(r.venta_id)}
+                                                        >
+                                                            <MaterialIcon name="visibility" size={18} />
+                                                        </button>
                                                     </div>
                                                 </td>
                                             </tr>
                                         ))
                                     )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* Pie */}
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-tg px-4 py-3">
-                        <div className="flex items-center gap-2">
-                            <span className="text-sm">Líneas por página</span>
-                            <select value={10} disabled className="h-9 rounded-md border border-tg bg-[var(--panel-bg)] px-2 text-sm text-tg-muted">
-                                <option value={10}>10</option>
-                            </select>
+                                </tbody>
+                            </table>
                         </div>
 
-                        <nav className="flex items-center gap-1">
-                            <button
-                                disabled={page <= 1}
-                                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                                className="h-8 rounded px-2 text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10"
-                            >
-                                Anterior
-                            </button>
-                            {Array.from({ length: pageCount }).slice(0, 5).map((_, i) => {
-                                const p = i + 1;
-                                const active = p === page;
-                                return (
-                                    <button
-                                        key={p}
-                                        onClick={() => setPage(p)}
-                                        className={`h-8 min-w-8 rounded px-2 text-sm ${active ? "bg-tg-primary text-tg-on-primary" : "hover:bg-black/10 dark:hover:bg-white/10"
-                                            }`}
-                                    >
-                                        {p}
-                                    </button>
-                                );
-                            })}
-                            {pageCount > 5 && <span className="px-1">…</span>}
-                            <button
-                                disabled={page >= pageCount}
-                                onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-                                className="h-8 rounded px-2 text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10"
-                            >
-                                Próximo
-                            </button>
-                        </nav>
+                        {/* Paginación estilo Productos */}
+                        <div className="shrink-0 flex flex-wrap items-center justify-between gap-3 border-t border-tg px-4 py-3">
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm">Líneas por página</span>
+                                <select value={pageSize} disabled className="h-9 rounded-md border border-tg bg-[var(--panel-bg)] px-2 text-sm text-tg-muted">
+                                    <option value={pageSize}>{pageSize}</option>
+                                </select>
+                            </div>
 
-                        <div className="text-sm text-tg-muted">
-                            Exhibiendo {from}-{to} de {total} registros
+                            <nav className="flex items-center gap-1">
+                                {/* Primera */}
+                                <button
+                                    disabled={safePage <= 1}
+                                    onClick={() => setPage(1)}
+                                    className="h-8 w-8 rounded grid place-items-center disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary"
+                                    aria-label="Primera página"
+                                    title="Primera página"
+                                >
+                                    <MaterialIcon name="first_page" size={18} />
+                                </button>
+
+                                {/* Anterior */}
+                                <button
+                                    disabled={safePage <= 1}
+                                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                    className="h-8 w-8 rounded grid place-items-center disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary"
+                                    aria-label="Anterior"
+                                    title="Anterior"
+                                >
+                                    <MaterialIcon name="chevron_left" size={18} />
+                                </button>
+
+                                {/* Números */}
+                                {Array.from({ length: endNum - startNum + 1 }, (_, i) => startNum + i).map((p) => {
+                                    const active = p === safePage;
+                                    return (
+                                        <button
+                                            key={p}
+                                            onClick={() => setPage(p)}
+                                            className={`h-8 min-w-8 rounded px-2 text-sm ${active ? "bg-tg-primary text-tg-on-primary" : "hover:bg-black/10 dark:hover:bg-white/10"
+                                                } focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary`}
+                                            aria-current={active ? "page" : undefined}
+                                        >
+                                            {p}
+                                        </button>
+                                    );
+                                })}
+
+                                {endNum < totalPages && <span className="px-1">…</span>}
+
+                                {/* Próximo */}
+                                <button
+                                    disabled={safePage >= totalPages}
+                                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                                    className="h-8 w-8 rounded grid place-items-center disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary"
+                                    aria-label="Próximo"
+                                    title="Próximo"
+                                >
+                                    <MaterialIcon name="chevron_right" size={18} />
+                                </button>
+
+                                {/* Última */}
+                                <button
+                                    disabled={safePage >= totalPages}
+                                    onClick={() => setPage(totalPages)}
+                                    className="h-8 w-8 rounded grid place-items-center disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary"
+                                    aria-label="Última página"
+                                    title="Última página"
+                                >
+                                    <MaterialIcon name="last_page" size={18} />
+                                </button>
+                            </nav>
+
+                            <div className="text-sm text-tg-muted">Exhibiendo {from}-{to} de {total} registros</div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+
+            {/* Modal de detalle de utilidad */}
+            <UtilidadView
+                open={openView}
+                onClose={() => setOpenView(false)}
+                ventaId={ventaToView}
+            />
+        </>
     );
 }

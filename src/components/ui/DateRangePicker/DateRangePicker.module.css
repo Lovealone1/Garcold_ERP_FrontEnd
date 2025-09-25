@@ -1,0 +1,130 @@
+/* cada celda sirve de ancla para pseudo */
+.day {
+    position: relative;
+    margin: 0 !important;
+    /* sin gaps */
+    border-radius: 0 !important;
+    /* base cuadrada */
+}
+
+/* “hoy” solo borde si NO está seleccionado */
+.today {
+    border-radius: 9999px !important;
+    outline: 2px solid var(--tg-primary);
+    color: var(--tg-primary);
+    background: transparent !important;
+}
+
+/* tramo medio del rango: bloque uniforme (píldora) */
+.rangeMiddle {
+    background: var(--tg-datepicker-range) !important;
+    border-radius: 0 !important;
+}
+
+/* extremos del rango: círculos primarios arriba del tramo */
+.rangeStart,
+.rangeEnd,
+.selected {
+    /* caso from==to */
+    background: var(--tg-primary) !important;
+    color: var(--tg-primary-fg) !important;
+    border-radius: 9999px !important;
+    z-index: 1;
+    /* sobre el tramo */
+}
+
+/* si hoy coincide con extremos, no muestres el borde */
+.rangeStart.today,
+.rangeEnd.today,
+.selected.today {
+    outline: none !important;
+}
+
+/* “media celda” debajo para unir círculo con el tramo */
+.rangeStart::before,
+.rangeEnd::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    /* por debajo del día circular */
+    pointer-events: none;
+}
+
+
+
+/* sombreado de las medias celdas en extremos */
+/* sombreado del rango */
+.rangeMiddle {
+  background: var(--tg-datepicker-range) !important;
+}
+
+
+
+
+/* existentes: .day, .today, .rangeMiddle, .rangeStart, .rangeEnd, .selected */
+
+/* flechas de navegación */
+.navBtn {
+  color: var(--tg-primary) !important;
+}
+
+
+
+
+
+/* dropdowns tema claro/oscuro */
+/* existentes: .day, .today, .rangeMiddle, .rangeStart, .rangeEnd, .selected */
+
+/* ---- NAV dentro del caption y en color tg-primary ---- */
+.caption {            /* el caption será el ancla del nav */
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.nav {                /* mueve las flechas al lado derecho del caption */
+  position: absolute !important;
+  right: .25rem;
+  top: .2rem;
+  display: flex;
+  gap: .25rem;
+}
+
+.navBtn {
+  color: var(--tg-primary) !important;
+  background: transparent !important;
+  border-radius: 9999px;
+}
+.navBtn:hover {
+  background: color-mix(in srgb, var(--tg-primary) 18%, transparent) !important;
+}
+.navBtn svg, .navBtn path {
+  stroke: var(--tg-primary) !important;
+  fill: none !important;
+}
+
+.themeFix{
+  --rdp-accent-color: var(--tg-primary);
+}
+/* dropdowns tema claro/oscuro (ya los tenías) */
+.themeFix :global(select.rdp-dropdown) {
+  appearance: none;
+  background-color: var(--tg-card-bg);
+  color: var(--tg-card-fg);
+  border: 1px solid var(--tg-border);
+  border-radius: .5rem;
+  padding: .25rem 1.8rem .25rem .5rem;
+  background-repeat: no-repeat;
+  background-position: right .45rem center;
+  background-size: 14px 14px;
+}
+html:not(.dark) .themeFix :global(select.rdp-dropdown) {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24'%3E%3Cpath fill='%2316a34a' d='M7 10l5 5 5-5'/%3E%3C/svg%3E");
+}
+html.dark .themeFix :global(select.rdp-dropdown) {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24'%3E%3Cpath fill='%2322c55e' d='M7 10l5 5 5-5'/%3E%3C/svg%3E");
+}
+
+

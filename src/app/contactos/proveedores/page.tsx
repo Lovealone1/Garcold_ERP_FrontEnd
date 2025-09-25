@@ -1,122 +1,217 @@
-// app/(comercial)/proveedores/page.tsx
 "use client";
 
-import { useEffect, useMemo, useState, CSSProperties } from "react";
+import { useMemo, useState, CSSProperties } from "react";
 import { MaterialIcon } from "@/components/ui/material-icon";
-import ProveedorCreate, { type NuevoProveedor } from "@/features/proveedores/ProveedorCreate";
-
-type Proveedor = {
-  id: number;
-  cc_nit: string;
-  nombre: string;
-  direccion: string;
-  ciudad: string;
-  celular?: string | null;
-  correo?: string | null;
-  fecha_creacion?: string;
-};
+import ProveedorForm from "@/features/proveedores/ProveedorForm";
+import ProveedorView from "@/features/proveedores/ProveedorView";
+import { useProveedores } from "@/hooks/proveedores/useProveedores";
+import { useProveedor } from "@/hooks/proveedores/useProveedor";
+import { createProveedor, updateProveedor, deleteProveedor } from "@/services/sales/proveedores.api";
+import type { Proveedor, ProveedorCreate, ProveedorUpdate } from "@/types/proveedores";
+import { useNotifications } from "@/components/providers/NotificationsProvider";
 
 export default function ProveedoresPage() {
-  const [rows, setRows] = useState<Proveedor[]>([]);
-  const [q, setQ] = useState("");
-  const [page, setPage] = useState(1);
-  const [size] = useState(10);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const {
+    items: rows,
+    page, pageSize, total, totalPages, hasPrev, hasNext,
+    loading, setPage,
+    filters, setFilters,
+    options,
+    reload,
+    upsertOne,
+  } = useProveedores(10);
 
-  // modal
+  const { success, error } = useNotifications();
+
+  // Crear
   const [openCreate, setOpenCreate] = useState(false);
-  const [createKey, setCreateKey] = useState(0); // fuerza reset del form al abrir
+  const [creating, setCreating] = useState(false);
 
-  const fetchList = () => {
-    setLoading(true);
-    fetch(`/api/proveedores?page=${page}&size=${size}&q=${encodeURIComponent(q)}`)
-      .then((r) => r.json())
-      .then((res: { items: Proveedor[]; total: number }) => {
-        setRows(res.items);
-        setTotal(res.total);
-      })
-      .finally(() => setLoading(false));
-  };
+  // Ver
+  const [viewId, setViewId] = useState<number | null>(null);
+  const [openView, setOpenView] = useState(false);
+  const { proveedor, loading: viewLoading } = useProveedor(viewId);
 
-  useEffect(() => {
-    fetchList();
-  }, [page, size, q]);
+  // Editar
+  const [editId, setEditId] = useState<number | null>(null);
+  const [openEdit, setOpenEdit] = useState(false);
+  const { proveedor: editProveedor, loading: editLoading } = useProveedor(editId);
 
-  const handleCreate = async (data: NuevoProveedor) => {
-    await fetch("/api/proveedores", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+  // Eliminar
+  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [openDelete, setOpenDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const from = useMemo(() => (total === 0 ? 0 : (page - 1) * pageSize + 1), [page, pageSize, total]);
+  const to = useMemo(() => Math.min(page * pageSize, total), [page, pageSize, total]);
+
+  const [start, end] = useMemo(() => {
+    const win = 5;
+    if (totalPages <= win) return [1, totalPages] as const;
+    const s = Math.max(1, Math.min(page - 2, totalPages - (win - 1)));
+    return [s, s + (win - 1)] as const;
+  }, [page, totalPages]);
+
+  const frameVars: CSSProperties = { ["--content-x" as any]: "16px" };
+
+  // Crear
+  async function handleCreateSubmit(data: ProveedorCreate) {
+    setCreating(true);
+    try {
+      await createProveedor(data);
+      setOpenCreate(false);
+      setPage(1);
+      reload?.();
+      success("Proveedor creado correctamente");
+    } catch (e: any) {
+      error(e?.response?.data?.detail ?? "Error creando proveedor");
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  // Editar
+  async function handleEditSubmit(data: ProveedorUpdate) {
+    if (!editId) return;
+    try {
+      await updateProveedor(editId, data);
+      setOpenEdit(false);
+      upsertOne({ id: editId, ...data });
+      reload?.();
+      success("Proveedor actualizado");
+    } catch (e: any) {
+      error(e?.response?.data?.detail ?? "Error actualizando proveedor");
+    }
+  }
+
+  // Confirmar eliminación
+  async function handleConfirmDelete() {
+    if (!deleteId) return;
+    setDeleting(true);
+    try {
+      await deleteProveedor(deleteId);
+      setOpenDelete(false);
+      setDeleteId(null);
+      reload?.();
+      success("Proveedor eliminado");
+    } catch (e: any) {
+      error(e?.response?.data?.detail ?? "Error eliminando proveedor");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  function handleClearFilters() {
+    // sin saldoPendiente en Proveedores
+    setFilters({ q: "", ciudades: undefined });
+  }
+
+  // Ciudades multiselect
+  const selectedCities = filters.ciudades ?? [];
+  const allCities = options.ciudades ?? [];
+  const allSelected = selectedCities.length > 0 && selectedCities.length === allCities.length;
+  const citiesLabel = selectedCities.length === 0 ? "Ciudad" : allSelected ? "Todas" : `${selectedCities.length} seleccionadas`;
+
+  const toggleCity = (city: string) => {
+    setFilters(f => {
+      const current = new Set(f.ciudades ?? []);
+      current.has(city) ? current.delete(city) : current.add(city);
+      const arr = Array.from(current);
+      return { ...f, ciudades: arr.length ? arr : undefined };
     });
-    setOpenCreate(false);
-    fetchList(); // refresca
   };
-
-  const from = useMemo(() => (total === 0 ? 0 : (page - 1) * size + 1), [page, size, total]);
-  const to = useMemo(() => Math.min(page * size, total), [page, size, total]);
-  const pageCount = useMemo(() => Math.max(1, Math.ceil(total / size)), [total, size]);
-
-  const frameVars: CSSProperties = {
-    ["--content-x" as any]: "16px",
-    ["--page-bg" as any]: "color-mix(in srgb, var(--tg-bg) 96%, white 4%)",
-    ["--panel-bg" as any]: "color-mix(in srgb, var(--tg-card-bg) 90%, black 10%)",
+  const toggleAllCities = () => {
+    setFilters(f => (allSelected ? { ...f, ciudades: undefined } : { ...f, ciudades: [...allCities] }));
   };
+  const [citiesOpen, setCitiesOpen] = useState(false);
 
   return (
-    <div className="app-shell__frame min-h-screen" style={frameVars}>
-      <div className="bg-[var(--page-bg)] rounded-xl px-[var(--content-x)] pb-[var(--content-b)] pt-3">
-        {/* Barra superior */}
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-2xl font-semibold text-tg-fg">Proveedores</h2>
+    <div className="app-shell__frame overflow-hidden" style={frameVars}>
+      <div className="bg-[var(--page-bg)] rounded-xl h-full flex flex-col px-[var(--content-x)] pt-3 pb-5">
+        <div className="shrink-0">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-2xl font-semibold text-tg-fg">Proveedores</h2>
 
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Búsqueda */}
-            <label className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-tg-muted">
-                <MaterialIcon name="search" size={18} />
-              </span>
-              <input
-                type="search"
-                placeholder="Buscar proveedor"
-                className="h-10 w-[260px] rounded-md border border-tg bg-tg-card text-tg-card pl-9 pr-3 outline-none focus:ring-2 focus:ring-tg-primary"
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-              />
-            </label>
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Buscar */}
+              <label className="relative flex items-center flex-none h-10 w-[260px]">
+                <span className="absolute inset-y-0 left-3 flex items-center text-tg-muted pointer-events-none">
+                  <MaterialIcon name="search" size={18} />
+                </span>
+                <input
+                  type="search"
+                  placeholder="Buscar"
+                  className="h-10 w-full rounded-md border border-tg bg-tg-card text-tg-card pl-9 pr-3
+                             focus:outline-none"
+                  value={filters.q ?? ""}
+                  onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
+                />
+              </label>
 
-            {/* Filtros dummy */}
-            <button className="h-10 min-w-[140px] rounded-md border border-tg bg-tg-card px-3 text-left text-sm text-tg-muted">
-              <span className="inline-flex items-center gap-2">
-                <MaterialIcon name="expand_more" size={18} /> Estado
-              </span>
-            </button>
-            <button className="h-10 min-w-[140px] rounded-md border border-tg bg-tg-card px-3 text-left text-sm text-tg-muted">
-              <span className="inline-flex items-center gap-2">
-                <MaterialIcon name="expand_more" size={18} /> Municipio
-              </span>
-            </button>
-            <button className="h-10 min-w-[140px] rounded-md border border-tg bg-tg-card px-3 text-left text-sm text-tg-muted">
-              <span className="inline-flex items-center gap-2">
-                <MaterialIcon name="expand_more" size={18} /> Barrio
-              </span>
-            </button>
+              {/* Ciudades */}
+              <div className="relative flex-none w-[220px]">
+                <button
+                  type="button"
+                  onClick={() => setCitiesOpen(o => !o)}
+                  className="h-10 w-full rounded-md border border-tg bg-tg-card px-3 text-left text-sm text-tg-muted inline-flex items-center justify-between
+                             focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary"
+                >
+                  <span>{citiesLabel}</span>
+                  <MaterialIcon name={citiesOpen ? "expand_less" : "expand_more"} size={18} />
+                </button>
 
-            <button
-              onClick={() => {
-                setCreateKey((k) => k + 1); // resetea el form
-                setOpenCreate(true);
-              }}
-              className="h-10 rounded-md bg-tg-primary px-4 text-sm font-medium text-tg-on-primary shadow-sm"
-            >
-              Nuevo proveedor
-            </button>
+                {citiesOpen && (
+                  <div className="absolute z-20 mt-1 w-full rounded-md border border-tg bg-[var(--panel-bg)] shadow-lg max-h-64 overflow-auto">
+                    <div className="px-3 py-2 border-b border-tg">
+                      <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
+                        <input type="checkbox" className="accent-current" checked={allSelected} onChange={toggleAllCities} />
+                        <span>Seleccionar todas</span>
+                      </label>
+                    </div>
+                    <ul className="p-2 space-y-1">
+                      {allCities.map(ci => {
+                        const checked = selectedCities.includes(ci);
+                        return (
+                          <li key={ci}>
+                            <label className="flex items-center gap-2 text-sm cursor-pointer px-1 py-1 rounded hover:bg-black/10 dark:hover:bg-white/10">
+                              <input type="checkbox" className="accent-current" checked={checked} onChange={() => toggleCity(ci)} />
+                              <span>{ci}</span>
+                            </label>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
+              </div>
+
+              {/* Limpiar */}
+              <span
+                onClick={handleClearFilters}
+                className="cursor-pointer text-sm text-tg-primary hover:underline ml-2 mr-2 select-none"
+                role="button"
+                tabIndex={0}
+              >
+                Limpiar filtros
+              </span>
+
+              {/* Nuevo */}
+              <button
+                onClick={() => setOpenCreate(true)}
+                className="h-10 rounded-md bg-tg-primary px-4 text-sm font-medium text-tg-on-primary shadow-sm
+                           focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary/60"
+              >
+                Nuevo proveedor
+              </button>
+            </div>
           </div>
         </div>
 
+        <div className="h-2 shrink-0" />
+
         {/* Tabla */}
-        <div className="rounded-xl overflow-hidden border border-[var(--panel-border)] bg-[var(--panel-bg)] shadow-md">
-          <div className="overflow-auto">
+        <div className="rounded-xl border border-[var(--panel-border)] bg-[var(--panel-bg)] shadow-md flex-1 min-h-0 flex flex-col overflow-hidden">
+          <div className="flex-1 min-h-0 overflow-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-[var(--table-head-bg)] text-[var(--table-head-fg)]">
@@ -124,99 +219,138 @@ export default function ProveedoresPage() {
                   <th className="px-4 py-3 text-left">CC/NIT</th>
                   <th className="px-4 py-3 text-left">Correo</th>
                   <th className="px-4 py-3 text-left">Celular</th>
-                  <th className="px-4 py-3 text-left">Dirección</th>
                   <th className="px-4 py-3 text-left">Ciudad</th>
                   <th className="px-4 py-3 text-center">Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {loading
-                  ? Array.from({ length: 10 }).map((_, i) => (
+                {loading ? (
+                  Array.from({ length: 10 }).map((_, i) => (
                     <tr key={`sk-${i}`} className="border-t border-tg">
-                      {Array.from({ length: 7 }).map((__, j) => (
+                      {Array.from({ length: 6 }).map((__, j) => (
                         <td key={j} className="px-4 py-3">
                           <div className="h-4 w-full animate-pulse rounded bg-black/10 dark:bg-white/10" />
                         </td>
                       ))}
                     </tr>
                   ))
-                  : rows.length === 0
-                    ? (
-                      <tr>
-                        <td colSpan={7} className="px-4 py-10 text-center text-tg-muted">
-                          Sin registros
-                        </td>
-                      </tr>
-                    )
-                    : rows.map((r) => (
-                      <tr key={r.id} className="border-t border-tg hover:bg-black/5 dark:hover:bg-white/5">
-                        <td className="px-4 py-3">{r.nombre}</td>
-                        <td className="px-4 py-3">{r.cc_nit}</td>
-                        <td className="px-4 py-3">{r.correo || "—"}</td>
-                        <td className="px-4 py-3">{r.celular || "—"}</td>
-                        <td className="px-4 py-3">{r.direccion}</td>
-                        <td className="px-4 py-3">{r.ciudad}</td>
-                        <td className="px-2 py-2">
-                          <div className="flex items-center justify-center gap-1">
-                            <button className="rounded p-2 hover:bg-black/10 dark:hover:bg-white/10" aria-label="ver">
-                              <MaterialIcon name="visibility" size={18} />
-                            </button>
-                            <button className="rounded p-2 hover:bg-black/10 dark:hover:bg-white/10" aria-label="editar">
-                              <MaterialIcon name="edit" size={18} />
-                            </button>
-                            <button className="rounded p-2 hover:bg-black/10 dark:hover:bg-white/10" aria-label="eliminar">
-                              <MaterialIcon name="delete" size={18} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                ) : rows.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-10 text-center text-tg-muted">Sin registros</td>
+                  </tr>
+                ) : (
+                  rows.map((r: Proveedor) => (
+                    <tr key={r.id} className="border-t border-tg hover:bg-black/5 dark:hover:bg-white/5">
+                      <td className="px-4 py-3">{r.nombre}</td>
+                      <td className="px-4 py-3">{r.cc_nit}</td>
+                      <td className="px-4 py-3">{r.correo || "—"}</td>
+                      <td className="px-4 py-3">{r.celular || "—"}</td>
+                      <td className="px-4 py-3">{r.ciudad}</td>
+                      <td className="px-2 py-2">
+                        <div className="flex items-center justify-center gap-1">
+                          {/* Ver */}
+                          <button
+                            className="rounded p-2 hover:bg-black/10 dark:hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary"
+                            aria-label="ver"
+                            onClick={() => { setViewId(r.id); setOpenView(true); }}
+                          >
+                            <MaterialIcon name="visibility" size={18} className="text-tg-primary" />
+                          </button>
+                          {/* Editar */}
+                          <button
+                            className="rounded p-2 hover:bg-black/10 dark:hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary"
+                            aria-label="editar"
+                            onClick={() => { setEditId(r.id); setOpenEdit(true); }}
+                          >
+                            <MaterialIcon name="edit" size={18} className="text-tg-primary" />
+                          </button>
+                          {/* Eliminar */}
+                          <button
+                            className="rounded p-2 hover:bg-black/10 dark:hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary"
+                            aria-label="eliminar"
+                            onClick={() => { setDeleteId(r.id); setOpenDelete(true); }}
+                          >
+                            <MaterialIcon name="delete" size={18} className="text-tg-primary" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
 
-          {/* Pie */}
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-tg px-4 py-3">
+          {/* Paginación */}
+          <div className="shrink-0 flex flex-wrap items-center justify-between gap-3 border-t border-tg px-4 py-3">
             <div className="flex items-center gap-2">
               <span className="text-sm">Líneas por página</span>
-              <select
-                value={10}
-                disabled
-                className="h-9 rounded-md border border-tg bg-[var(--panel-bg)] px-2 text-sm text-tg-muted"
-              >
-                <option value={10}>10</option>
+              <select value={pageSize} disabled className="h-9 rounded-md border border-tg bg-[var(--panel-bg)] px-2 text-sm text-tg-muted">
+                <option value={pageSize}>{pageSize}</option>
               </select>
             </div>
 
             <nav className="flex items-center gap-1">
+              {/* Ir al inicio */}
               <button
-                disabled={page <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="h-8 rounded px-2 text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10"
+                disabled={!hasPrev}
+                onClick={() => setPage(1)}
+                className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary"
+                aria-label="Primera página"
+                title="Primera página"
               >
-                Anterior
+                <MaterialIcon name="first_page" size={18} />
               </button>
-              {Array.from({ length: pageCount }).slice(0, 5).map((_, i) => {
-                const p = i + 1;
+
+              {/* Anterior */}
+              <button
+                disabled={!hasPrev}
+                onClick={() => setPage(page - 1)}
+                className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary"
+                aria-label="Anterior"
+                title="Anterior"
+              >
+                <MaterialIcon name="chevron_left" size={18} />
+              </button>
+
+              {/* Números */}
+              {Array.from({ length: end - start + 1 }, (_, i) => start + i).map((p) => {
                 const active = p === page;
                 return (
                   <button
                     key={p}
                     onClick={() => setPage(p)}
                     className={`h-8 min-w-8 rounded px-2 text-sm ${active ? "bg-tg-primary text-tg-on-primary" : "hover:bg-black/10 dark:hover:bg-white/10"
-                      }`}
+                      } focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary`}
+                    aria-current={active ? "page" : undefined}
                   >
                     {p}
                   </button>
                 );
               })}
-              {pageCount > 5 && <span className="px-1">…</span>}
+
+              {end < totalPages && <span className="px-1">…</span>}
+
+              {/* Siguiente */}
               <button
-                disabled={page >= pageCount}
-                onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-                className="h-8 rounded px-2 text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10"
+                disabled={!hasNext}
+                onClick={() => setPage(page + 1)}
+                className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary"
+                aria-label="Próximo"
+                title="Próximo"
               >
-                Próximo
+                <MaterialIcon name="chevron_right" size={18} />
+              </button>
+
+              {/* Ir al final */}
+              <button
+                disabled={!hasNext}
+                onClick={() => setPage(totalPages)}
+                className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary"
+                aria-label="Última página"
+                title="Última página"
+              >
+                <MaterialIcon name="last_page" size={18} />
               </button>
             </nav>
 
@@ -225,17 +359,71 @@ export default function ProveedoresPage() {
         </div>
       </div>
 
-      {/* Modal crear proveedor */}
+      {/* Crear */}
       {openCreate && (
-        <ProveedorCreate
-          key={createKey}
-          mode="modal"
+        <ProveedorForm
+          intent="create"
           open={openCreate}
           onClose={() => setOpenCreate(false)}
-          onSubmit={handleCreate}
-          loading={false}
-          defaults={{}}
+          onSubmit={handleCreateSubmit}
+          loading={creating}
         />
+      )}
+
+      {/* Ver */}
+      {openView && (
+        <ProveedorView
+          open={openView}
+          onClose={() => setOpenView(false)}
+          proveedor={proveedor}
+          loading={viewLoading}
+        />
+      )}
+
+      {/* Editar */}
+      {openEdit && (
+        <ProveedorForm
+          intent="edit"
+          open={openEdit}
+          onClose={() => setOpenEdit(false)}
+          onSubmit={handleEditSubmit}
+          loading={editLoading}
+          defaults={editProveedor ? {
+            nombre: editProveedor.nombre,
+            cc_nit: editProveedor.cc_nit,
+            correo: editProveedor.correo ?? "",
+            celular: editProveedor.celular ?? "",
+            direccion: editProveedor.direccion,
+            ciudad: editProveedor.ciudad,
+          } : undefined}
+        />
+      )}
+
+      {/* Eliminar */}
+      {openDelete && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 grid place-items-center bg-black/50"
+          onKeyDown={(e) => { if (e.key === "Escape") setOpenDelete(false); }}
+          onClick={(e) => { if (e.target === e.currentTarget && !deleting) setOpenDelete(false); }}
+        >
+          <div className="w-[420px] rounded-lg border border-tg bg-[var(--panel-bg)] shadow-xl">
+            <div className="px-4 py-3 border-b border-tg flex items-center gap-2">
+              <MaterialIcon name="warning" size={18} />
+              <h3 className="text-base font-semibold">Confirmar eliminación</h3>
+            </div>
+            <div className="px-4 py-4 text-sm">¿Seguro que deseas eliminar este proveedor? Esta acción no se puede deshacer.</div>
+            <div className="px-4 py-3 border-t border-tg flex justify-end gap-2">
+              <button onClick={() => setOpenDelete(false)} className="h-9 rounded-md px-3 text-sm hover:bg-black/10 dark:hover:bg-white/10" disabled={deleting}>
+                Cancelar
+              </button>
+              <button onClick={handleConfirmDelete} className="h-9 rounded-md bg-red-600 px-3 text-sm font-medium text-white disabled:opacity-60" disabled={deleting}>
+                {deleting ? "Eliminando…" : "Eliminar"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -13,7 +13,7 @@ import Pagination from "@mui/material/Pagination";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 
-import ProductoAgregate, { ProductoAgregateDefaults } from "@/features/productos/ProductoAgregate";
+import ProductoAgregate, { ProductoAgregateDefaults } from "@/features/productos/ProductoForm";
 
 // --------- Mock de datos (ajusta por tus APIs) ----------
 type Producto = {

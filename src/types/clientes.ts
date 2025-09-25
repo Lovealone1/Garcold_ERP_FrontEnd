@@ -25,3 +25,4 @@ export type ClienteCreate = Omit<Cliente, "id" | "fecha_creacion">;
 export type ClienteUpdate = Omit<Cliente, "id" | "fecha_creacion" | "saldo">; 
 
 export type NuevoCliente = ClienteCreate;
+export type ClienteLite = Pick<Cliente, "id" | "nombre">;

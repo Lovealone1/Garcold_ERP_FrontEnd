@@ -9,6 +9,8 @@
   --tg-muted: #6b7280;
   --tg-border: #e5e7eb;
   --tg-primary: #16a34a;
+  --tg-datepicker-range: #91d4aa;
+  --tg-icon-button: #2b7a48;
   --tg-primary-fg: #ffffff;
   --tg-sidebar-bg: #f0fdf4;
   --tg-sidebar-fg: #111827;
@@ -19,6 +21,10 @@
   --tg-card-bg: #ffffff;
   --tg-card-fg: #0b0b0d;
 
+
+  --page-bg: color-mix(in srgb, var(--tg-bg) 95%, black 5%);
+  /* +contraste */
+  --panel-bg: color-mix(in srgb, var(--tg-card-bg) 92%, black 8%);
   /* panel pequeño (tabla) */
   --panel-bg: color-mix(in srgb, var(--tg-card-bg) 92%, black 8%);
   --panel-border: var(--tg-border);
@@ -40,6 +46,8 @@ html.dark {
   --tg-muted: #a3a3a3;
   --tg-border: #2a2f2a;
   --tg-primary: #22c55e;
+  --tg-datepicker-range: #91d4aa;
+  --tg-icon-button: #2b7a48;
   --tg-primary-fg: #0b0b0d;
   --tg-sidebar-bg: #0b1d14;
   --tg-sidebar-fg: #e5e5e5;
@@ -55,6 +63,9 @@ html.dark {
   --table-head-bg: #1b1b1f;
   --table-head-fg: #e5e7eb;
   --tg-placeholder: #525252;
+  --page-bg: color-mix(in srgb, var(--tg-bg) 96%, white 4%);
+  /* levanta sobre fondo oscuro */
+  --panel-bg: color-mix(in srgb, var(--tg-card-bg) 85%, black 15%);
 }
 
 
@@ -100,6 +111,10 @@ body {
 
 .bg-tg-primary {
   background-color: var(--tg-primary)
+}
+
+.bg-tg-icon-button {
+  background-color: var(--tg-icon-button)
 }
 
 .text-tg-primary {

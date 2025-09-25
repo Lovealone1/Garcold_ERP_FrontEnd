@@ -1,5 +1,5 @@
 import salesApi from "../salesApi";
-import type { Cliente, ClientesPage, ClienteCreate, ClienteUpdate } from "@/types/clientes";
+import type { Cliente, ClientesPage, ClienteCreate, ClienteUpdate, ClienteLite } from "@/types/clientes";
 
 export async function listClientes(
   page = 1,
@@ -42,4 +42,17 @@ export async function createCliente(data: ClienteCreate): Promise<Cliente> {
 export async function updateCliente(id: number, payload: ClienteUpdate): Promise<Cliente> {
   const { data } = await salesApi.put(`/clientes/actualizar/${id}`, payload);
   return data as Cliente;
+}
+
+export async function deleteCliente(id: number): Promise<Cliente> {
+  const { data } = await salesApi.delete(`/clientes/eliminar/${id}`);
+  return data as Cliente;
+}
+
+export async function listClientesAll(nocacheToken?: number): Promise<ClienteLite[]> {
+  const { data } = await salesApi.get("/clientes/all", {
+    params: { _ts: nocacheToken ?? Date.now() },
+    headers: { "Cache-Control": "no-cache" },
+  });
+  return data as ClienteLite[];
 }

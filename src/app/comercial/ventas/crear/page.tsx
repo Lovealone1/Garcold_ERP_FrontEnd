@@ -11,43 +11,22 @@ import TextField from "@mui/material/TextField";
 import IconButton from "@mui/material/IconButton";
 import Pagination from "@mui/material/Pagination";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 
-import ProductoAgregate, { ProductoAgregateDefaults } from "@/features/productos/ProductoAgregate";
+import ProductoAgregate from "@/features/productos/ProductoForm";
 
-// --------- Mock de datos ----------
-type Producto = {
-    id: number;
-    referencia: string;
-    descripcion: string;
-    precio_venta: number;
-    stock: number;
-    precio_compra: number;
-};
+import { useProductosAll } from "@/hooks/productos/useProductosAll";
+import { useClienteOptions, type ClienteOption } from "@/hooks/clientes/useClienteOptions";
+import { useVentaEstados } from "@/hooks/estados/useVentaEstados";
+import { listBancos } from "@/services/sales/bancos.api";
+import type { Producto } from "@/types/productos";
+import type { Banco } from "@/types/bancos";
+import { useNotifications } from "@/components/providers/NotificationsProvider";
+import { useRouter } from "next/navigation";
 
-const MOCK_PROD: Producto[] = [
-    { id: 1, referencia: "REF-1001", descripcion: "Bulto concentrado 30kg", precio_venta: 98000, stock: 25, precio_compra: 76000 },
-    { id: 2, referencia: "REF-2001", descripcion: "Arena para gato 10kg", precio_venta: 48000, stock: 40, precio_compra: 36000 },
-    { id: 3, referencia: "REF-3005", descripcion: "Juguete cuerda grande", precio_venta: 24000, stock: 12, precio_compra: 15000 },
-];
+// ⬇️ nuevo hook
+import { useCreateVenta } from "@/hooks/ventas/useCreateVenta";
+import type { VentaCreate } from "@/types/ventas";
 
-type Cliente = { id: number; nombre: string };
-const MOCK_CLIENTES: Cliente[] = [
-    { id: 1, nombre: "Agropecuaria San Jorge" },
-    { id: 2, nombre: "Distribuciones La 14" },
-    { id: 3, nombre: "Veterinaria El Prado" },
-];
-
-type Banco = { id: number; nombre: string };
-const MOCK_BANCOS: Banco[] = [
-    { id: 1, nombre: "Bancolombia" },
-    { id: 2, nombre: "Davivienda" },
-    { id: 3, nombre: "BBVA" },
-];
-
-const ESTADOS = ["Venta contado", "Venta crédito"] as const;
-
-// ---------------------- Tipos internos ----------------------
 type ItemVenta = {
     idTmp: string;
     productoId: number;
@@ -57,15 +36,57 @@ type ItemVenta = {
     cantidad: number;
 };
 
-const PAGE_SIZE = 8;
+type Option = { value: number; label: string };
+
+type ProductoAgregateDefaults = {
+    referencia: string;
+    descripcion: string;
+    precio_unitario: number;
+    cantidad: number;
+    stock: number;
+    precio_compra: number;
+};
+
+// ===== Config =====
+const PAGE_SIZE = 5;            // 5 por página (fijas)
+const CARD_H = 80;              // alto de cada card
+const CARD_GAP = 10;            // separación vertical entre cards
+const SHOW_EMPTY_HINT = true;   // mostrar placeholder cuando no hay productos
+
+const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
+const BLOQUEADA_RE = /venta\s*cancelada/i;
 
 export default function VentaCrearPage() {
-    const [catalogo] = useState<Producto[]>(MOCK_PROD);
-    const [clientes] = useState<Cliente[]>(MOCK_CLIENTES);
-    const [bancos] = useState<Banco[]>(MOCK_BANCOS);
+    const router = useRouter();
+    const { error } = useNotifications();
 
-    const [clienteSel, setClienteSel] = useState<Cliente | null>(null);
-    const [bancoSel, setBancoSel] = useState<Banco | null>(null);
+    const { items: catalogo, loading: loadingProd } = useProductosAll();
+    const { options: clienteOptions } = useClienteOptions();
+    const { options: estadoOptions, byName: estadoByName } = useVentaEstados();
+
+    const [bancos, setBancos] = useState<Banco[]>([]);
+    const bancoOptions: Option[] = useMemo(
+        () => bancos.map((b) => ({ value: b.id, label: b.nombre })),
+        [bancos]
+    );
+
+    useEffect(() => {
+        let alive = true;
+        (async () => {
+            try {
+                const data = await listBancos(Date.now());
+                if (alive) setBancos(data);
+            } catch {
+                setBancos([]);
+            }
+        })();
+        return () => {
+            alive = false;
+        };
+    }, []);
+
+    const [clienteSel, setClienteSel] = useState<ClienteOption | null>(null);
+    const [bancoSel, setBancoSel] = useState<Option | null>(null);
     const [estadoSel, setEstadoSel] = useState<string | null>(null);
 
     const [queryProd, setQueryProd] = useState("");
@@ -78,19 +99,24 @@ export default function VentaCrearPage() {
     const [items, setItems] = useState<ItemVenta[]>([]);
     const total = useMemo(() => items.reduce((a, it) => a + it.precioUnit * it.cantidad, 0), [items]);
 
-    // paginación front
     const [page, setPage] = useState(1);
     const pageCount = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
-
     useEffect(() => {
         if (page > pageCount) setPage(pageCount);
     }, [page, pageCount, items.length]);
-
     const startIndex = (page - 1) * PAGE_SIZE;
     const endIndex = Math.min(page * PAGE_SIZE, items.length);
     const pagedItems = useMemo(() => items.slice(startIndex, endIndex), [items, startIndex, endIndex]);
 
-    // Flechas/íconos a --tg-muted
+    // ¿hay algo que limpiar?
+    const hasDirty =
+        items.length > 0 ||
+        Boolean(clienteSel) ||
+        Boolean(bancoSel) ||
+        Boolean(estadoSel) ||
+        queryProd.trim().length > 0;
+
+    // estilos inputs
     const textFieldSx = {
         mt: 0.5,
         "& .MuiOutlinedInput-root": {
@@ -109,14 +135,25 @@ export default function VentaCrearPage() {
             color: "var(--tg-placeholder, rgba(115,115,115,0.9))",
             opacity: 1,
         },
-        "& .MuiSvgIcon-root": {
-            color: "var(--tg-muted)",
-        },
+        "& .MuiSvgIcon-root": { color: "var(--tg-muted)" },
     } as const;
 
-    const iconButtonSx = {
-        color: "var(--tg-muted)",
-        "&:hover": { color: "var(--tg-primary)" },
+    const autoSlotProps = {
+        paper: {
+            sx: {
+                bgcolor: "var(--tg-card-bg)",
+                color: "var(--tg-card-fg)",
+                border: "1px solid var(--tg-border)",
+            },
+        },
+        listbox: {
+            sx: {
+                "& .MuiAutocomplete-option.Mui-focused, & .MuiAutocomplete-option[aria-selected='true']": {
+                    bgcolor: "color-mix(in srgb, var(--tg-primary) 18%, transparent)",
+                    color: "var(--tg-card-fg)",
+                },
+            },
+        },
     } as const;
 
     const openConfirm = (p: Producto) => {
@@ -127,52 +164,54 @@ export default function VentaCrearPage() {
             descripcion: p.descripcion,
             precio_unitario: p.precio_venta,
             cantidad: 1,
-            stock: p.stock,
+            stock: p.cantidad,
             precio_compra: p.precio_compra,
         });
         setConfirmOpen(true);
     };
 
-    const editItem = (it: ItemVenta) => {
-        const p = catalogo.find((x) => x.id === it.productoId);
-        setSelProd(p ?? null);
-        setEditIdTmp(it.idTmp);
-        setModalDefaults({
-            referencia: it.referencia,
-            descripcion: it.descripcion,
-            precio_unitario: it.precioUnit,
-            cantidad: it.cantidad,
-            stock: p?.stock ?? 0,
-            precio_compra: p?.precio_compra ?? 0,
-        });
-        setConfirmOpen(true);
-    };
+    // helpers cantidad
+    const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
+    function incQty(idTmp: string) {
+        setItems(prev => prev.map(it => it.idTmp === idTmp ? { ...it, cantidad: it.cantidad + 1 } : it));
+    }
+    function decQty(idTmp: string) {
+        setItems(prev => prev.map(it => it.idTmp === idTmp ? { ...it, cantidad: clamp(it.cantidad - 1, 1, 1e9) } : it));
+    }
+    function setQty(idTmp: string, v: number) {
+        const q = clamp(Number.isFinite(v) ? Math.trunc(v) : 1, 1, 1e9);
+        setItems(prev => prev.map(it => it.idTmp === idTmp ? { ...it, cantidad: q } : it));
+    }
 
+    // merge si se repite producto
     const onConfirmProducto = (data: { precio_unitario: number; cantidad: number }) => {
         if (!selProd || !modalDefaults) return;
 
         if (editIdTmp) {
-            setItems((prev) =>
-                prev.map((x) =>
-                    x.idTmp === editIdTmp ? { ...x, precioUnit: data.precio_unitario, cantidad: data.cantidad } : x
-                )
+            setItems(prev =>
+                prev.map(x => (x.idTmp === editIdTmp ? { ...x, precioUnit: data.precio_unitario, cantidad: data.cantidad } : x))
             );
         } else {
-            const newLen = items.length + 1; // calcular antes del set
-            setItems((prev) => [
-                ...prev,
-                {
-                    idTmp: crypto.randomUUID(),
-                    productoId: selProd.id,
-                    referencia: selProd.referencia,
-                    descripcion: selProd.descripcion,
-                    precioUnit: data.precio_unitario,
-                    cantidad: data.cantidad,
-                },
-            ]);
-            // ir a la última página
-            const nextPage = Math.max(1, Math.ceil(newLen / PAGE_SIZE));
-            setPage(nextPage);
+            setItems(prev => {
+                const idx = prev.findIndex(r => r.productoId === selProd.id);
+                if (idx >= 0) {
+                    const next = [...prev];
+                    next[idx] = { ...next[idx], cantidad: next[idx].cantidad + data.cantidad, precioUnit: data.precio_unitario };
+                    return next;
+                }
+                return [
+                    ...prev,
+                    {
+                        idTmp: crypto.randomUUID(),
+                        productoId: selProd.id,
+                        referencia: selProd.referencia,
+                        descripcion: selProd.descripcion,
+                        precioUnit: data.precio_unitario,
+                        cantidad: data.cantidad,
+                    },
+                ];
+            });
+            setPage(p => Math.max(1, Math.ceil((items.length + 1) / PAGE_SIZE)));
         }
 
         setConfirmOpen(false);
@@ -184,9 +223,9 @@ export default function VentaCrearPage() {
 
     const removeItem = (idTmp: string) => {
         const newLen = items.length - 1;
-        const wouldBeEmpty = startIndex >= newLen && page > 1; // si esta página quedaría vacía
-        setItems((prev) => prev.filter((i) => i.idTmp !== idTmp));
-        if (wouldBeEmpty) setPage((p) => Math.max(1, p - 1));
+        const wouldBeEmpty = startIndex >= newLen && page > 1;
+        setItems(prev => prev.filter(i => i.idTmp !== idTmp));
+        if (wouldBeEmpty) setPage(p => Math.max(1, p - 1));
     };
 
     const limpiar = () => {
@@ -201,42 +240,86 @@ export default function VentaCrearPage() {
         setPage(1);
     };
 
-    const puedeFinalizar = items.length > 0 && !!clienteSel && !!bancoSel && !!estadoSel;
+    // bloquear “Venta cancelada”
+    const estadoOptionsFiltradas = useMemo(
+        () => estadoOptions.filter(n => !BLOQUEADA_RE.test(String(n))),
+        [estadoOptions]
+    );
+
+    const puedeFinalizar = useMemo(
+        () => items.length > 0 && !!clienteSel && !!bancoSel && !!estadoSel,
+        [items.length, clienteSel, bancoSel, estadoSel]
+    );
+
+    // ⬇️ usar hook para crear la venta
+    const { create: createVenta, loading: creating } = useCreateVenta({
+        onSuccess: () => {
+            limpiar();
+            router.push("/comercial/ventas");
+        },
+    });
+
+    async function finalizarVenta() {
+        if (!puedeFinalizar) return;
+        const estado_id = estadoSel ? estadoByName?.[estadoSel] : undefined;
+        if (!estado_id) {
+            error("No se pudo identificar el estado seleccionado");
+            return;
+        }
+
+        // construir el carrito EXACTAMENTE como lo requiere el backend
+        const carrito: VentaCreate["carrito"] = items.map(it => ({
+            producto_id: it.productoId,
+            cantidad: it.cantidad,
+            precio_producto: it.precioUnit,
+        }));
+
+        const payload: VentaCreate = {
+            cliente_id: Number(clienteSel!.value),
+            banco_id: Number(bancoSel!.value),
+            estado_id,
+            carrito, // [{ producto_id, cantidad, precio_producto }, ...]
+        };
+
+        await createVenta(payload);
+    }
 
     return (
-        <div className="app-shell__frame min-h-screen">
-            <div className="bg-[var(--page-bg)] rounded-xl px-[var(--content-l)] pb-[var(--content-b)] pt-4">
-                <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
+        // Pantalla completa y sin scroll
+        <div className="app-shell__frame overflow-hidden">
+            <div className="bg-[var(--page-bg)] rounded-xl h-full flex flex-col px-4 md:px-5 pb-5 pt-4">
+                <Typography variant="h5" sx={{ mb: 1.25, fontWeight: 600 }}>
                     Nueva venta
                 </Typography>
 
-                {/* Cabecera: Cliente / Banco / Estado */}
-                <Box sx={{ maxWidth: 1100, mb: 2 }}>
-                    <Stack direction={{ xs: "column", md: "row" }} gap={2}>
-                        <Box sx={{ flex: 1, minWidth: 260 }}>
+                <Box sx={{ maxWidth: 1800, mb: 1.0 }}>
+                    <Stack direction={{ xs: "column", md: "row" }} gap={1.2} flexWrap="wrap" alignItems="flex-end">
+                        <Box sx={{ flex: 1, minWidth: 240 }}>
                             <Typography variant="caption" sx={{ color: "var(--tg-muted)", fontWeight: 600 }}>
                                 Cliente
                             </Typography>
                             <Autocomplete
-                                options={clientes}
+                                options={clienteOptions}
                                 value={clienteSel}
                                 onChange={(_, v) => setClienteSel(v)}
-                                getOptionLabel={(o) => o?.nombre ?? ""}
+                                getOptionLabel={(o) => (o?.label ?? "") as string}
+                                slotProps={autoSlotProps}
                                 renderInput={(params) => (
                                     <TextField {...params} placeholder="Selecciona o busca un cliente…" sx={textFieldSx} />
                                 )}
                             />
                         </Box>
 
-                        <Box sx={{ flex: 1, minWidth: 220 }}>
+                        <Box sx={{ flex: 1, minWidth: 210 }}>
                             <Typography variant="caption" sx={{ color: "var(--tg-muted)", fontWeight: 600 }}>
                                 Banco
                             </Typography>
                             <Autocomplete
-                                options={bancos}
+                                options={bancoOptions}
                                 value={bancoSel}
                                 onChange={(_, v) => setBancoSel(v)}
-                                getOptionLabel={(o) => o?.nombre ?? ""}
+                                getOptionLabel={(o) => (o?.label ?? "") as string}
+                                slotProps={autoSlotProps}
                                 renderInput={(params) => (
                                     <TextField {...params} placeholder="Selecciona banco…" sx={textFieldSx} />
                                 )}
@@ -248,155 +331,249 @@ export default function VentaCrearPage() {
                                 Estado
                             </Typography>
                             <Autocomplete
-                                options={[...ESTADOS]}
+                                options={estadoOptionsFiltradas}
                                 value={estadoSel}
-                                onChange={(_, v) => setEstadoSel(v)}
+                                onChange={(_, v) => {
+                                    if (v && BLOQUEADA_RE.test(String(v))) {
+                                        error("Estado no permitido");
+                                        return;
+                                    }
+                                    setEstadoSel(v);
+                                }}
+                                slotProps={autoSlotProps}
                                 renderInput={(params) => (
                                     <TextField {...params} placeholder="Venta contado / crédito…" sx={textFieldSx} />
+                                )}
+                            />
+                        </Box>
+
+                        <Box sx={{ flex: 1.3, minWidth: 310, maxWidth: { md: 510 } }}>
+                            <Typography variant="caption" sx={{ color: "var(--tg-muted)", fontWeight: 600 }}>
+                                Producto
+                            </Typography>
+                            <Autocomplete
+                                value={selProd}
+                                inputValue={queryProd}
+                                options={catalogo}
+                                loading={loadingProd}
+                                isOptionEqualToValue={(o, v) => o.id === v.id}
+                                getOptionLabel={(o) => `${o.referencia} — ${o.descripcion}`}
+                                clearOnBlur
+                                onChange={(_, val, reason) => {
+                                    if (reason === "clear") { setSelProd(null); setQueryProd(""); return; }
+                                    if (val) openConfirm(val);
+                                }}
+                                onInputChange={(_, val, reason) => {
+                                    if (reason === "clear") { setQueryProd(""); return; }
+                                    setQueryProd(val);
+                                }}
+                                slotProps={autoSlotProps}
+                                renderInput={(params) => (
+                                    <TextField {...params} placeholder="Busca por referencia o descripción…" sx={textFieldSx} />
                                 )}
                             />
                         </Box>
                     </Stack>
                 </Box>
 
-                {/* Selector de producto */}
-                <Box sx={{ maxWidth: 800 }}>
-                    <Typography variant="caption" sx={{ color: "var(--tg-muted)", fontWeight: 600 }}>
-                        Producto
-                    </Typography>
-                    <Autocomplete
-                        value={selProd}
-                        onChange={(_, val) => val && openConfirm(val)}
-                        inputValue={queryProd}
-                        onInputChange={(_, val) => setQueryProd(val)}
-                        options={catalogo}
-                        getOptionLabel={(o) => `${o.referencia} — ${o.descripcion}`}
-                        renderInput={(params) => (
-                            <TextField {...params} placeholder="Busca por referencia o descripción…" sx={textFieldSx} />
-                        )}
-                    />
-                </Box>
+                {/* Línea divisoria */}
+                <div className="h-px w-full" style={{ background: "var(--tg-border)" }} />
 
-                {/* Tabla de ítems */}
-                <div className="mt-4 rounded-xl overflow-hidden border border-[var(--panel-border)] bg-[var(--panel-bg)] shadow">
-                    <div className="overflow-auto">
-                        <table className="w-full text-sm">
-                            <thead>
-                                <tr className="bg-[var(--table-head-bg)] text-[var(--table-head-fg)]">
-                                    <th className="px-4 py-3 text-left">Referencia</th>
-                                    <th className="px-4 py-3 text-left">Descripción</th>
-                                    <th className="px-4 py-3 text-right">Precio</th>
-                                    <th className="px-4 py-3 text-right">Cantidad</th>
-                                    <th className="px-4 py-3 text-right">Subtotal</th>
-                                    <th className="px-4 py-3 text-center">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {items.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={6} className="px-4 py-8 text-center text-tg-muted">
-                                            Agrega productos para construir la venta.
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    pagedItems.map((it) => (
-                                        <tr key={it.idTmp} className="border-t border-tg hover:bg-black/5 dark:hover:bg-white/5">
-                                            <td className="px-4 py-3">{it.referencia}</td>
-                                            <td className="px-4 py-3">{it.descripcion}</td>
-                                            <td className="px-4 py-3 text-right">{it.precioUnit.toLocaleString("es-CO")}</td>
-                                            <td className="px-4 py-3 text-right">{it.cantidad}</td>
-                                            <td className="px-4 py-3 text-right">
-                                                {(it.precioUnit * it.cantidad).toLocaleString("es-CO")}
-                                            </td>
-                                            <td className="px-2 py-2">
-                                                <div className="flex items-center justify-center gap-1">
-                                                    <IconButton size="small" onClick={() => editItem(it)} aria-label="editar" sx={iconButtonSx}>
-                                                        <EditOutlinedIcon fontSize="small" />
-                                                    </IconButton>
-                                                    <IconButton size="small" onClick={() => removeItem(it.idTmp)} aria-label="eliminar" sx={iconButtonSx}>
-                                                        <DeleteOutlineIcon fontSize="small" />
-                                                    </IconButton>
+                {/* ===== Área fija de 5 filas: mismo tamaño/posición siempre ===== */}
+                <div
+                    className="flex-1 overflow-hidden mt-2"
+                    style={{
+                        display: "grid",
+                        gridTemplateRows: `repeat(${PAGE_SIZE}, ${CARD_H}px)`,
+                        rowGap: `${CARD_GAP}px`,
+                    }}
+                >
+                    {/* placeholder (configurable) cuando no hay items */}
+                    {SHOW_EMPTY_HINT && items.length === 0 ? (
+                        <div
+                            className="rounded-xl border"
+                            style={{
+                                gridRow: `span ${PAGE_SIZE}`,
+                                height: `calc(${CARD_H}px * ${PAGE_SIZE} + ${CARD_GAP}px * ${PAGE_SIZE - 1})`,
+                                borderColor: "var(--tg-border)",
+                                background: "var(--tg-card-bg)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                            }}
+                        >
+                            <Typography sx={{ color: "var(--tg-muted)" }}>
+                                Agrega productos para construir tu venta.
+                            </Typography>
+                        </div>
+                    ) : (
+                        <>
+                            {pagedItems.map((it, i) => {
+                                const number = startIndex + i + 1;
+                                const subtotal = it.precioUnit * it.cantidad;
+                                return (
+                                    <div
+                                        key={it.idTmp}
+                                        className="rounded-xl border p-3 md:p-4"
+                                        style={{
+                                            height: CARD_H,
+                                            borderColor: "var(--tg-border)",
+                                            background: "var(--tg-card-bg)", // mismo bg que inputs
+                                        }}
+                                    >
+                                        <div className="grid items-center gap-3" style={{ gridTemplateColumns: "1fr 140px 180px 160px" }}>
+                                            {/* info */}
+                                            <div className="flex items-start gap-3 overflow-hidden">
+                                                <div
+                                                    className="h-7 min-w-7 rounded-full border text-xs flex items-center justify-center mt-0.5"
+                                                    style={{ borderColor: "var(--tg-border)", color: "var(--tg-muted)" }}
+                                                    aria-label={`producto-${number}`}
+                                                >
+                                                    {number}
                                                 </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
+                                                <div className="min-w-0">
+                                                    <div className="font-semibold text-[var(--tg-card-fg)] truncate">{it.descripcion}</div>
+                                                    <div className="text-sm" style={{ color: "var(--tg-muted)" }}>Ref: {it.referencia}</div>
+                                                </div>
+                                            </div>
 
-                            {items.length > 0 && (
-                                <tfoot>
-                                    <tr className="border-t border-tg">
-                                        <td colSpan={4} />
-                                        <td className="px-4 py-3 text-right font-semibold">Total</td>
-                                        <td className="px-4 py-3 text-right font-semibold">{total.toLocaleString("es-CO")}</td>
-                                    </tr>
-                                </tfoot>
-                            )}
-                        </table>
-                    </div>
+                                            {/* precio */}
+                                            <div className="text-right">
+                                                <div className="text-sm" style={{ color: "var(--tg-muted)" }}>Precio</div>
+                                                <div className="font-medium">{money.format(it.precioUnit)}</div>
+                                            </div>
+
+                                            {/* cantidad */}
+                                            <div className="flex items-center justify-center gap-2">
+                                                <button
+                                                    type="button"
+                                                    className="h-8 w-8 rounded border"
+                                                    style={{ borderColor: "var(--tg-border)", color: "var(--tg-card-fg)" }}
+                                                    onClick={() => decQty(it.idTmp)}
+                                                    aria-label="decrementar"
+                                                >
+                                                    –
+                                                </button>
+                                                <input
+                                                    type="number"
+                                                    min={1}
+                                                    className="h-8 w-16 rounded border bg-transparent text-center"
+                                                    style={{ borderColor: "var(--tg-border)", color: "var(--tg-card-fg)" }}
+                                                    value={it.cantidad}
+                                                    onChange={(e) => setQty(it.idTmp, Number(e.target.value))}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    className="h-8 w-8 rounded border"
+                                                    style={{ borderColor: "var(--tg-border)", color: "var(--tg-card-fg)" }}
+                                                    onClick={() => incQty(it.idTmp)}
+                                                    aria-label="incrementar"
+                                                >
+                                                    +
+                                                </button>
+                                            </div>
+
+                                            {/* subtotal + borrar */}
+                                            <div className="flex items-center justify-end gap-3">
+                                                <div className="text-right">
+                                                    <div className="text-sm" style={{ color: "var(--tg-muted)" }}>Subtotal</div>
+                                                    <div className="font-semibold">{money.format(subtotal)}</div>
+                                                </div>
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={() => removeItem(it.idTmp)}
+                                                    aria-label="eliminar"
+                                                    sx={{ color: "var(--tg-muted)", "&:hover": { color: "var(--tg-primary)" } }}
+                                                >
+                                                    <DeleteOutlineIcon fontSize="small" />
+                                                </IconButton>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+
+                            {/* placeholders invisibles para completar las 5 filas */}
+                            {Array.from({ length: Math.max(0, PAGE_SIZE - pagedItems.length) }).map((_, idx) => (
+                                <div
+                                    key={`ph-${idx}`}
+                                    aria-hidden
+                                    className="rounded-xl border"
+                                    style={{
+                                        height: CARD_H,
+                                        opacity: 0,
+                                        pointerEvents: "none",
+                                        borderColor: "var(--tg-border)",
+                                        background: "var(--tg-card-bg)",
+                                    }}
+                                />
+                            ))}
+                        </>
+                    )}
                 </div>
 
-                {/* Navegación de página: Anterior / Paginador / Próximo */}
+                {/* Paginación: flechas visibles, números ocultos + indicador numérico al lado */}
                 {items.length > PAGE_SIZE && (
-                    <Stack direction="row" alignItems="center" justifyContent="flex-end" gap={1.5} sx={{ mt: 1.5, flexWrap: "wrap" }}>
-                        <Button
-                            size="small"
-                            variant="outlined"
-                            onClick={() => setPage((p) => Math.max(1, p - 1))}
-                            disabled={page <= 1}
-                            sx={{ textTransform: "none", borderColor: "var(--tg-border)", color: "var(--tg-muted)" }}
-                        >
-                            Anterior
-                        </Button>
-
+                    <Stack direction="row" alignItems="center" justifyContent="flex-end" gap={1.25} sx={{ mt: 1 }}>
                         <Pagination
                             page={page}
                             count={pageCount}
                             onChange={(_, p) => setPage(p)}
-                            siblingCount={1}
-                            boundaryCount={1}
+                            siblingCount={0}
+                            boundaryCount={0}
+                            showFirstButton={false}
+                            showLastButton={false}
                             size="small"
                             sx={{
-                                "& .MuiPaginationItem-root": {
-                                    color: "var(--tg-muted)", 
-                                },
-                                "& .MuiPaginationItem-root.Mui-selected": {
-                                    bgcolor: "var(--tg-primary)",
-                                    color: "var(--tg-primary-fg)",
-                                    "&:hover": {
-                                        bgcolor: "color-mix(in srgb, var(--tg-primary) 88%, black 12%)",
-                                    },
-                                },
-                                "& .MuiPaginationItem-previousNext": {
-                                    color: "var(--tg-muted)", 
-                                },
+                                "& .MuiPaginationItem-root": { color: "var(--tg-muted)" },
+                                // Oculta los números, deja solo las flechas
+                                "& .MuiPaginationItem-text": { display: "none" },
+                                "& .MuiPaginationItem-previousNext": { display: "inline-flex" },
                             }}
                         />
-                        <Button
-                            size="small"
-                            variant="outlined"
-                            onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-                            disabled={page >= pageCount}
-                            sx={{ textTransform: "none", borderColor: "var(--tg-border)", color: "var(--tg-muted)" }}
+                        <div
+                            className="px-3 py-1 rounded-md border"
+                            style={{ borderColor: "var(--tg-border)", color: "var(--tg-muted)" }}
+                            aria-label="page-indicator"
                         >
-                            Próximo
-                        </Button>
-
+                            {page} / {pageCount}
+                        </div>
                         <Typography variant="body2" sx={{ ml: 1, color: "var(--tg-muted)" }}>
                             Mostrando {startIndex + 1}-{endIndex} de {items.length}
                         </Typography>
                     </Stack>
                 )}
 
-                {/* Acciones */}
-                <Stack direction="row" justifyContent="flex-end" gap={1.5} sx={{ mt: 3 }}>
-                    <Button onClick={limpiar} variant="text" sx={{ textTransform: "none", color: "var(--tg-muted)" }}>
-                        Limpiar
-                    </Button>
+                {items.length > 0 && (
+                    <div className="mt-2 flex justify-end">
+                        <div
+                            className="rounded-lg border px-4 py-3 w-full max-w-sm"
+                            style={{ borderColor: "var(--tg-border)", background: "var(--tg-card-bg)" }}
+                        >
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm" style={{ color: "var(--tg-muted)" }}>Subtotal</span>
+                                <span className="font-medium">{money.format(total)}</span>
+                            </div>
+                            <div className="mt-2 flex items-center justify-between">
+                                <span className="text-sm" style={{ color: "var(--tg-muted)" }}>Total</span>
+                                <span className="font-semibold text-[var(--tg-card-fg)]">{money.format(total)}</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                <Stack direction="row" justifyContent="flex-end" gap={1.25} sx={{ mt: 2 }}>
+                    {hasDirty && (
+                        <Button onClick={limpiar} variant="text" sx={{ textTransform: "none", color: "var(--tg-muted)" }}>
+                            Limpiar
+                        </Button>
+                    )}
 
                     {puedeFinalizar && (
                         <Button
                             variant="contained"
+                            onClick={finalizarVenta}
+                            disabled={creating}
                             sx={{
                                 textTransform: "none",
                                 bgcolor: "var(--tg-primary)",
@@ -404,7 +581,7 @@ export default function VentaCrearPage() {
                                 "&:hover": { bgcolor: "color-mix(in srgb, var(--tg-primary) 88%, black 12%)" },
                             }}
                         >
-                            Finalizar venta
+                            {creating ? "Guardando…" : "Finalizar venta"}
                         </Button>
                     )}
                 </Stack>
@@ -420,6 +597,7 @@ export default function VentaCrearPage() {
                     loading={false}
                     defaults={modalDefaults}
                     onConfirm={onConfirmProducto}
+                    addToSale
                 />
             )}
         </div>

@@ -8,19 +8,19 @@ import type { DateRange } from "react-day-picker";
 
 import { MaterialIcon } from "@/components/ui/material-icon";
 import { fetchAllUtilidades } from "@/services/sales/utilidades.api";
+import { getVentaById } from "@/services/sales/ventas.api";
 import type { Utilidad } from "@/types/utilidades";
-import DateRangeInput from "@/components/ui/DateRangePicker/DateRangePicker";
 import UtilidadView from "@/features/utilidades/ViewDetalleUtilidades";
+import DateRangeInput from "@/components/ui/DateRangePicker/DateRangePicker";
 
-const money = new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-    maximumFractionDigits: 0,
-});
+const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 
 export default function UtilidadesPage() {
     const [all, setAll] = useState<Utilidad[]>([]);
     const [loading, setLoading] = useState(true);
+
+    // mapa venta_id -> nombre cliente
+    const [clienteByVenta, setClienteByVenta] = useState<Record<number, string>>({});
 
     // filtros
     const [q, setQ] = useState("");
@@ -45,15 +45,51 @@ export default function UtilidadesPage() {
                 if (alive) setLoading(false);
             }
         })();
-        return () => {
-            alive = false;
-        };
+        return () => { alive = false; };
     }, []);
+
+    // Cargar nombres de clientes para ventas no cacheadas (lotes de 25)
+    useEffect(() => {
+        if (!all.length) return;
+        const missing = Array.from(
+            new Set(all.map(u => u.venta_id).filter(id => clienteByVenta[id] == null))
+        );
+        if (missing.length === 0) return;
+
+        let cancelled = false;
+
+        (async () => {
+            const chunk = 25;
+            const nextMap: Record<number, string> = {};
+            for (let i = 0; i < missing.length; i += chunk) {
+                const ids = missing.slice(i, i + chunk);
+                const results = await Promise.allSettled(ids.map(id => getVentaById(id)));
+                results.forEach((res, idx) => {
+                    const id = ids[idx];
+                    if (res.status === "fulfilled") {
+                        nextMap[id] = res.value?.cliente ?? "";
+                    } else {
+                        nextMap[id] = "";
+                    }
+                });
+                if (cancelled) return;
+                // merge incremental para ir mostrando nombres
+                setClienteByVenta(prev => ({ ...prev, ...nextMap }));
+            }
+        })();
+
+        return () => { cancelled = true; };
+    }, [all, clienteByVenta]);
 
     // filtros
     const filtered = useMemo(() => {
-        const v = q.trim();
-        const byVenta = (u: Utilidad) => (v ? String(u.venta_id).includes(v) : true);
+        const v = q.trim().toLowerCase();
+        const byVentaOrCliente = (u: Utilidad) => {
+            if (!v) return true;
+            if (String(u.venta_id).includes(v)) return true;
+            const nombre = (clienteByVenta[u.venta_id] ?? "").toLowerCase();
+            return nombre.includes(v);
+        };
         const byDate = (u: Utilidad) => {
             if (!range?.from || !range?.to) return true;
             const d = new Date(u.fecha);
@@ -61,8 +97,8 @@ export default function UtilidadesPage() {
             const to = endOfDay(range.to);
             return isWithinInterval(d, { start: from, end: to });
         };
-        return all.filter((u) => byVenta(u) && byDate(u));
-    }, [all, q, range]);
+        return all.filter(u => byVentaOrCliente(u) && byDate(u));
+    }, [all, q, range, clienteByVenta]);
 
     useEffect(() => { setPage(1); }, [q, range]);
 
@@ -78,7 +114,7 @@ export default function UtilidadesPage() {
     const from = useMemo(() => (total === 0 ? 0 : (safePage - 1) * pageSize + 1), [safePage, pageSize, total]);
     const to = useMemo(() => Math.min(safePage * pageSize, total), [safePage, pageSize, total]);
 
-    // ventana de números como en Productos
+    // ventana de números
     const [startNum, endNum] = useMemo(() => {
         const win = 5;
         if (totalPages <= win) return [1, totalPages] as const;
@@ -108,18 +144,17 @@ export default function UtilidadesPage() {
 
                         <div className="flex flex-wrap items-center gap-2">
                             {/* Buscar */}
-                            <label className="relative flex items-center flex-none h-10 w-[260px]">
+                            <label className="relative flex items-center flex-none h-10 w-[300px]">
                                 <span className="absolute inset-y-0 left-3 flex items-center text-tg-muted pointer-events-none">
                                     <MaterialIcon name="search" size={18} />
                                 </span>
                                 <input
                                     type="search"
-                                    placeholder="Buscar por Nro de venta"
+                                    placeholder="Buscar por venta o cliente"
                                     className="h-10 w-full rounded-md border border-tg bg-tg-card text-tg-card pl-9 pr-3
-                             focus:outline-none focus:ring-tg-primary"
+                  focus:outline-none focus:ring-tg-primary"
                                     value={q}
                                     onChange={(e) => setQ(e.target.value)}
-                                    inputMode="numeric"
                                 />
                             </label>
 
@@ -149,7 +184,7 @@ export default function UtilidadesPage() {
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="bg-[var(--table-head-bg)] text-[var(--table-head-fg)]">
-                                        <th className="px-4 py-3 text-left">Nro Venta</th>
+                                        <th className="px-4 py-3 text-left">Venta / Cliente</th>
                                         <th className="px-4 py-3 text-right">Utilidad</th>
                                         <th className="px-4 py-3 text-left">Fecha</th>
                                         <th className="px-4 py-3 text-center">Acciones</th>
@@ -173,36 +208,42 @@ export default function UtilidadesPage() {
                                             </td>
                                         </tr>
                                     ) : (
-                                        rows.map((r) => (
-                                            <tr
-                                                key={`${r.venta_id}-${r.fecha}`}
-                                                className="border-t border-tg hover:bg-black/5 dark:hover:bg-white/5"
-                                            >
-                                                <td className="px-4 py-3">{r.venta_id}</td>
-                                                <td className="px-4 py-3 text-right">{money.format(r.utilidad)}</td>
-                                                <td className="px-4 py-3">
-                                                    {format(new Date(r.fecha), "dd MMM yyyy", { locale: es })}
-                                                </td>
-                                                <td className="px-2 py-2">
-                                                    <div className="flex items-center justify-center">
-                                                        <button
-                                                            className="p-2 rounded-full text-tg-primary hover:bg-[color-mix(in_srgb,var(--tg-primary)_22%,transparent)]"
-                                                            aria-label="ver detalle utilidad"
-                                                            title="Ver detalle de utilidad"
-                                                            onClick={() => onView(r.venta_id)}
-                                                        >
-                                                            <MaterialIcon name="visibility" size={18} />
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))
+                                        rows.map((r) => {
+                                            const nombre = clienteByVenta[r.venta_id];
+                                            return (
+                                                <tr
+                                                    key={`${r.venta_id}-${r.fecha}`}
+                                                    className="border-t border-tg hover:bg-black/5 dark:hover:bg-white/5"
+                                                >
+                                                    <td className="px-4 py-3">
+                                                        <span className="font-medium">#{r.venta_id}</span>
+                                                        <span className="opacity-70"> — {nombre ? nombre : "…"}</span>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right">{money.format(r.utilidad)}</td>
+                                                    <td className="px-4 py-3">
+                                                        {format(new Date(r.fecha), "dd MMM yyyy", { locale: es })}
+                                                    </td>
+                                                    <td className="px-2 py-2">
+                                                        <div className="flex items-center justify-center">
+                                                            <button
+                                                                className="p-2 rounded-full text-tg-primary hover:bg-[color-mix(in_srgb,var(--tg-primary)_22%,transparent)]"
+                                                                aria-label="ver detalle utilidad"
+                                                                title="Ver detalle de utilidad"
+                                                                onClick={() => onView(r.venta_id)}
+                                                            >
+                                                                <MaterialIcon name="visibility" size={18} />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
                                     )}
                                 </tbody>
                             </table>
                         </div>
 
-                        {/* Paginación estilo Productos */}
+                        {/* Paginación */}
                         <div className="shrink-0 flex flex-wrap items-center justify-between gap-3 border-t border-tg px-4 py-3">
                             <div className="flex items-center gap-2">
                                 <span className="text-sm">Líneas por página</span>
@@ -212,7 +253,6 @@ export default function UtilidadesPage() {
                             </div>
 
                             <nav className="flex items-center gap-1">
-                                {/* Primera */}
                                 <button
                                     disabled={safePage <= 1}
                                     onClick={() => setPage(1)}
@@ -223,10 +263,9 @@ export default function UtilidadesPage() {
                                     <MaterialIcon name="first_page" size={18} />
                                 </button>
 
-                                {/* Anterior */}
                                 <button
                                     disabled={safePage <= 1}
-                                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                    onClick={() => setPage(p => Math.max(1, p - 1))}
                                     className="h-8 w-8 rounded grid place-items-center disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary"
                                     aria-label="Anterior"
                                     title="Anterior"
@@ -234,15 +273,13 @@ export default function UtilidadesPage() {
                                     <MaterialIcon name="chevron_left" size={18} />
                                 </button>
 
-                                {/* Números */}
                                 {Array.from({ length: endNum - startNum + 1 }, (_, i) => startNum + i).map((p) => {
                                     const active = p === safePage;
                                     return (
                                         <button
                                             key={p}
                                             onClick={() => setPage(p)}
-                                            className={`h-8 min-w-8 rounded px-2 text-sm ${active ? "bg-tg-primary text-tg-on-primary" : "hover:bg-black/10 dark:hover:bg-white/10"
-                                                } focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary`}
+                                            className={`h-8 min-w-8 rounded px-2 text-sm ${active ? "bg-tg-primary text-tg-on-primary" : "hover:bg-black/10 dark:hover:bg-white/10"} focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary`}
                                             aria-current={active ? "page" : undefined}
                                         >
                                             {p}
@@ -252,10 +289,9 @@ export default function UtilidadesPage() {
 
                                 {endNum < totalPages && <span className="px-1">…</span>}
 
-                                {/* Próximo */}
                                 <button
                                     disabled={safePage >= totalPages}
-                                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                                     className="h-8 w-8 rounded grid place-items-center disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary"
                                     aria-label="Próximo"
                                     title="Próximo"
@@ -263,7 +299,6 @@ export default function UtilidadesPage() {
                                     <MaterialIcon name="chevron_right" size={18} />
                                 </button>
 
-                                {/* Última */}
                                 <button
                                     disabled={safePage >= totalPages}
                                     onClick={() => setPage(totalPages)}
@@ -281,12 +316,8 @@ export default function UtilidadesPage() {
                 </div>
             </div>
 
-            {/* Modal de detalle de utilidad */}
-            <UtilidadView
-                open={openView}
-                onClose={() => setOpenView(false)}
-                ventaId={ventaToView}
-            />
+            {/* Modal */}
+            <UtilidadView open={openView} onClose={() => setOpenView(false)} ventaId={ventaToView} />
         </>
     );
 }

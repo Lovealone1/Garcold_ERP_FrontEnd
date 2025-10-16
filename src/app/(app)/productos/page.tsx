@@ -7,8 +7,8 @@ import ProductoView from "@/features/productos/ProductoView";
 import ProductImagesModal from "@/features/productos/ProductImagesModal";
 import { useProductos } from "@/hooks/productos/useProductos";
 import { useProducto } from "@/hooks/productos/useProducto";
-import { createProduct, updateProduct, deleteProduct, toggleProductActive } from "@/services/sales/productos.api";
-import type { ProductDTO, ProductCreate, ProductUpdate } from "@/types/productos";
+import { createProduct, updateProduct, deleteProduct, toggleProductActive } from "@/services/sales/product.api";
+import type { ProductDTO, ProductCreate, ProductUpdate } from "@/types/product";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 
 const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });

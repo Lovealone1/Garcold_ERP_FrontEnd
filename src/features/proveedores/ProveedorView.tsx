@@ -12,13 +12,13 @@ import Typography from "@mui/material/Typography";
 import Skeleton from "@mui/material/Skeleton";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import type { Proveedor } from "@/types/proveedores";
+import type { Supplier } from "@/types/supplier";
 import * as React from "react";
 
 type Props = {
     open: boolean;
     onClose: () => void;
-    proveedor: Proveedor | null;
+    proveedor: Supplier | null;
     loading?: boolean;
 };
 
@@ -65,7 +65,7 @@ export default function ProveedorView({ open, onClose, proveedor, loading }: Pro
                             <Stack direction="row" alignItems="center" justifyContent="space-between" gap={2}>
                                 <Stack>
                                     <Typography variant="h6" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
-                                        {proveedor.nombre}
+                                        {proveedor.name}
                                     </Typography>
                                     <Typography variant="caption" sx={{ color: "var(--tg-muted)" }}>
                                         ID interno: {proveedor.id}
@@ -77,27 +77,27 @@ export default function ProveedorView({ open, onClose, proveedor, loading }: Pro
                         {/* Datos: Label: Valor */}
                         <Grid container spacing={2}>
                             <Grid size={{ xs: 12, sm: 6 }}>
-                                <InfoInline label="CC/NIT" value={proveedor.cc_nit} />
+                                <InfoInline label="CC/NIT" value={proveedor.tax_id || "—"} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 6 }}>
-                                <InfoInline label="Ciudad" value={proveedor.ciudad} />
+                                <InfoInline label="Ciudad" value={proveedor.city || "—"} />
                             </Grid>
 
                             <Grid size={{ xs: 12, sm: 6 }}>
-                                <InfoInline label="Correo" value={proveedor.correo || "—"} />
+                                <InfoInline label="Correo" value={proveedor.email || "—"} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 6 }}>
-                                <InfoInline label="Celular" value={proveedor.celular || "—"} />
+                                <InfoInline label="Celular" value={proveedor.phone || "—"} />
                             </Grid>
 
                             <Grid size={{ xs: 12 }}>
-                                <InfoInline label="Dirección" value={proveedor.direccion} />
+                                <InfoInline label="Dirección" value={proveedor.address || "—"} />
                             </Grid>
 
                             <Grid size={{ xs: 12, sm: 6 }}>
                                 <InfoInline
                                     label="Fecha de creación"
-                                    value={format(new Date(proveedor.fecha_creacion), "dd MMM yyyy, HH:mm", { locale: es })}
+                                    value={format(new Date(proveedor.created_at), "dd MMM yyyy, HH:mm", { locale: es })}
                                 />
                             </Grid>
                         </Grid>

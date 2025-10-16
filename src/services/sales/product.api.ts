@@ -5,7 +5,7 @@ import type {
     ProductCreate,
     ProductUpdate,
     SaleProductsDTO,
-} from "@/types/productos";
+} from "@/types/product";
 
 type Q = { q?: string }; // el back no filtra por q; útil si luego lo agregas
 type Opts = { nocacheToken?: number; signal?: AbortSignal };

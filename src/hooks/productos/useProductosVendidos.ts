@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useMemo } from "react";
-import { soldProductsInRange } from "@/services/sales/productos.api";
-import type { SaleProductsDTO } from "@/types/productos";
+import { soldProductsInRange } from "@/services/sales/product.api";
+import type { SaleProductsDTO } from "@/types/product";
 
 export type UseProductosVendidosParams = {
   date_from: string | Date;

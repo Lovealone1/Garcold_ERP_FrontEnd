@@ -1,27 +1,35 @@
 import { useEffect, useState, useCallback } from "react";
-import { getClienteById } from "@/services/sales/clientes.api";
-import type { Cliente } from "@/types/clientes";
+import { getCustomerById } from "@/services/sales/customer.api";
+import type { Customer } from "@/types/customer";
 
-export function useCliente(clienteId: number | null) {
-  const [cliente, setCliente] = useState<Cliente | null>(null);
+export function useCustomer(customerId: number | null) {
+  const [customer, setCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchIt = useCallback(async () => {
-    if (!clienteId) return;
+    if (!customerId) return;
     setLoading(true);
     setError(null);
     try {
-      const data = await getClienteById(clienteId);
-      setCliente(data);
+      const data = await getCustomerById(customerId);
+      setCustomer(data);
     } catch (e: any) {
-      setError(e?.message ?? "Error al cargar cliente");
+      setError(e?.message ?? "Failed to load customer");
     } finally {
       setLoading(false);
     }
-  }, [clienteId]);
+  }, [customerId]);
 
-  useEffect(() => { fetchIt(); }, [fetchIt]);
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      await fetchIt();
+    })();
+    return () => {
+      active = false;
+    };
+  }, [fetchIt]);
 
-  return { cliente, loading, error, refetch: fetchIt };
+  return { customer, loading, error, refetch: fetchIt };
 }

@@ -1,35 +1,41 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { listProveedoresAll } from "@/services/sales/proveedores.api";
-import type { ProveedorLite } from "@/types/proveedores";
+import { listSuppliersAll } from "@/services/sales/supplier.api";
+import type { SupplierLite } from "@/types/supplier";
 
-export type ProveedorOption = { label: string; value: number };
+export type SupplierOption = { label: string; value: number };
 
-export function useProveedorOptions(nocacheToken?: number) {
-    const [items, setItems] = useState<ProveedorLite[]>([]);
+export function useSupplierOptions(nocacheToken?: number) {
+    const [items, setItems] = useState<SupplierLite[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         let alive = true;
         setLoading(true);
-        listProveedoresAll(nocacheToken)
-            .then((data) => { if (alive) setItems(data || []); })
-            .catch((e: any) => {
-                if (alive) setError(e?.response?.data?.detail ?? e?.message ?? "Error cargando proveedores");
+        listSuppliersAll(nocacheToken)
+            .then((data) => {
+                if (alive) setItems(data || []);
             })
-            .finally(() => { if (alive) setLoading(false); });
-        return () => { alive = false; };
+            .catch((e: any) => {
+                if (alive) setError(e?.response?.data?.detail ?? e?.message ?? "Failed to load suppliers");
+            })
+            .finally(() => {
+                if (alive) setLoading(false);
+            });
+        return () => {
+            alive = false;
+        };
     }, [nocacheToken]);
 
-    const options: ProveedorOption[] = useMemo(
-        () => items.map((p) => ({ label: p.nombre, value: p.id })),
+    const options: SupplierOption[] = useMemo(
+        () => items.map((p) => ({ label: p.name, value: p.id })),
         [items]
     );
 
     const findLabel = (id?: number | null) =>
-        id == null ? "" : (items.find((x) => x.id === id)?.nombre ?? "");
+        id == null ? "" : items.find((x) => x.id === id)?.name ?? "";
 
     return { items, options, loading, error, findLabel };
 }

@@ -4,10 +4,10 @@ import { useMemo, useState, CSSProperties } from "react";
 import { MaterialIcon } from "@/components/ui/material-icon";
 import ClienteForm from "@/features/clientes/ClienteForm";
 import ClienteView from "@/features/clientes/ClienteView";
-import { useClientes } from "@/hooks/clientes/useClientes";
-import { useCliente } from "@/hooks/clientes/useCliente";
-import { createCliente, updateCliente, deleteCliente } from "@/services/sales/clientes.api";
-import type { Cliente, ClienteCreate, ClienteUpdate } from "@/types/clientes";
+import { useCustomers } from "@/hooks/clientes/useClientes";
+import { useCustomer } from "@/hooks/clientes/useCliente";
+import { createCustomer, updateCustomer, deleteCustomer } from "@/services/sales/customer.api";
+import type { Customer, CustomerCreate, CustomerUpdate } from "@/types/customer";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 
 const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
@@ -21,25 +21,21 @@ export default function ClientesPage() {
     options,
     reload,
     upsertOne
-  } = useClientes(10);
+  } = useCustomers(10);
 
   const { success, error } = useNotifications();
 
-  // Crear
   const [openCreate, setOpenCreate] = useState(false);
   const [creating, setCreating] = useState(false);
 
-  // Ver
   const [viewId, setViewId] = useState<number | null>(null);
   const [openView, setOpenView] = useState(false);
-  const { cliente, loading: viewLoading } = useCliente(viewId);
+  const { customer: viewCustomer, loading: viewLoading } = useCustomer(viewId);
 
-  // Editar
   const [editId, setEditId] = useState<number | null>(null);
   const [openEdit, setOpenEdit] = useState(false);
-  const { cliente: editCliente, loading: editLoading } = useCliente(editId);
+  const { customer: editCustomer, loading: editLoading } = useCustomer(editId);
 
-  // Eliminar
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [openDelete, setOpenDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -54,15 +50,12 @@ export default function ClientesPage() {
     return [s, s + (win - 1)] as const;
   }, [page, totalPages]);
 
-  const frameVars: CSSProperties = {
-    ["--content-x" as any]: "16px",
-  };
+  const frameVars: CSSProperties = { ["--content-x" as any]: "16px" };
 
-  // Crear
-  async function handleCreateSubmit(data: ClienteCreate) {
+  async function handleCreateSubmit(data: CustomerCreate) {
     setCreating(true);
     try {
-      await createCliente(data);
+      await createCustomer(data);
       setOpenCreate(false);
       setPage(1);
       reload?.();
@@ -74,11 +67,10 @@ export default function ClientesPage() {
     }
   }
 
-  // Editar
-  async function handleEditSubmit(data: ClienteUpdate) {
+  async function handleEditSubmit(data: CustomerUpdate) {
     if (!editId) return;
     try {
-      await updateCliente(editId, data);
+      await updateCustomer(editId, data);
       setOpenEdit(false);
       upsertOne({ id: editId, ...data });
       reload?.();
@@ -88,12 +80,11 @@ export default function ClientesPage() {
     }
   }
 
-  // Confirmar eliminación
   async function handleConfirmDelete() {
     if (!deleteId) return;
     setDeleting(true);
     try {
-      await deleteCliente(deleteId);
+      await deleteCustomer(deleteId);
       setOpenDelete(false);
       setDeleteId(null);
       reload?.();
@@ -106,31 +97,30 @@ export default function ClientesPage() {
   }
 
   function handleClearFilters() {
-    setFilters({ q: "", ciudades: undefined, saldoPendiente: undefined });
+    setFilters({ q: "", cities: undefined, pendingBalance: undefined });
   }
 
-  // Ciudades multiselect
-  const selectedCities = filters.ciudades ?? [];
-  const allCities = options.ciudades;
+  const selectedCities = filters.cities ?? [];
+  const allCities = options.cities;
   const allSelected = selectedCities.length > 0 && selectedCities.length === allCities.length;
   const citiesLabel = selectedCities.length === 0 ? "Ciudad" : allSelected ? "Todas" : `${selectedCities.length} seleccionadas`;
 
   const toggleCity = (city: string) => {
     setFilters(f => {
-      const current = new Set(f.ciudades ?? []);
+      const current = new Set(f.cities ?? []);
       current.has(city) ? current.delete(city) : current.add(city);
       const arr = Array.from(current);
-      return { ...f, ciudades: arr.length ? arr : undefined };
+      return { ...f, cities: arr.length ? arr : undefined };
     });
   };
   const toggleAllCities = () => {
-    setFilters(f => (allSelected ? { ...f, ciudades: undefined } : { ...f, ciudades: [...allCities] }));
+    setFilters(f => (allSelected ? { ...f, cities: undefined } : { ...f, cities: [...allCities] }));
   };
   const [citiesOpen, setCitiesOpen] = useState(false);
 
   return (
     <div className="app-shell__frame overflow-hidden" style={frameVars}>
-      <div className="bg-[var(--page-bg)] rounded-xl h-full flex flex-col px-[var(--content-x)] pt-3 pb-5">
+      <div className="bg-[var(--page-bg)] rounded-xl h-full flex flex-col px-[var(--content-x)] pt-3 pb-5 relative">
         <div className="shrink-0">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-2xl font-semibold text-tg-fg">Clientes</h2>
@@ -144,8 +134,7 @@ export default function ClientesPage() {
                 <input
                   type="search"
                   placeholder="Buscar"
-                  className="h-10 w-full rounded-md border border-tg bg-tg-card text-tg-card pl-9 pr-3 
-             focus:outline-none focus:ring-tg-primary"
+                  className="h-10 w-full rounded-md border border-tg bg-tg-card text-tg-card pl-9 pr-3 focus:outline-none focus:ring-tg-primary"
                   value={filters.q ?? ""}
                   onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
                 />
@@ -189,18 +178,17 @@ export default function ClientesPage() {
 
               {/* Saldo pendiente */}
               <select
-                className="h-10 flex-none w-[160px] rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted 
-             focus:outline-none "
-                value={filters.saldoPendiente ?? ""}
+                className="h-10 flex-none w-[160px] rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted focus:outline-none"
+                value={filters.pendingBalance ?? ""}
                 onChange={(e) =>
                   setFilters((f) => ({
                     ...f,
-                    saldoPendiente: (e.target.value || undefined) as "si" | "no" | undefined,
+                    pendingBalance: (e.target.value || undefined) as "yes" | "no" | undefined,
                   }))
                 }
               >
                 <option value="">Saldo pendiente</option>
-                <option value="si">Sí</option>
+                <option value="yes">Sí</option>
                 <option value="no">No</option>
               </select>
 
@@ -258,17 +246,16 @@ export default function ClientesPage() {
                     <td colSpan={7} className="px-4 py-10 text-center text-tg-muted">Sin registros</td>
                   </tr>
                 ) : (
-                  rows.map((r: Cliente) => (
+                  rows.map((r: Customer) => (
                     <tr key={r.id} className="border-t border-tg hover:bg-black/5 dark:hover:bg-white/5">
-                      <td className="px-4 py-3">{r.nombre}</td>
-                      <td className="px-4 py-3">{r.cc_nit}</td>
-                      <td className="px-4 py-3">{r.correo || "—"}</td>
-                      <td className="px-4 py-3">{r.celular || "—"}</td>
-                      <td className="px-4 py-3">{r.ciudad}</td>
-                      <td className="px-4 py-3 text-right">{money.format(r.saldo)}</td>
+                      <td className="px-4 py-3">{r.name}</td>
+                      <td className="px-4 py-3">{r.tax_id || "—"}</td>
+                      <td className="px-4 py-3">{r.email || "—"}</td>
+                      <td className="px-4 py-3">{r.phone || "—"}</td>
+                      <td className="px-4 py-3">{r.city || "—"}</td>
+                      <td className="px-4 py-3 text-right">{money.format(r.balance)}</td>
                       <td className="px-2 py-2">
                         <div className="flex items-center justify-center gap-1">
-                          {/* Ver */}
                           <button
                             className="rounded p-2 hover:bg-black/10 dark:hover:bg-white/10"
                             aria-label="ver"
@@ -276,7 +263,6 @@ export default function ClientesPage() {
                           >
                             <MaterialIcon name="visibility" size={18} className="text-tg-primary" />
                           </button>
-                          {/* Editar */}
                           <button
                             className="rounded p-2 hover:bg-black/10 dark:hover:bg-white/10"
                             aria-label="editar"
@@ -284,7 +270,6 @@ export default function ClientesPage() {
                           >
                             <MaterialIcon name="edit" size={18} className="text-tg-primary" />
                           </button>
-                          {/* Eliminar */}
                           <button
                             className="rounded p-2 hover:bg-black/10 dark:hover:bg-white/10"
                             aria-label="eliminar"
@@ -294,7 +279,6 @@ export default function ClientesPage() {
                           </button>
                         </div>
                       </td>
-
                     </tr>
                   ))
                 )}
@@ -312,7 +296,6 @@ export default function ClientesPage() {
             </div>
 
             <nav className="flex items-center gap-1">
-              {/* Ir al inicio */}
               <button
                 disabled={!hasPrev}
                 onClick={() => setPage(1)}
@@ -323,7 +306,6 @@ export default function ClientesPage() {
                 <MaterialIcon name="first_page" size={18} />
               </button>
 
-              {/* Anterior */}
               <button
                 disabled={!hasPrev}
                 onClick={() => setPage(page - 1)}
@@ -334,15 +316,13 @@ export default function ClientesPage() {
                 <MaterialIcon name="chevron_left" size={18} />
               </button>
 
-              {/* Números */}
               {Array.from({ length: end - start + 1 }, (_, i) => start + i).map((p) => {
                 const active = p === page;
                 return (
                   <button
                     key={p}
                     onClick={() => setPage(p)}
-                    className={`h-8 min-w-8 rounded px-2 text-sm ${active ? "bg-tg-primary text-tg-on-primary" : "hover:bg-black/10 dark:hover:bg-white/10"
-                      } focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary`}
+                    className={`h-8 min-w-8 rounded px-2 text-sm ${active ? "bg-tg-primary text-tg-on-primary" : "hover:bg-black/10 dark:hover:bg-white/10"} focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary`}
                     aria-current={active ? "page" : undefined}
                   >
                     {p}
@@ -352,7 +332,6 @@ export default function ClientesPage() {
 
               {end < totalPages && <span className="px-1">…</span>}
 
-              {/* Siguiente */}
               <button
                 disabled={!hasNext}
                 onClick={() => setPage(page + 1)}
@@ -363,7 +342,6 @@ export default function ClientesPage() {
                 <MaterialIcon name="chevron_right" size={18} />
               </button>
 
-              {/* Ir al final */}
               <button
                 disabled={!hasNext}
                 onClick={() => setPage(totalPages)}
@@ -378,9 +356,30 @@ export default function ClientesPage() {
             <div className="text-sm text-tg-muted">Exhibiendo {from}-{to} de {total} registros</div>
           </div>
         </div>
+
+        {/* Botonera flotante inferior derecha: Importar / Exportar */}
+        <div className="fixed bottom-6 right-6 z-40 flex gap-2 pointer-events-auto">
+          <button
+            type="button"
+            className="h-10 rounded-md border border-tg bg-[var(--panel-bg)] px-3 text-sm text-tg-muted inline-flex items-center gap-2"
+            aria-label="Importar datos"
+            title="Importar datos"
+          >
+            <MaterialIcon name="file_upload" size={18} />
+            Importar
+          </button>
+          <button
+            type="button"
+            className="h-10 rounded-md border border-tg bg-[var(--panel-bg)] px-3 text-sm text-tg-muted inline-flex items-center gap-2"
+            aria-label="Exportar datos"
+            title="Exportar datos"
+          >
+            <MaterialIcon name="file_download" size={18} />
+            Exportar
+          </button>
+        </div>
       </div>
 
-      {/* Crear */}
       {openCreate && (
         <ClienteForm
           intent="create"
@@ -391,17 +390,15 @@ export default function ClientesPage() {
         />
       )}
 
-      {/* Ver */}
       {openView && (
         <ClienteView
           open={openView}
           onClose={() => setOpenView(false)}
-          cliente={cliente}
+          cliente={viewCustomer}
           loading={viewLoading}
         />
       )}
 
-      {/* Editar */}
       {openEdit && (
         <ClienteForm
           intent="edit"
@@ -409,18 +406,21 @@ export default function ClientesPage() {
           onClose={() => setOpenEdit(false)}
           onSubmit={handleEditSubmit}
           loading={editLoading}
-          defaults={editCliente ? {
-            nombre: editCliente.nombre,
-            cc_nit: editCliente.cc_nit,
-            correo: editCliente.correo ?? "",
-            celular: editCliente.celular ?? "",
-            direccion: editCliente.direccion,
-            ciudad: editCliente.ciudad,
-          } : undefined}
+          defaults={
+            editCustomer
+              ? {
+                name: editCustomer.name,
+                tax_id: editCustomer.tax_id ?? "",
+                email: editCustomer.email ?? "",
+                phone: editCustomer.phone ?? "",
+                address: editCustomer.address ?? "",
+                city: editCustomer.city ?? "",
+              }
+              : undefined
+          }
         />
       )}
 
-      {/* Eliminar */}
       {openDelete && (
         <div
           role="dialog"

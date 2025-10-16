@@ -4,7 +4,7 @@
 import { useCallback, useMemo, useState } from "react";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { Menu, MenuItem, Checkbox, ListItemIcon, ListItemText } from "@mui/material";
-import type { Producto } from "@/types/productos";
+import type { Producto } from "@/types/product";
 
 type Props = {
     items: Producto[];

@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { deleteProduct } from "@/services/sales/productos.api";
+import { deleteProduct } from "@/services/sales/product.api";
 
 export function useDeleteProducto() {
   const [loading, setLoading] = useState(false);

@@ -14,7 +14,7 @@ import Skeleton from "@mui/material/Skeleton";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import * as React from "react";
-import type { ProductDTO } from "@/types/productos";
+import type { ProductDTO } from "@/types/product";
 
 type Props = {
   open: boolean;

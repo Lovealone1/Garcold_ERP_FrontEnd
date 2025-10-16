@@ -18,7 +18,7 @@ import { useProductosAll } from "@/hooks/productos/useProductosAll";
 import { useClienteOptions, type ClienteOption } from "@/hooks/clientes/useClienteOptions";
 import { useVentaEstados } from "@/hooks/estados/useEstados";
 import { listBancos } from "@/services/sales/bancos.api";
-import type { Producto } from "@/types/productos";
+import type { Producto } from "@/types/product";
 import type { Banco } from "@/types/bancos";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 import { useRouter } from "next/navigation";

@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { listAllProducts } from "@/services/sales/productos.api";
-import type { ProductDTO } from "@/types/productos";
+import { listAllProducts } from "@/services/sales/product.api";
+import type { ProductDTO } from "@/types/product";
 
 type Option = { value: number; label: string };
 

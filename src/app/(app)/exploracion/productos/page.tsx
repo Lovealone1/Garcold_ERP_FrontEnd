@@ -14,8 +14,8 @@ import type { DateRange } from "react-day-picker";
 import DateRangePicker from "@/components/ui/DateRangePicker/DateRangePicker";
 import { useProductosAll } from "@/hooks/productos/useProductosAll";
 import useProductosVendidos from "@/hooks/productos/useProductosVendidos";
-import type { Producto } from "@/types/productos";
-import type { ProductoVentasDTO } from "@/types/productos";
+import type { Producto } from "@/types/product";
+import type { ProductoVentasDTO } from "@/types/product";
 
 const MAX_SELECT = 6;
 const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });

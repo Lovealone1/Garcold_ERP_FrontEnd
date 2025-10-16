@@ -11,19 +11,19 @@ import DialogActions from "@mui/material/DialogActions";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import DynamicTextField from "@/components/forms/DynamicTextField";
-import type { ProveedorCreate, ProveedorUpdate } from "@/types/proveedores";
+import type { SupplierCreate, SupplierUpdate } from "@/types/supplier";
 
 type Mode = "modal" | "page";
 
 type CreateProps = {
   intent: "create";
-  onSubmit: (data: ProveedorCreate) => Promise<void> | void;
-  defaults?: Partial<ProveedorCreate>;
+  onSubmit: (data: SupplierCreate) => Promise<void> | void;
+  defaults?: Partial<SupplierCreate>;
 };
 type EditProps = {
   intent: "edit";
-  onSubmit: (data: ProveedorUpdate) => Promise<void> | void;
-  defaults?: Partial<ProveedorUpdate>;
+  onSubmit: (data: SupplierUpdate) => Promise<void> | void;
+  defaults?: Partial<SupplierUpdate>;
 };
 type Common = { mode?: Mode; open?: boolean; onClose?: () => void; loading?: boolean };
 type Props = (CreateProps | EditProps) & Common;
@@ -99,23 +99,31 @@ export default function ProveedorForm(props: Props) {
     celular: "",
     direccion: "",
     ciudad: "",
-    ...(props.defaults as any),
   }));
   const [submitted, setSubmitted] = useState(false);
 
-  // sync defaults al abrir/editar
+  // Mapear defaults EN -> estado ES sin tocar estilos/ids
   useEffect(() => {
-    setForm((f) => ({ ...f, ...(props.defaults as any) }));
+    setForm((f) => ({
+      ...f,
+      nombre: (props.defaults as any)?.name ?? f.nombre,
+      cc_nit: (props.defaults as any)?.tax_id ?? f.cc_nit,
+      correo: (props.defaults as any)?.email ?? f.correo,
+      celular: (props.defaults as any)?.phone ?? f.celular,
+      direccion: (props.defaults as any)?.address ?? f.direccion,
+      ciudad: (props.defaults as any)?.city ?? f.ciudad,
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.defaults, open, isCreate]);
 
   const set =
     (k: keyof FormState) =>
-    (e: ChangeEvent<HTMLInputElement>) =>
-      setForm((f) => ({ ...f, [k]: e.target.value }));
+      (e: ChangeEvent<HTMLInputElement>) =>
+        setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const errors = useMemo(() => {
     const out: Partial<Record<keyof FormState, string>> = {};
-    for (const k of REQ) if (submitted && !String(form[k] ?? "").trim()) out[k] = "Campo obligatorio";
+    for (const k of REQ) if (submitted && !String((form as any)[k] ?? "").trim()) out[k] = "Campo obligatorio";
     if (submitted && form.correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.correo)) out.correo = "Correo inválido";
     return out;
   }, [submitted, form]);
@@ -125,19 +133,20 @@ export default function ProveedorForm(props: Props) {
     setSubmitted(true);
     if (Object.keys(errors).length) return;
 
-    const base = {
-      nombre: form.nombre.trim(),
-      cc_nit: form.cc_nit.trim(),
-      correo: form.correo?.trim() || null,
-      celular: form.celular?.trim() || null,
-      direccion: form.direccion.trim(),
-      ciudad: form.ciudad.trim(),
+    // EN payload
+    const baseEn = {
+      name: form.nombre.trim(),
+      tax_id: form.cc_nit.trim(),
+      email: form.correo?.trim() || null,
+      phone: form.celular?.trim() || null,
+      address: form.direccion.trim(),
+      city: form.ciudad.trim(),
     };
 
     if (isCreate) {
-      await (onSubmit as CreateProps["onSubmit"])(base as ProveedorCreate);
+      await (onSubmit as CreateProps["onSubmit"])(baseEn as SupplierCreate);
     } else {
-      await (onSubmit as EditProps["onSubmit"])(base as ProveedorUpdate);
+      await (onSubmit as EditProps["onSubmit"])(baseEn as SupplierUpdate);
     }
   };
 

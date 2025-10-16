@@ -219,7 +219,7 @@ export default function ProductImagesModal({ open, onClose, productId, max = 3 }
             <DialogTitle sx={{ fontWeight: 600, pb: 1.5, display: "flex", alignItems: "center", gap: 1 }}>
                 Imágenes del producto
                 <Box component="span" sx={{ ml: "auto", fontSize: 12, color: "var(--tg-muted)" }}>
-                    Máximo {max} • Quedan {remaining} • Pendientes {pendingCount}
+                    Máximo {max} • Quedan {remaining} 
                 </Box>
             </DialogTitle>
 

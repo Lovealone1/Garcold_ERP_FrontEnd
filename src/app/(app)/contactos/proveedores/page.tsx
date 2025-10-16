@@ -4,10 +4,10 @@ import { useMemo, useState, CSSProperties } from "react";
 import { MaterialIcon } from "@/components/ui/material-icon";
 import ProveedorForm from "@/features/proveedores/ProveedorForm";
 import ProveedorView from "@/features/proveedores/ProveedorView";
-import { useProveedores } from "@/hooks/proveedores/useProveedores";
-import { useProveedor } from "@/hooks/proveedores/useProveedor";
-import { createProveedor, updateProveedor, deleteProveedor } from "@/services/sales/proveedores.api";
-import type { Proveedor, ProveedorCreate, ProveedorUpdate } from "@/types/proveedores";
+import { useSuppliers } from "@/hooks/proveedores/useProveedores"; // ← ya refactorizado a Supplier internamente
+import { useSupplier } from "@/hooks/proveedores/useProveedor";
+import { createSupplier, updateSupplier, deleteSupplier } from "@/services/sales/supplier.api";
+import type { Supplier, SupplierCreate, SupplierUpdate } from "@/types/supplier";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 
 export default function ProveedoresPage() {
@@ -19,7 +19,7 @@ export default function ProveedoresPage() {
     options,
     reload,
     upsertOne,
-  } = useProveedores(10);
+  } = useSuppliers(10);
 
   const { success, error } = useNotifications();
 
@@ -30,12 +30,12 @@ export default function ProveedoresPage() {
   // Ver
   const [viewId, setViewId] = useState<number | null>(null);
   const [openView, setOpenView] = useState(false);
-  const { proveedor, loading: viewLoading } = useProveedor(viewId);
+  const { supplier: viewSupplier, loading: viewLoading } = useSupplier(viewId);
 
   // Editar
   const [editId, setEditId] = useState<number | null>(null);
   const [openEdit, setOpenEdit] = useState(false);
-  const { proveedor: editProveedor, loading: editLoading } = useProveedor(editId);
+  const { supplier: editSupplier, loading: editLoading } = useSupplier(editId);
 
   // Eliminar
   const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -55,10 +55,10 @@ export default function ProveedoresPage() {
   const frameVars: CSSProperties = { ["--content-x" as any]: "16px" };
 
   // Crear
-  async function handleCreateSubmit(data: ProveedorCreate) {
+  async function handleCreateSubmit(data: SupplierCreate) {
     setCreating(true);
     try {
-      await createProveedor(data);
+      await createSupplier(data);
       setOpenCreate(false);
       setPage(1);
       reload?.();
@@ -71,10 +71,10 @@ export default function ProveedoresPage() {
   }
 
   // Editar
-  async function handleEditSubmit(data: ProveedorUpdate) {
+  async function handleEditSubmit(data: SupplierUpdate) {
     if (!editId) return;
     try {
-      await updateProveedor(editId, data);
+      await updateSupplier(editId, data);
       setOpenEdit(false);
       upsertOne({ id: editId, ...data });
       reload?.();
@@ -89,7 +89,7 @@ export default function ProveedoresPage() {
     if (!deleteId) return;
     setDeleting(true);
     try {
-      await deleteProveedor(deleteId);
+      await deleteSupplier(deleteId);
       setOpenDelete(false);
       setDeleteId(null);
       reload?.();
@@ -102,26 +102,25 @@ export default function ProveedoresPage() {
   }
 
   function handleClearFilters() {
-    // sin saldoPendiente en Proveedores
-    setFilters({ q: "", ciudades: undefined });
+    setFilters({ q: "", cities: undefined });
   }
 
   // Ciudades multiselect
-  const selectedCities = filters.ciudades ?? [];
-  const allCities = options.ciudades ?? [];
+  const selectedCities = filters.cities ?? [];
+  const allCities = options.cities ?? [];
   const allSelected = selectedCities.length > 0 && selectedCities.length === allCities.length;
   const citiesLabel = selectedCities.length === 0 ? "Ciudad" : allSelected ? "Todas" : `${selectedCities.length} seleccionadas`;
 
   const toggleCity = (city: string) => {
-    setFilters(f => {
-      const current = new Set(f.ciudades ?? []);
+    setFilters((f) => {
+      const current = new Set(f.cities ?? []);
       current.has(city) ? current.delete(city) : current.add(city);
       const arr = Array.from(current);
-      return { ...f, ciudades: arr.length ? arr : undefined };
+      return { ...f, cities: arr.length ? arr : undefined };
     });
   };
   const toggleAllCities = () => {
-    setFilters(f => (allSelected ? { ...f, ciudades: undefined } : { ...f, ciudades: [...allCities] }));
+    setFilters((f) => (allSelected ? { ...f, cities: undefined } : { ...f, cities: [...allCities] }));
   };
   const [citiesOpen, setCitiesOpen] = useState(false);
 
@@ -152,7 +151,7 @@ export default function ProveedoresPage() {
               <div className="relative flex-none w-[220px]">
                 <button
                   type="button"
-                  onClick={() => setCitiesOpen(o => !o)}
+                  onClick={() => setCitiesOpen((o) => !o)}
                   className="h-10 w-full rounded-md border border-tg bg-tg-card px-3 text-left text-sm text-tg-muted inline-flex items-center justify-between
                              focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary"
                 >
@@ -169,7 +168,7 @@ export default function ProveedoresPage() {
                       </label>
                     </div>
                     <ul className="p-2 space-y-1">
-                      {allCities.map(ci => {
+                      {allCities.map((ci) => {
                         const checked = selectedCities.includes(ci);
                         return (
                           <li key={ci}>
@@ -239,13 +238,13 @@ export default function ProveedoresPage() {
                     <td colSpan={6} className="px-4 py-10 text-center text-tg-muted">Sin registros</td>
                   </tr>
                 ) : (
-                  rows.map((r: Proveedor) => (
+                  rows.map((r: Supplier) => (
                     <tr key={r.id} className="border-t border-tg hover:bg-black/5 dark:hover:bg-white/5">
-                      <td className="px-4 py-3">{r.nombre}</td>
-                      <td className="px-4 py-3">{r.cc_nit}</td>
-                      <td className="px-4 py-3">{r.correo || "—"}</td>
-                      <td className="px-4 py-3">{r.celular || "—"}</td>
-                      <td className="px-4 py-3">{r.ciudad}</td>
+                      <td className="px-4 py-3">{r.name}</td>
+                      <td className="px-4 py-3">{r.tax_id || "—"}</td>
+                      <td className="px-4 py-3">{r.email || "—"}</td>
+                      <td className="px-4 py-3">{r.phone || "—"}</td>
+                      <td className="px-4 py-3">{r.city || "—"}</td>
                       <td className="px-2 py-2">
                         <div className="flex items-center justify-center gap-1">
                           {/* Ver */}
@@ -356,6 +355,28 @@ export default function ProveedoresPage() {
 
             <div className="text-sm text-tg-muted">Exhibiendo {from}-{to} de {total} registros</div>
           </div>
+
+          {/* Botones Importar / Exportar debajo de la tabla */}
+          <div className="shrink-0 flex items-center justify-end gap-2 border-t border-tg px-4 py-3">
+            <button
+              type="button"
+              className="h-10 rounded-md border border-tg bg-[var(--panel-bg)] px-3 text-sm text-tg-muted inline-flex items-center gap-2"
+              aria-label="Importar datos"
+              title="Importar datos"
+            >
+              <MaterialIcon name="file_upload" size={18} />
+              Importar
+            </button>
+            <button
+              type="button"
+              className="h-10 rounded-md border border-tg bg-[var(--panel-bg)] px-3 text-sm text-tg-muted inline-flex items-center gap-2"
+              aria-label="Exportar datos"
+              title="Exportar datos"
+            >
+              <MaterialIcon name="file_download" size={18} />
+              Exportar
+            </button>
+          </div>
         </div>
       </div>
 
@@ -375,7 +396,7 @@ export default function ProveedoresPage() {
         <ProveedorView
           open={openView}
           onClose={() => setOpenView(false)}
-          proveedor={proveedor}
+          proveedor={viewSupplier || null}
           loading={viewLoading}
         />
       )}
@@ -388,14 +409,18 @@ export default function ProveedoresPage() {
           onClose={() => setOpenEdit(false)}
           onSubmit={handleEditSubmit}
           loading={editLoading}
-          defaults={editProveedor ? {
-            nombre: editProveedor.nombre,
-            cc_nit: editProveedor.cc_nit,
-            correo: editProveedor.correo ?? "",
-            celular: editProveedor.celular ?? "",
-            direccion: editProveedor.direccion,
-            ciudad: editProveedor.ciudad,
-          } : undefined}
+          defaults={
+            editSupplier
+              ? {
+                name: editSupplier.name,
+                tax_id: editSupplier.tax_id ?? "",
+                email: editSupplier.email ?? "",
+                phone: editSupplier.phone ?? "",
+                address: editSupplier.address ?? "",
+                city: editSupplier.city ?? "",
+              }
+              : undefined
+          }
         />
       )}
 

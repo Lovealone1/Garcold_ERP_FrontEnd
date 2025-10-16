@@ -1,24 +1,24 @@
 "use client";
 import { useState } from "react";
-import { deleteProveedor } from "@/services/sales/proveedores.api";
+import { deleteSupplier } from "@/services/sales/supplier.api";
 
-export function useDeleteProveedor() {
+export function useDeleteSupplier() {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error,   setError]   = useState<string | null>(null);
 
   async function handleDelete(id: number) {
     setLoading(true);
     setError(null);
     try {
-      const res = await deleteProveedor(id);
+      const res = await deleteSupplier(id); // { message: string }
       return res;
     } catch (e: any) {
-      setError(e?.message ?? "Error eliminando proveedor");
+      setError(e?.message ?? "Error deleting supplier");
       throw e;
     } finally {
       setLoading(false);
     }
   }
 
-  return { deleteProveedor: handleDelete, loading, error };
+  return { deleteSupplier: handleDelete, loading, error };
 }

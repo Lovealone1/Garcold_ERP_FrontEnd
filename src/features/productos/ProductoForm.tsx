@@ -12,7 +12,7 @@ import DialogActions from "@mui/material/DialogActions";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import DynamicTextField from "@/components/forms/DynamicTextField";
-import type { ProductCreate, ProductUpdate } from "@/types/productos";
+import type { ProductCreate, ProductUpdate } from "@/types/product";
 
 /** Defaults cuando se usa como modal de agregado (venta/compra) */
 export type ProductoAgregateDefaults = {

@@ -33,7 +33,7 @@ export function AlertHost({
       open={!!alert}
       autoHideDuration={autoHideDuration}
       onClose={onClose}
-      anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+      anchorOrigin={{ vertical: "top", horizontal: "center" }}
     >
       <Alert
         variant="filled"

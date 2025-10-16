@@ -1,5 +1,5 @@
 import salesApi from "../salesApi";
-import type { Venta, VentasPage, VentaCreate, DetalleVentaView, PagoVenta, PagoVentaCreate } from "@/types/ventas";
+import type { Venta, VentasPage, VentaCreate, DetalleVentaView } from "@/types/ventas";
 
 export async function listVentas(
   page = 1,

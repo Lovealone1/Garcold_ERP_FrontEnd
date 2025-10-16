@@ -23,3 +23,4 @@ export type ProveedorCreate = Omit<Proveedor, "id" | "fecha_creacion">;
 export type ProveedorUpdate = Omit<Proveedor, "id" | "fecha_creacion">;
 
 export type NuevoProveedor = ProveedorCreate;
+export type ProveedorLite = Pick<Proveedor, "id" | "nombre">;

@@ -10,14 +10,14 @@ export type OrigenFilter = "all" | Origen;
 
 export interface TransaccionesFilters {
     q?: string;
-    banco?: string;     // label "Banco {id}"
-    tipo?: string;      // tipo_str
+    banco?: string;   // nombre del banco (no id)
+    tipo?: string;    // tipo_str
     origen?: OrigenFilter;
 }
 
 /**
- * Carga TODO el dataset desde el backend y pagina en cliente.
- * Devuelve filtros globales y opciones globales para combos.
+ * Carga TODO el dataset y pagina en cliente.
+ * Filtros y opciones globales listos para combos.
  */
 export function useTransacciones(initialPage = 1, pageSize = 10) {
     const [page, setPage] = useState(initialPage);
@@ -65,9 +65,9 @@ export function useTransacciones(initialPage = 1, pageSize = 10) {
         return () => { mounted.current = false; };
     }, [fetchAll]);
 
-    // Opciones globales para combos
+    // Opciones globales
     const options = useMemo(() => {
-        const bancos = Array.from(new Set(all.map(x => `Banco ${x.banco_id}`))).sort();
+        const bancos = Array.from(new Set(all.map(x => x.banco))).sort();
         const tipos = Array.from(new Set(all.map(x => x.tipo_str))).sort();
         return { bancos, tipos };
     }, [all]);
@@ -78,15 +78,14 @@ export function useTransacciones(initialPage = 1, pageSize = 10) {
         const origenF = (filters.origen ?? "all") as OrigenFilter;
 
         return all.filter(r => {
-            const bancoLabel = `Banco ${r.banco_id}`;
             const byQ =
                 !v ||
                 String(r.id).includes(v) ||
-                bancoLabel.toLowerCase().includes(v) ||
+                r.banco.toLowerCase().includes(v) ||
                 r.tipo_str.toLowerCase().includes(v) ||
                 (r.descripcion ?? "").toLowerCase().includes(v);
 
-            const byBanco = !filters.banco || bancoLabel === filters.banco;
+            const byBanco = !filters.banco || r.banco === filters.banco;
             const byTipo = !filters.tipo || r.tipo_str === filters.tipo;
             const byOrigen = origenF === "all" || r.origen === origenF;
 
@@ -94,7 +93,7 @@ export function useTransacciones(initialPage = 1, pageSize = 10) {
         });
     }, [all, filters]);
 
-    // reset de página al cambiar filtros
+    // Reset página al cambiar filtros
     useEffect(() => { setPage(1); }, [filters.q, filters.banco, filters.tipo, filters.origen]);
 
     // Paginación en cliente
@@ -113,7 +112,6 @@ export function useTransacciones(initialPage = 1, pageSize = 10) {
     const refresh = useCallback(() => fetchAll(), [fetchAll]);
 
     return {
-        // datos para UI
         page: safePage,
         setPage,
         items,
@@ -121,14 +119,12 @@ export function useTransacciones(initialPage = 1, pageSize = 10) {
         error,
         refresh,
 
-        // paginación (cliente)
         has_next,
         has_prev,
         total_pages,
         page_size: pageSize,
         total,
 
-        // filtros y opciones globales
         filters,
         setFilters,
         options,

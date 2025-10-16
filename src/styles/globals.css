@@ -4,18 +4,18 @@
 
 /* TG tokens – light */
 :root {
-  --tg-bg: #fafafa;
+  --tg-bg: #ffffff;
   --tg-fg: #0b0b0d;
   --tg-muted: #6b7280;
-  --tg-border: #e5e7eb;
+  --tg-border: #cacaca;
   --tg-primary: #16a34a;
   --tg-datepicker-range: #91d4aa;
   --tg-icon-button: #2b7a48;
   --tg-primary-fg: #ffffff;
-  --tg-sidebar-bg: #f0fdf4;
+  --tg-sidebar-bg: #f5f5f5;
   --tg-sidebar-fg: #111827;
   --tg-sidebar-muted: #64748b;
-  --tg-sidebar-border: #16a34a;
+  --tg-sidebar-border: #06411b;
   --tg-sidebar-item-bg: #dcfce7;
   --tg-sidebar-item-fg: #14532d;
   --tg-card-bg: #ffffff;
@@ -41,7 +41,7 @@
 
 /* TG tokens – dark */
 html.dark {
-  --tg-bg: #101412;
+  --tg-bg: #131313;
   --tg-fg: #e5e5e5;
   --tg-muted: #a3a3a3;
   --tg-border: #2a2f2a;
@@ -49,13 +49,13 @@ html.dark {
   --tg-datepicker-range: #91d4aa;
   --tg-icon-button: #2b7a48;
   --tg-primary-fg: #0b0b0d;
-  --tg-sidebar-bg: #0b1d14;
+  --tg-sidebar-bg: #0f0f0f;
   --tg-sidebar-fg: #e5e5e5;
   --tg-sidebar-muted: #b1b1b5;
   --tg-sidebar-border: #22c55e;
   --tg-sidebar-item-bg: #052e1c;
   --tg-sidebar-item-fg: #e5e7eb;
-  --tg-card-bg: #141a17;
+  --tg-card-bg: #131313;
   --tg-card-fg: #e5e7eb;
 
   --panel-bg: color-mix(in srgb, var(--tg-card-bg) 85%, black 15%);
@@ -198,4 +198,212 @@ html.dark {
   --panel-border: var(--tg-border);
   --table-head-bg: #1b1b1f;
   --table-head-fg: #e5e7eb;
+}
+
+.phone-field .PhoneInput {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  width: 100%;
+}
+
+.phone-field .PhoneInputInput {
+  flex: 1;
+  width: 100%;
+  padding: .5rem .75rem;
+  border-radius: .5rem;
+  background: var(--tg-input-bg, transparent);
+  border: 1px solid var(--tg-border);
+  color: var(--tg-fg);
+  line-height: 1.25rem;
+}
+
+/* Botón compacto de país */
+.tg-country-btn {
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+  padding: .35rem .45rem;
+  border-radius: .5rem;
+  border: 1px solid var(--tg-border);
+  background: var(--tg-card-bg);
+}
+
+.tg-flag-fallback,
+.tg-country-btn img,
+.tg-country-btn svg,
+.tg-country-btn .PhoneInputCountryIcon {
+  width: 18px;
+  height: 14px;
+  min-width: 18px;
+  min-height: 14px;
+  border-radius: .2rem;
+}
+
+/* Menú alineado al nivel del campo, a la derecha del botón */
+.tg-country-menu {
+  position: absolute;
+  z-index: 50;
+  top: 0;
+  /* antes: top:50% */
+  left: calc(100% + .5rem);
+  transform: none;
+  /* antes: translateY(-50%) */
+  width: 260px;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: .75rem;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .25);
+}
+
+/* Buscador dentro del menú */
+.tg-country-search {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--panel-border);
+  background: transparent;
+  color: var(--tg-fg);
+  padding: .45rem .6rem;
+  font-size: .875rem;
+}
+
+/* Lista con scroll dark/light */
+.tg-country-list {
+  max-height: 240px;
+  overflow: auto;
+  padding: .25rem;
+}
+
+.tg-country-list {
+  scrollbar-width: thin;
+  scrollbar-color: var(--tg-muted) transparent;
+}
+
+.tg-country-list::-webkit-scrollbar {
+  width: 8px
+}
+
+.tg-country-list::-webkit-scrollbar-track {
+  background: transparent
+}
+
+.tg-country-list::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--tg-muted) 45%, transparent 55%);
+  border-radius: 8px;
+}
+
+/* Items */
+.tg-country-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .4rem .5rem;
+  border-radius: .5rem;
+  background: transparent;
+  color: var(--tg-fg);
+}
+
+.tg-country-item:hover {
+  background: rgba(255, 255, 255, .06)
+}
+
+html:not(.dark) .tg-country-item:hover {
+  background: rgba(0, 0, 0, .05)
+}
+
+.tg-country-item.is-active {
+  outline: 1px solid var(--tg-primary)
+}
+
+.tg-country-item img,
+.tg-country-item svg,
+.tg-country-item .PhoneInputCountryIcon {
+  width: 18px;
+  height: 14px;
+  border-radius: .2rem;
+}
+
+.tg-country-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap
+}
+
+.tg-cc {
+  font-variant-numeric: tabular-nums;
+  color: var(--tg-muted);
+  font-size: .8rem
+}
+
+.phone-field,
+.phone-field .tg-country{ overflow:visible; }
+
+.scroll-silent { scrollbar-width: none; }
+.scroll-silent::-webkit-scrollbar { display: none; }
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 0% 3.9%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
+  }
+  .dark {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
 }

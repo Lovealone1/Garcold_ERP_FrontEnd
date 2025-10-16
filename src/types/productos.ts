@@ -21,6 +21,15 @@ export interface ProductosPage {
   has_prev: boolean;
 }
 
+export interface ProductoVentasDTO {
+  id: number;
+  referencia: string;
+  descripcion: string;
+  cantidad_vendida: number;
+  precio_compra: number;
+  precio_venta: number;
+}
+
 export type ProductoCreate = Omit<Producto, "id" | "fecha_creacion">;
 export type ProductoUpdate = Omit<Producto, "id" | "fecha_creacion">;
 

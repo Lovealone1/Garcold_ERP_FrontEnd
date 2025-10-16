@@ -10,7 +10,7 @@ export const sections: NavSection[] = [
         iconName: 'space_dashboard',
         iconSet: 'rounded',
         name: 'Dashboard',
-        href: '/dashboard',
+        href: '/inicio',  
       },
     ],
   },
@@ -20,17 +20,17 @@ export const sections: NavSection[] = [
     iconSet: 'rounded',
     items: [
       {
-        iconName: 'checklist',
+        iconName: 'category',
         iconSet: 'rounded',
-        name: 'Listar productos',
+        name: 'Panel de productos',
         href: '/productos',
       },
       {
-        iconName: 'model_training',
+        iconName: 'explore',
         iconSet: 'rounded',
-        name: 'Models',
-        href: '/models',
-      },
+        name: 'Exploración',
+        href: '/exploracion/productos',
+      }
     ],
   },
   {
@@ -83,6 +83,12 @@ export const sections: NavSection[] = [
     iconSet: 'rounded',
     items: [
       {
+        iconName: 'money_off',
+        iconSet: 'rounded',
+        name: 'Gastos',
+        href: '/finanzas/gastos',
+      },
+      {
         iconName: 'receipt_long',
         iconSet: 'rounded',
         name: 'Transacciones',
@@ -91,20 +97,14 @@ export const sections: NavSection[] = [
       {
         iconName: 'credit_card',
         iconSet: 'rounded',
-        name: 'Creditos',
-        href: '/creditos',
-      },
-      {
-        iconName: 'area_chart',
-        iconSet: 'rounded',
-        name: 'Inversiones',
-        href: '/inversiones',
+        name: 'Creditos-Inversiones',
+        href: '/finanzas/creditos-inversiones',
       },
       {
         iconName: 'account_balance',
         iconSet: 'rounded',
         name: 'Bancos',
-        href: '/bancos',
+        href: '/finanzas/bancos',
       },
     ],
   },

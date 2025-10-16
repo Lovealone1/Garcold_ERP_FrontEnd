@@ -1,5 +1,5 @@
 import salesApi from "../salesApi";
-import type { Proveedor, ProveedoresPage, ProveedorCreate, ProveedorUpdate } from "@/types/proveedores";
+import type { Proveedor, ProveedoresPage, ProveedorCreate, ProveedorUpdate, ProveedorLite } from "@/types/proveedores";
 
 export async function listProveedores(
     page = 1,
@@ -47,4 +47,12 @@ export async function updateProveedor(id: number, payload: ProveedorUpdate): Pro
 export async function deleteProveedor(id: number): Promise<Proveedor> {
     const { data } = await salesApi.delete(`/proveedores/eliminar/${id}`);
     return data as Proveedor;
+}
+
+export async function listProveedoresAll(nocacheToken?: number): Promise<ProveedorLite[]> {
+    const { data } = await salesApi.get("/proveedores/all", {
+        params: { _ts: nocacheToken ?? Date.now() },
+        headers: { "Cache-Control": "no-cache" },
+    });
+    return data as ProveedorLite[];
 }

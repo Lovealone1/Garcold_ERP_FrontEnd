@@ -14,12 +14,12 @@ import Skeleton from "@mui/material/Skeleton";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import * as React from "react";
-import type { Producto } from "@/types/productos";
+import type { ProductDTO } from "@/types/product";
 
 type Props = {
   open: boolean;
   onClose: () => void;
-  producto: Producto | null;
+  producto: ProductDTO | null;
   loading?: boolean;
 };
 
@@ -30,7 +30,7 @@ const money = new Intl.NumberFormat("es-CO", {
 });
 
 export default function ProductoView({ open, onClose, producto, loading }: Props) {
-  const stock = producto?.cantidad ?? 0;
+  const stock = producto?.quantity ?? 0;
   const inStock = stock > 0;
 
   return (
@@ -75,7 +75,7 @@ export default function ProductoView({ open, onClose, producto, loading }: Props
               <Stack direction="row" alignItems="center" justifyContent="space-between" gap={2}>
                 <Stack>
                   <Typography variant="h6" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
-                    {producto.referencia}
+                    {producto.reference}
                   </Typography>
                   <Typography variant="caption" sx={{ color: "var(--tg-muted)" }}>
                     ID interno: {producto.id}
@@ -97,12 +97,12 @@ export default function ProductoView({ open, onClose, producto, loading }: Props
                   {/* Estado activo */}
                   <Chip
                     size="small"
-                    label={producto.activo ? "Activo" : "Inactivo"}
+                    label={producto.is_active ? "Activo" : "Inactivo"}
                     sx={{
                       fontWeight: 600,
-                      bgcolor: producto.activo ? "primary.main" : "transparent",
-                      color: producto.activo ? "primary.contrastText" : "var(--tg-muted)",
-                      border: producto.activo ? "none" : "1px solid var(--tg-border)",
+                      bgcolor: producto.is_active ? "primary.main" : "transparent",
+                      color: producto.is_active ? "primary.contrastText" : "var(--tg-muted)",
+                      border: producto.is_active ? "none" : "1px solid var(--tg-border)",
                     }}
                   />
                 </Stack>
@@ -112,23 +112,23 @@ export default function ProductoView({ open, onClose, producto, loading }: Props
             {/* Datos: Label: Valor */}
             <Grid container spacing={2}>
               <Grid size={{ xs: 12 }}>
-                <InfoInline label="Descripción" value={producto.descripcion} />
+                <InfoInline label="Descripción" value={producto.description} />
               </Grid>
 
               <Grid size={{ xs: 12, sm: 6 }}>
-                <InfoInline label="Precio compra" value={money.format(producto.precio_compra)} />
+                <InfoInline label="Precio compra" value={money.format(producto.purchase_price)} />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <InfoInline label="Precio venta" value={money.format(producto.precio_venta)} />
+                <InfoInline label="Precio venta" value={money.format(producto.sale_price)} />
               </Grid>
 
               <Grid size={{ xs: 12, sm: 6 }}>
-                <InfoInline label="Stock" value={String(producto.cantidad)} />
+                <InfoInline label="Stock" value={String(producto.quantity)} />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
                 <InfoInline
                   label="Fecha de creación"
-                  value={format(new Date(producto.fecha_creacion), "dd MMM yyyy, HH:mm", { locale: es })}
+                  value={format(new Date(producto.created_at), "dd MMM yyyy, HH:mm", { locale: es })}
                 />
               </Grid>
             </Grid>

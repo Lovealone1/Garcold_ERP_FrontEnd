@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { fetchAllProducts } from "@/services/sales/productos.api"; // <- ruta nueva
-import type { ProductDTO } from "@/types/productos";
+import { fetchAllProducts } from "@/services/sales/product.api"; // <- ruta nueva
+import type { ProductDTO } from "@/types/product";
 
 type Filters = { q?: string; estado?: "activos" | "inactivos" };
 

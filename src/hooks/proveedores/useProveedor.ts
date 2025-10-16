@@ -1,28 +1,28 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
-import { getProveedorById } from "@/services/sales/proveedores.api";
-import type { Proveedor } from "@/types/proveedores";
+import { getSupplierById } from "@/services/sales/supplier.api";
+import type { Supplier } from "@/types/supplier";
 
-export function useProveedor(proveedorId: number | null) {
-  const [proveedor, setProveedor] = useState<Proveedor | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export function useSupplier(supplierId: number | null) {
+  const [supplier, setSupplier] = useState<Supplier | null>(null);
+  const [loading,  setLoading]  = useState(false);
+  const [error,    setError]    = useState<string | null>(null);
 
   const fetchIt = useCallback(async () => {
-    if (!proveedorId) return;
+    if (!supplierId) return;
     setLoading(true);
     setError(null);
     try {
-      const data = await getProveedorById(proveedorId);
-      setProveedor(data);
+      const data = await getSupplierById(supplierId);
+      setSupplier(data);
     } catch (e: any) {
-      setError(e?.message ?? "Error al cargar proveedor");
+      setError(e?.message ?? "Failed to load supplier");
     } finally {
       setLoading(false);
     }
-  }, [proveedorId]);
+  }, [supplierId]);
 
   useEffect(() => { fetchIt(); }, [fetchIt]);
 
-  return { proveedor, loading, error, refetch: fetchIt };
+  return { supplier, loading, error, refetch: fetchIt };
 }

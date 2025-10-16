@@ -1,4 +1,3 @@
-// features/clientes/ClienteView.tsx
 "use client";
 
 import Box from "@mui/material/Box";
@@ -14,13 +13,13 @@ import Chip from "@mui/material/Chip";
 import Skeleton from "@mui/material/Skeleton";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import type { Cliente } from "@/types/clientes";
+import type { Customer } from "@/types/customer";
 import * as React from "react";
 
 type Props = {
   open: boolean;
   onClose: () => void;
-  cliente: Cliente | null;
+  cliente: Customer | null;
   loading?: boolean;
 };
 
@@ -31,14 +30,14 @@ const money = new Intl.NumberFormat("es-CO", {
 });
 
 export default function ClienteView({ open, onClose, cliente, loading }: Props) {
-  const hasSaldo = (cliente?.saldo ?? 0) !== 0;
+  const hasSaldo = (cliente?.balance ?? 0) !== 0;
 
   return (
     <Dialog
       open={open}
       onClose={onClose}
       fullWidth
-      maxWidth="sm" // ← más angosto que "md"
+      maxWidth="sm"
       slotProps={{
         paper: {
           sx: {
@@ -75,7 +74,7 @@ export default function ClienteView({ open, onClose, cliente, loading }: Props) 
               <Stack direction="row" alignItems="center" justifyContent="space-between" gap={2}>
                 <Stack>
                   <Typography variant="h6" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
-                    {cliente.nombre}
+                    {cliente.name}
                   </Typography>
                   <Typography variant="caption" sx={{ color: "var(--tg-muted)" }}>
                     ID interno: {cliente.id}
@@ -95,7 +94,7 @@ export default function ClienteView({ open, onClose, cliente, loading }: Props) 
                   />
                   <Chip
                     size="small"
-                    label={money.format(cliente.saldo)}
+                    label={money.format(cliente.balance)}
                     sx={{
                       fontWeight: 600,
                       bgcolor: hasSaldo ? "error.main" : "transparent",
@@ -110,26 +109,26 @@ export default function ClienteView({ open, onClose, cliente, loading }: Props) 
             {/* Datos: Label: Valor (en línea) */}
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <InfoInline label="CC/NIT" value={cliente.cc_nit} />
+                <InfoInline label="CC/NIT" value={cliente.tax_id || "—"} />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <InfoInline label="Ciudad" value={cliente.ciudad} />
-              </Grid>
-
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <InfoInline label="Correo" value={cliente.correo || "—"} />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <InfoInline label="Celular" value={cliente.celular || "—"} />
+                <InfoInline label="Ciudad" value={cliente.city || "—"} />
               </Grid>
 
               <Grid size={{ xs: 12, sm: 6 }}>
-                <InfoInline label="Dirección" value={cliente.direccion} />
+                <InfoInline label="Correo" value={cliente.email || "—"} />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <InfoInline label="Celular" value={cliente.phone || "—"} />
+              </Grid>
+
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <InfoInline label="Dirección" value={cliente.address || "—"} />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
                 <InfoInline
                   label="Fecha de creación"
-                  value={format(new Date(cliente.fecha_creacion), "dd MMM yyyy, HH:mm", { locale: es })}
+                  value={format(new Date(cliente.created_at), "dd MMM yyyy, HH:mm", { locale: es })}
                 />
               </Grid>
             </Grid>

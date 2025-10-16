@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import type { Cliente } from "@/types/clientes";
+import type { Cliente } from "@/types/customer";
 
 type Props = {
     cliente: Cliente;

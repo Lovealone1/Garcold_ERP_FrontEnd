@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
-import { getProductById } from "@/services/sales/productos.api";
-import type { ProductDTO } from "@/types/productos";
+import { getProductById } from "@/services/sales/product.api";
+import type { ProductDTO } from "@/types/product";
 
 export function useProducto(productoId: number | null) {
     const [producto, setProducto] = useState<ProductDTO | null>(null);

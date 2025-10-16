@@ -1,4 +1,4 @@
-import type { Cliente } from "@/types/clientes";
+import type { Cliente } from "@/types/customer";
 
 export enum Regimen {
     COMUN = "COMUN",

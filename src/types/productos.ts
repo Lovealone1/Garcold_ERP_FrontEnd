@@ -1,36 +1,32 @@
-// types/productos.ts
-
-export interface Producto {
+import { PageDTO } from "./page";
+// === ProductDTO ===
+export interface ProductDTO {
+  /** Full product listing row */
   id: number;
-  referencia: string;
-  descripcion: string;
-  cantidad: number;        // stock
-  precio_compra: number;
-  precio_venta: number;
-  activo: boolean;
-  fecha_creacion: string;  // ISO
+  reference: string;
+  description: string;
+  quantity: number;
+  purchase_price: number;
+  sale_price: number;
+  is_active: boolean;
+  created_at: string; // ISO datetime
 }
 
-export interface ProductosPage {
-  items: Producto[];
-  page: number;
-  page_size: number;
-  total: number;
-  total_pages: number;
-  has_next: boolean;
-  has_prev: boolean;
-}
+// PageDTO[ProductDTO]
+export type ProductPageDTO = PageDTO<ProductDTO>;
 
-export interface ProductoVentasDTO {
+// === SaleProductsDTO ===
+// Nota: backend usa la clave `sold_quanity` (sic). Respeto el nombre tal cual.
+export interface SaleProductsDTO {
   id: number;
-  referencia: string;
-  descripcion: string;
-  cantidad_vendida: number;
-  precio_compra: number;
-  precio_venta: number;
+  reference: string;
+  description: string;
+  sold_quanity: number; // cantidad vendida
+  purchase_price: number;
+  sale_price: number;
 }
 
-export type ProductoCreate = Omit<Producto, "id" | "fecha_creacion">;
-export type ProductoUpdate = Omit<Producto, "id" | "fecha_creacion">;
-
-export type NuevoProducto = ProductoCreate;
+// Helpers de creación/actualización si los necesitas en UI
+export type ProductCreate = Omit<ProductDTO, "id" | "created_at">;
+export type ProductUpdate = Omit<ProductDTO, "id" |"is_active" |"created_at">;
+export type NewProduct = ProductCreate;

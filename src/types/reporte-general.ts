@@ -1,147 +1,152 @@
-// reporte-general.d.ts
+// reporte-general.d.ts (refactor)
 
+// Utilidades
 export type Bucket = "week" | "month" | "year" | "all";
 export type Granularity = "day" | "month" | "year";
+/** ISO date string "YYYY-MM-DD" o "YYYY-MM" o "YYYY" según el caso */
+export type DateISO = string;
 
-export interface SolicitudMetaDTO {
-    bucket: Bucket;
-    pivot?: string;      // YYYY-MM-DD
-    date_from?: string;  // YYYY-MM-DD
-    date_to?: string;    // YYYY-MM-DD
-    year?: number;
-    month?: number;
-}
-
-export interface SegmentosMetaDTO {
-    bucket: Bucket;
-    granularity: Granularity;
-    from_: string; // YYYY-MM-DD | YYYY-MM
-    to: string;    // YYYY-MM-DD | YYYY-MM
-    segments: number;
+// Meta de solicitud (Pydantic BaseModel en backend → JSON aquí)
+export interface RequestMetaDTO {
+  bucket: Bucket;
+  pivot?: DateISO;
+  date_from?: DateISO;
+  date_to?: DateISO;
+  year?: number;
+  month?: number;
 }
 
-/* VENTAS */
-export interface VentasSerieItemDTO {
-    fecha: string; // YYYY-MM-DD | YYYY-MM | YYYY
-    total: number;
-    saldo_restante: number;
-}
-export interface VentasSeriesDTO {
-    meta: SegmentosMetaDTO;
-    series: VentasSerieItemDTO[];
-}
-export interface CXCItemDTO {
-    cliente: string;
-    total: number;
-    saldo_restante: number;
-    fecha: string; // YYYY-MM-DD
-}
-export interface VentasBloqueDTO {
-    total_ventas: number;
-    total_creditos: number;
-    series: VentasSeriesDTO;
-    cuentas_por_cobrar: CXCItemDTO[];
+// Meta de segmentación
+export interface SegmentMetaDTO {
+  bucket: Bucket;
+  granularity: Granularity;
+  from_: string;
+  to: string;
+  segments: number;
 }
 
-/* COMPRAS */
-export interface ComprasSerieItemDTO {
-    fecha: string; // YYYY-MM-DD | YYYY-MM | YYYY
-    total: number;
-    saldo: number;
+/* SALES */
+export interface SalesSeriesItemDTO {
+  date: string;
+  total: number;
+  remaining_balance: number;
 }
-export interface ComprasSeriesDTO {
-    meta: SegmentosMetaDTO;
-    series: ComprasSerieItemDTO[];
+export interface SalesSeriesDTO {
+  meta: SegmentMetaDTO;
+  series: SalesSeriesItemDTO[];
 }
-export interface CXPItemDTO {
-    proveedor: string;
-    total: number;
-    saldo: number;
-    fecha: string; // YYYY-MM-DD
+export interface ARItemDTO {
+  customer: string;
+  total: number;
+  remaining_balance: number;
+  date: string;
 }
-export interface ComprasBloqueDTO {
-    total_compras: number;
-    total_por_pagar: number;
-    series: ComprasSeriesDTO;
-    cuentas_por_pagar: CXPItemDTO[];
-}
-
-/* GASTOS */
-export interface GastosSerieItemDTO {
-    fecha: string; // YYYY-MM-DD | YYYY-MM | YYYY
-    monto: number;
-}
-export interface GastosSeriesDTO {
-    meta: SegmentosMetaDTO;
-    series: GastosSerieItemDTO[];
-}
-export interface GastosBloqueDTO {
-    total_gastos: number;
-    series: GastosSeriesDTO;
+export interface SalesBlockDTO {
+  total_sales: number;
+  total_credit: number;
+  series: SalesSeriesDTO;
+  accounts_receivable: ARItemDTO[];
 }
 
-/* UTILIDAD */
-export interface UtilidadSerieItemDTO {
-    fecha: string; // YYYY-MM-DD | YYYY-MM | YYYY
-    utilidad: number;
+/* PURCHASES */
+export interface PurchasesSeriesItemDTO {
+  date: string;
+  total: number;
+  balance: number;
 }
-export interface UtilidadSeriesDTO {
-    meta: SegmentosMetaDTO;
-    series: UtilidadSerieItemDTO[];
+export interface PurchasesSeriesDTO {
+  meta: SegmentMetaDTO;
+  series: PurchasesSeriesItemDTO[];
 }
-export interface UtilidadBloqueDTO {
-    total_utilidad: number;
-    series: UtilidadSeriesDTO;
+export interface APItemDTO {
+  supplier: string;
+  total: number;
+  balance: number;
+  date: string;
 }
-
-/* BANCOS */
-export interface BancoItemDTO {
-    nombre: string;
-    saldo: number;
-}
-export interface BancosResumenDTO {
-    bancos: BancoItemDTO[];
-    total: number;
-}
-
-/* TOP PRODUCTOS */
-export interface TopProductoItemDTO {
-    producto_id: number;
-    producto: string;
-    cantidad_total: number;
+export interface PurchasesBlockDTO {
+  total_purchases: number;
+  total_payables: number;
+  series: PurchasesSeriesDTO;
+  accounts_payable: APItemDTO[];
 }
 
-/* CRÉDITOS */
-export interface CreditoItemDTO {
-    nombre: string;
-    monto: number;
-    fecha_creacion: string; // YYYY-MM-DD
+/* EXPENSES */
+export interface ExpensesSeriesItemDTO {
+  date: string;
+  amount: number;
 }
-export interface CreditosResumenDTO {
-    creditos: CreditoItemDTO[];
-    total: number;
+export interface ExpensesSeriesDTO {
+  meta: SegmentMetaDTO;
+  series: ExpensesSeriesItemDTO[];
 }
-
-/* INVERSIONES */
-export interface InversionItemDTO {
-    nombre: string;
-    saldo: number;
-    fecha_vencimiento: string | null; // YYYY-MM-DD | null
-}
-export interface InversionesResumenDTO {
-    inversiones: InversionItemDTO[];
-    total: number;
+export interface ExpensesBlockDTO {
+  total_expenses: number;
+  series: ExpensesSeriesDTO;
 }
 
-/* RESPUESTA FINAL */
-export interface ReporteFinalDTO {
-    meta: SolicitudMetaDTO;
-    ventas: VentasBloqueDTO;
-    compras: ComprasBloqueDTO;
-    gastos: GastosBloqueDTO;
-    utilidad: UtilidadBloqueDTO;
-    bancos: BancosResumenDTO;
-    creditos: CreditosResumenDTO;
-    inversiones: InversionesResumenDTO;
-    top_productos?: TopProductoItemDTO[] | null;
+/* PROFIT */
+export interface ProfitSeriesItemDTO {
+  date: string;
+  profit: number;
+}
+export interface ProfitSeriesDTO {
+  meta: SegmentMetaDTO;
+  series: ProfitSeriesItemDTO[];
+}
+export interface ProfitBlockDTO {
+  total_profit: number;
+  series: ProfitSeriesDTO;
+}
+
+/* BANKS */
+export interface BankItemDTO {
+  name: string;
+  balance: number;
+}
+export interface BanksSummaryDTO {
+  banks: BankItemDTO[];
+  total: number;
+}
+
+/* TOP PRODUCTS */
+export interface TopProductItemDTO {
+  product_id: number;
+  product: string;
+  total_quantity: number;
+}
+
+/* CREDITS */
+export interface CreditItemDTO {
+  name: string;
+  amount: number;
+  created_at: DateISO; // "YYYY-MM-DD"
+}
+export interface CreditsSummaryDTO {
+  credits: CreditItemDTO[];
+  total: number;
+}
+
+/* INVESTMENTS */
+export interface InvestmentItemDTO {
+  name: string;
+  balance: number;
+  due_date: string | null; // "YYYY-MM-DD" | null
+}
+export interface InvestmentsSummaryDTO {
+  investments: InvestmentItemDTO[];
+  total: number;
+}
+
+/* FINAL RESPONSE */
+export interface FinalReportDTO {
+  meta: Record<string, any>; // Dict[str, Any] en backend
+  sales: SalesBlockDTO;
+  purchases: PurchasesBlockDTO;
+  expenses: ExpensesBlockDTO;
+  profit: ProfitBlockDTO;
+  banks: BanksSummaryDTO;
+  credits: CreditsSummaryDTO;
+  investments: InvestmentsSummaryDTO;
+  top_products?: TopProductItemDTO[] | null;
 }

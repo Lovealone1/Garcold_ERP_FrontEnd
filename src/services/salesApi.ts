@@ -1,6 +1,6 @@
 import api from "./api";
 
-const SALES_PREFIX = "/sales-api/v1";
+const SALES_PREFIX = "/api/v1";
 const base = (api.defaults.baseURL ?? "").replace(/\/+$/g, "");
 const hasPrefixInBase = base.endsWith(SALES_PREFIX);
 

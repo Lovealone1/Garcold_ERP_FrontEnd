@@ -6,8 +6,8 @@ import ProductoForm from "@/features/productos/ProductoForm";
 import ProductoView from "@/features/productos/ProductoView";
 import { useProductos } from "@/hooks/productos/useProductos";
 import { useProducto } from "@/hooks/productos/useProducto";
-import { createProducto, updateProducto, deleteProducto, toggleProductoActivo } from "@/services/sales/productos.api";
-import type { Producto, ProductoCreate, ProductoUpdate } from "@/types/productos";
+import { createProduct, updateProduct, deleteProduct, toggleProductActive } from "@/services/sales/productos.api";
+import type { ProductDTO, ProductCreate, ProductUpdate } from "@/types/productos";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 
 const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
@@ -57,10 +57,10 @@ export default function ProductosPage() {
   const frameVars: CSSProperties = { ["--content-x" as any]: "16px" };
 
   // Crear
-  async function handleCreateSubmit(data: ProductoCreate) {
+  async function handleCreateSubmit(payload: ProductCreate | ProductUpdate) {
     setCreating(true);
     try {
-      await createProducto(data);
+      await createProduct(payload as ProductCreate);
       setOpenCreate(false);
       setPage(1);
       reload?.();
@@ -73,12 +73,12 @@ export default function ProductosPage() {
   }
 
   // Editar
-  async function handleEditSubmit(data: ProductoUpdate) {
+  async function handleEditSubmit(payload: ProductCreate | ProductUpdate) {
     if (!editId) return;
     try {
-      await updateProducto(editId, data);
+      await updateProduct(editId, payload as ProductUpdate);
       setOpenEdit(false);
-      upsertOne({ id: editId, ...data });
+      upsertOne({ id: editId, ...(payload as ProductUpdate) });
       reload?.();
       success("Producto actualizado");
     } catch (e: any) {
@@ -91,7 +91,7 @@ export default function ProductosPage() {
     if (!deleteId) return;
     setDeleting(true);
     try {
-      await deleteProducto(deleteId);
+      await deleteProduct(deleteId);
       setOpenDelete(false);
       setDeleteId(null);
       reload?.();
@@ -106,15 +106,16 @@ export default function ProductosPage() {
   // Toggle activo
   async function handleToggleActivo(id: number, current: boolean) {
     try {
-      const res = await toggleProductoActivo(id);
-      const activo = res.activo ?? !current;
-      upsertOne({ id, activo });         // actualiza la fila
-      if (viewId === id) refetchView();  // <-- vuelve a cargar el detalle si está abierto
-      success(activo ? "Producto activado" : "Producto desactivado");
+      const res = await toggleProductActive(id);
+      const isActive = res.is_active ?? !current;
+      upsertOne({ id, is_active: isActive }); // actualiza la fila
+      if (viewId === id) refetchView();
+      success(isActive ? "Producto activado" : "Producto desactivado");
     } catch (e: any) {
       err(e?.response?.data?.detail ?? "No se pudo cambiar el estado");
     }
   }
+
 
   function handleClearFilters() {
     setFilters({ q: "", estado: undefined });
@@ -211,16 +212,16 @@ export default function ProductosPage() {
                     <td colSpan={7} className="px-4 py-10 text-center text-tg-muted">Sin registros</td>
                   </tr>
                 ) : (
-                  rows.map((r: Producto) => (
+                  rows.map((r: ProductDTO) => (
                     <tr key={r.id} className="border-t border-tg hover:bg-black/5 dark:hover:bg-white/5">
-                      <td className="px-4 py-3">{r.referencia}</td>
-                      <td className="px-4 py-3">{r.descripcion}</td>
-                      <td className="px-4 py-3 text-right">{r.cantidad ?? 0}</td>
-                      <td className="px-4 py-3 text-right">{money.format(r.precio_compra)}</td>
-                      <td className="px-4 py-3 text-right">{money.format(r.precio_venta)}</td>
+                      <td className="px-4 py-3">{r.reference}</td>
+                      <td className="px-4 py-3">{r.description}</td>
+                      <td className="px-4 py-3 text-right">{r.quantity ?? 0}</td>
+                      <td className="px-4 py-3 text-right">{money.format(r.purchase_price)}</td>
+                      <td className="px-4 py-3 text-right">{money.format(r.sale_price)}</td>
                       <td className="px-4 py-3 text-center">
-                        <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${r.activo ? "bg-green-600/15 text-green-700 dark:text-green-300" : "bg-red-600/15 text-red-700 dark:text-red-300"}`}>
-                          {r.activo ? "Activo" : "Inactivo"}
+                        <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${r.is_active ? "bg-green-600/15 text-green-700 dark:text-green-300" : "bg-red-600/15 text-red-700 dark:text-red-300"}`}>
+                          {r.is_active ? "Activo" : "Inactivo"}
                         </span>
                       </td>
                       <td className="px-2 py-2">
@@ -246,14 +247,14 @@ export default function ProductosPage() {
                           {/* Activar/Desactivar */}
                           <button
                             className="p-2 rounded-full hover:bg-[color-mix(in_srgb,var(--tg-primary)_22%,transparent)]"
-                            aria-label={r.activo ? "desactivar" : "activar"}
-                            onClick={() => handleToggleActivo(r.id, r.activo)}
-                            title={r.activo ? "Desactivar" : "Activar"}
+                            aria-label={r.is_active ? "desactivar" : "activar"}
+                            onClick={() => handleToggleActivo(r.id, r.is_active)}
+                            title={r.is_active ? "Desactivar" : "Activar"}
                           >
                             <MaterialIcon
-                              name={r.activo ? "toggle_on" : "toggle_off"}
+                              name={r.is_active ? "toggle_on" : "toggle_off"}
                               size={22}
-                              className={r.activo ? "text-tg-primary" : "text-tg-muted"}
+                              className={r.is_active ? "text-tg-primary" : "text-tg-muted"}
                             />
                           </button>
 
@@ -383,12 +384,12 @@ export default function ProductosPage() {
           onSubmit={handleEditSubmit}
           loading={editLoading}
           defaults={editProducto ? {
-            referencia: editProducto.referencia,
-            descripcion: editProducto.descripcion,
-            cantidad: editProducto.cantidad ?? 0,
-            precio_compra: editProducto.precio_compra,
-            precio_venta: editProducto.precio_venta,
-            activo: editProducto.activo,
+            reference: editProducto.reference,
+            descripcion: editProducto.description,
+            quantity: editProducto.quantity ?? 0,
+            purchase_price: editProducto.purchase_price,
+            sale_price: editProducto.sale_price,
+            is_active: editProducto.is_active,
           } : undefined}
         />
       )}

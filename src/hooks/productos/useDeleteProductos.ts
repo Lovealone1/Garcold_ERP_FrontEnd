@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { deleteProducto } from "@/services/sales/productos.api";
+import { deleteProduct } from "@/services/sales/productos.api";
 
 export function useDeleteProducto() {
   const [loading, setLoading] = useState(false);
@@ -10,7 +10,7 @@ export function useDeleteProducto() {
     setLoading(true);
     setError(null);
     try {
-      const res = await deleteProducto(id);
+      const res = await deleteProduct(id);
       return res;
     } catch (e: any) {
       setError(e?.message ?? "Error eliminando producto");

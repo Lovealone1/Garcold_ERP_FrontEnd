@@ -2,11 +2,11 @@
 "use client";
 import * as React from "react";
 import { LineChart, lineElementClasses } from "@mui/x-charts/LineChart";
-import type { VentasBloqueDTO, UtilidadBloqueDTO } from "@/types/reporte-general";
+import type { SalesBlockDTO, ProfitBlockDTO } from "@/types/reporte-general";
 
 type Props = {
-    ventas: VentasBloqueDTO;
-    utilidades: UtilidadBloqueDTO;
+    ventas: SalesBlockDTO;
+    utilidades: ProfitBlockDTO;
     height?: number;
     compactLabels?: boolean;
     widthPercent?: number;
@@ -41,11 +41,11 @@ export default function VentasAreaChart({
     }, []);
 
     const labels = React.useMemo(
-        () => ventas.series.series.map(p => labelOf(p.fecha, compactLabels)),
+        () => ventas.series.series.map(p => labelOf(p.date, compactLabels)),
         [ventas.series.series, compactLabels],
     );
     const ventasData = React.useMemo(() => ventas.series.series.map(p => p.total ?? 0), [ventas.series.series]);
-    const utilidadesData = React.useMemo(() => utilidades.series.series.map(p => p.utilidad ?? 0), [utilidades.series.series]);
+    const utilidadesData = React.useMemo(() => utilidades.series.series.map(p => p.profit ?? 0), [utilidades.series.series]);
 
     const maxY = Math.max(1, ...ventasData, ...utilidadesData);
 

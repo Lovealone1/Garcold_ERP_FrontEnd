@@ -1,11 +1,10 @@
-// components/charts/GastosLineChart.tsx
 "use client";
 import * as React from "react";
 import { LineChart, lineElementClasses } from "@mui/x-charts/LineChart";
-import type { GastosBloqueDTO } from "@/types/reporte-general";
+import type { ExpensesBlockDTO } from "@/types/reporte-general";
 
 type Props = {
-    gastos: GastosBloqueDTO;
+    gastos: ExpensesBlockDTO;
     height?: number;
     widthPercent?: number;   // 10..100
     compactLabels?: boolean; // default true
@@ -35,11 +34,11 @@ export default function GastosLineChart({
     }, []);
 
     const labels = React.useMemo(
-        () => gastos.series.series.map(p => labelOf(p.fecha, compactLabels)),
+        () => gastos.series.series.map(p => labelOf(p.date, compactLabels)),
         [gastos.series.series, compactLabels]
     );
     const valores = React.useMemo(
-        () => gastos.series.series.map(p => p.monto ?? 0),
+        () => gastos.series.series.map(p => p.amount ?? 0),
         [gastos.series.series]
     );
 

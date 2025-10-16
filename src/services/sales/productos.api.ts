@@ -1,4 +1,3 @@
-// services/sales/products.api.ts
 import salesApi from "../salesApi";
 import type {
     ProductDTO,

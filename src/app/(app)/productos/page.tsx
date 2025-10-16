@@ -4,6 +4,7 @@ import { useMemo, useState, CSSProperties } from "react";
 import { MaterialIcon } from "@/components/ui/material-icon";
 import ProductoForm from "@/features/productos/ProductoForm";
 import ProductoView from "@/features/productos/ProductoView";
+import ProductImagesModal from "@/features/productos/ProductImagesModal";
 import { useProductos } from "@/hooks/productos/useProductos";
 import { useProducto } from "@/hooks/productos/useProducto";
 import { createProduct, updateProduct, deleteProduct, toggleProductActive } from "@/services/sales/productos.api";
@@ -18,7 +19,7 @@ export default function ProductosPage() {
     page, pageSize, total, totalPages, hasPrev, hasNext,
     loading, setPage,
     filters, setFilters,
-    options, // reservado si luego agregas más filtros
+    options,
     reload,
     upsertOne
   } = useProductos(10);
@@ -43,6 +44,10 @@ export default function ProductosPage() {
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [openDelete, setOpenDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // Media
+  const [mediaProductId, setMediaProductId] = useState<number | null>(null);
+  const [openMedia, setOpenMedia] = useState(false);
 
   const from = useMemo(() => (total === 0 ? 0 : (page - 1) * pageSize + 1), [page, pageSize, total]);
   const to = useMemo(() => Math.min(page * pageSize, total), [page, pageSize, total]);
@@ -108,14 +113,13 @@ export default function ProductosPage() {
     try {
       const res = await toggleProductActive(id);
       const isActive = res.is_active ?? !current;
-      upsertOne({ id, is_active: isActive }); // actualiza la fila
+      upsertOne({ id, is_active: isActive });
       if (viewId === id) refetchView();
       success(isActive ? "Producto activado" : "Producto desactivado");
     } catch (e: any) {
       err(e?.response?.data?.detail ?? "No se pudo cambiar el estado");
     }
   }
-
 
   function handleClearFilters() {
     setFilters({ q: "", estado: undefined });
@@ -202,7 +206,7 @@ export default function ProductosPage() {
                     <tr key={`sk-${i}`} className="border-t border-tg">
                       {Array.from({ length: 7 }).map((__, j) => (
                         <td key={j} className="px-4 py-3">
-                          <div className="h-4 w-full animate-pulse rounded bg-black/10 dark:bg-white/10" />
+                          <div className="h-4 w-full animate-pulse rounded bg-black/10 dark:bg.white/10 dark:bg-white/10" />
                         </td>
                       ))}
                     </tr>
@@ -242,6 +246,16 @@ export default function ProductosPage() {
                             onClick={() => { setEditId(r.id); setOpenEdit(true); }}
                           >
                             <MaterialIcon name="edit" size={18} />
+                          </button>
+
+                          {/* Media */}
+                          <button
+                            className="p-2 rounded-full text-tg-primary hover:bg-[color-mix(in_srgb,var(--tg-primary)_22%,transparent)]"
+                            aria-label="media"
+                            title="Imágenes"
+                            onClick={() => { setMediaProductId(r.id); setOpenMedia(true); }}
+                          >
+                            <MaterialIcon name="photo_camera" size={18} />
                           </button>
 
                           {/* Activar/Desactivar */}
@@ -286,7 +300,6 @@ export default function ProductosPage() {
             </div>
 
             <nav className="flex items-center gap-1">
-              {/* Ir al inicio */}
               <button
                 disabled={!hasPrev}
                 onClick={() => setPage(1)}
@@ -297,7 +310,6 @@ export default function ProductosPage() {
                 <MaterialIcon name="first_page" size={18} />
               </button>
 
-              {/* Anterior */}
               <button
                 disabled={!hasPrev}
                 onClick={() => setPage(page - 1)}
@@ -308,7 +320,6 @@ export default function ProductosPage() {
                 <MaterialIcon name="chevron_left" size={18} />
               </button>
 
-              {/* Números */}
               {Array.from({ length: end - start + 1 }, (_, i) => start + i).map((p) => {
                 const active = p === page;
                 return (
@@ -326,7 +337,6 @@ export default function ProductosPage() {
 
               {end < totalPages && <span className="px-1">…</span>}
 
-              {/* Siguiente */}
               <button
                 disabled={!hasNext}
                 onClick={() => setPage(page + 1)}
@@ -337,7 +347,6 @@ export default function ProductosPage() {
                 <MaterialIcon name="chevron_right" size={18} />
               </button>
 
-              {/* Ir al final */}
               <button
                 disabled={!hasNext}
                 onClick={() => setPage(totalPages)}
@@ -391,6 +400,15 @@ export default function ProductosPage() {
             sale_price: editProducto.sale_price,
             is_active: editProducto.is_active,
           } : undefined}
+        />
+      )}
+
+      {/* Media */}
+      {openMedia && mediaProductId !== null && (
+        <ProductImagesModal
+          open={openMedia}
+          productId={mediaProductId}
+          onClose={() => setOpenMedia(false)}
         />
       )}
 

@@ -1,72 +1,84 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { productosVendidosEnRango } from "@/services/sales/productos.api";
-import type { ProductoVentasDTO } from "@/types/productos";
+import { useCallback, useEffect, useRef, useState, useMemo } from "react";
+import { soldProductsInRange } from "@/services/sales/productos.api";
+import type { SaleProductsDTO } from "@/types/productos";
 
 export type UseProductosVendidosParams = {
-    date_from: string | Date;
-    date_to: string | Date;
-    product_ids: number[];
-    enabled?: boolean;       // auto-disparo en cambios
-    nocacheToken?: number;   // opcional para forzar no-cache
+  date_from: string | Date;
+  date_to: string | Date;
+  product_ids: number[];
+  enabled?: boolean;
+  nocacheToken?: number;
 };
 
 type State = {
-    data: ProductoVentasDTO[] | null;
-    loading: boolean;
-    error: unknown;
-    triggeredAt: Date | null;
+  data: SaleProductsDTO[] | null;
+  loading: boolean;
+  error: unknown;
+  triggeredAt: Date | null;
 };
 
 export default function useProductosVendidos({
-    date_from,
-    date_to,
-    product_ids,
-    enabled = true,
-    nocacheToken,
+  date_from,
+  date_to,
+  product_ids,
+  enabled = true,
+  nocacheToken,
 }: UseProductosVendidosParams) {
-    const [state, setState] = useState<State>({
-        data: null,
-        loading: false,
-        error: null,
-        triggeredAt: null,
-    });
+  const [state, setState] = useState<State>({
+    data: null,
+    loading: false,
+    error: null,
+    triggeredAt: null,
+  });
 
-    const isMounted = useRef(true);
-    useEffect(() => () => { isMounted.current = false; }, []);
+  const mountedRef = useRef(true);
+  const abortRef = useRef<AbortController | null>(null);
 
-    const fire = useCallback(async () => {
-        if (!product_ids?.length) {
-            setState((s) => ({ ...s, data: [], loading: false, error: null, triggeredAt: new Date() }));
-            return [];
-        }
-        setState((s) => ({ ...s, loading: true, error: null }));
+  useEffect(() => () => { mountedRef.current = false; abortRef.current?.abort(); }, []);
 
-        try {
-            const data = await productosVendidosEnRango(
-                { date_from, date_to, product_ids },
-                nocacheToken
-            );
-            if (!isMounted.current) return [];
-            setState({ data, loading: false, error: null, triggeredAt: new Date() });
-            return data;
-        } catch (err) {
-            if (!isMounted.current) return [];
-            setState((s) => ({ ...s, loading: false, error: err }));
-            return [];
-        }
-    }, [date_from, date_to, JSON.stringify([...product_ids].sort()), nocacheToken]);
+  // clave estable para deps
+  const idsKey = useMemo(
+    () => (product_ids && product_ids.length ? [...product_ids].sort((a,b)=>a-b).join(",") : ""),
+    [product_ids]
+  );
 
-    useEffect(() => {
-        if (enabled) void fire();
-    }, [enabled, fire]);
+  const fire = useCallback(async () => {
+    if (!product_ids?.length) {
+      setState((s) => ({ ...s, data: [], loading: false, error: null, triggeredAt: new Date() }));
+      return [];
+    }
 
-    return {
-        data: state.data,
-        loading: state.loading,
-        error: state.error,
-        triggeredAt: state.triggeredAt,
-        reload: fire,
-    };
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    setState((s) => ({ ...s, loading: true, error: null }));
+    try {
+      const data = await soldProductsInRange(
+        { date_from, date_to, product_ids },
+        { nocacheToken: nocacheToken ?? Date.now(), signal: controller.signal }
+      );
+      if (!mountedRef.current || controller.signal.aborted) return [];
+      setState({ data, loading: false, error: null, triggeredAt: new Date() });
+      return data;
+    } catch (err) {
+      if (!mountedRef.current || (err as any)?.name === "CanceledError") return [];
+      setState((s) => ({ ...s, loading: false, error: err }));
+      return [];
+    }
+  }, [date_from, date_to, idsKey, nocacheToken, product_ids]);
+
+  useEffect(() => {
+    if (enabled) void fire();
+  }, [enabled, fire]);
+
+  return {
+    data: state.data,
+    loading: state.loading,
+    error: state.error,
+    triggeredAt: state.triggeredAt,
+    reload: fire,
+  };
 }

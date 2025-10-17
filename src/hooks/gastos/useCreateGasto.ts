@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import type { GastoCreate, GastoCreated } from "@/types/gastos";
+import type { GastoCreate, GastoCreated } from "@/types/expense";
 import { createGasto } from "@/services/sales/gastos.api";
 
 export function useCreateGasto(onCreated?: (g: GastoCreated) => void) {

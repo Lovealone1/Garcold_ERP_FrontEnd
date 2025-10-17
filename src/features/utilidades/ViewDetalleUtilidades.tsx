@@ -13,8 +13,8 @@ import Typography from "@mui/material/Typography";
 import Divider from "@mui/material/Divider";
 
 import { useVenta } from "@/hooks/ventas/useVenta";
-import { useDetallesUtilidad } from "@/hooks/utilidades/useDetallesUtilidad";
-import type { DetalleUtilidad } from "@/types/utilidades";
+import { useProfitDetails } from "@/hooks/utilidades/useDetallesUtilidad";
+import type { ProfitDetail } from "@/types/profit";
 
 type Props = {
     open: boolean;
@@ -30,11 +30,16 @@ const money = new Intl.NumberFormat("es-CO", {
 
 export default function UtilidadView({ open, onClose, ventaId }: Props) {
     const { venta, loading: loadingVenta } = useVenta(open ? ventaId : null);
-    const { detalles, loading: loadingDet } = useDetallesUtilidad(ventaId, { enabled: open && !!ventaId });
 
+    // ⬇️ refactor: llamado al nuevo hook
+    const { details, loading: loadingDet } = useProfitDetails(ventaId, {
+        enabled: open && !!ventaId,
+    });
+
+    // ⬇️ refactor: campos en inglés
     const totalUtilidad = useMemo(
-        () => detalles.reduce((acc, d) => acc + (d.total_utilidad ?? 0), 0),
-        [detalles]
+        () => details.reduce((acc, d) => acc + (d.profit_total ?? 0), 0),
+        [details]
     );
 
     return (
@@ -72,14 +77,14 @@ export default function UtilidadView({ open, onClose, ventaId }: Props) {
                     <Stack direction="row" alignItems="flex-start" justifyContent="space-between" gap={2}>
                         <Box>
                             <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
-                                {venta?.cliente ?? (loadingVenta ? "Cargando…" : "—")}
+                                {venta?.customer ?? (loadingVenta ? "Cargando…" : "—")}
                             </Typography>
                             <Typography variant="caption" sx={{ opacity: 0.8, display: "block" }}>
                                 ID venta: {venta?.id ?? (loadingVenta ? "…" : "—")}
                             </Typography>
-                            {venta?.fecha && (
+                            {venta?.created_at && (
                                 <Typography variant="caption" sx={{ opacity: 0.7, display: "block", mt: 0.5 }}>
-                                    Fecha: {new Date(venta.fecha).toLocaleString()}
+                                    Fecha: {new Date(venta.created_at).toLocaleString()}
                                 </Typography>
                             )}
                         </Box>
@@ -130,12 +135,12 @@ export default function UtilidadView({ open, onClose, ventaId }: Props) {
                     {/* Body */}
                     {loadingDet ? (
                         Array.from({ length: 4 }).map((_, i) => <RowSkeleton key={i} />)
-                    ) : detalles.length === 0 ? (
+                    ) : details.length === 0 ? (
                         <Box sx={{ px: 2, py: 3, textAlign: "center", color: "var(--tg-muted)" }}>
                             Sin detalles de utilidad
                         </Box>
                     ) : (
-                        detalles.map((d: DetalleUtilidad, idx) => (
+                        details.map((d: ProfitDetail, idx) => (
                             <Box
                                 key={idx}
                                 sx={{
@@ -148,27 +153,27 @@ export default function UtilidadView({ open, onClose, ventaId }: Props) {
                                 }}
                             >
                                 <Typography variant="body2">
-                                    {d.referencia ? `${d.referencia} — ` : ""}
-                                    {d.descripcion ?? ""}
+                                    {d.reference ? `${d.reference} — ` : ""}
+                                    {d.description ?? ""}
                                 </Typography>
                                 <Typography variant="body2" sx={{ textAlign: "right" }}>
-                                    {money.format(d.precio_compra)}
+                                    {money.format(d.purchase_price)}
                                 </Typography>
                                 <Typography variant="body2" sx={{ textAlign: "right" }}>
-                                    {money.format(d.precio_venta)}
+                                    {money.format(d.sale_price)}
                                 </Typography>
                                 <Typography variant="body2" sx={{ textAlign: "right" }}>
-                                    {d.cantidad}
+                                    {d.quantity}
                                 </Typography>
                                 <Typography variant="body2" sx={{ textAlign: "right", fontWeight: 600 }}>
-                                    {money.format(d.total_utilidad)}
+                                    {money.format(d.profit_total)}
                                 </Typography>
                             </Box>
                         ))
                     )}
 
                     {/* Footer total */}
-                    {!loadingDet && detalles.length > 0 && (
+                    {!loadingDet && details.length > 0 && (
                         <>
                             <Divider sx={{ borderColor: "var(--panel-border)" }} />
                             <Box
@@ -212,7 +217,7 @@ function ChipBox({
     bg,
     children,
 }: {
-    label: string;        // ahora se muestra en el chip
+    label: string;
     color: string;
     bg: string;
     children: React.ReactNode;

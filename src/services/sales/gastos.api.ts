@@ -1,5 +1,5 @@
 import salesApi from "../salesApi";
-import type { Gasto, GastosPage, GastoCreate, GastoCreated } from "@/types/gastos";
+import type { Gasto, GastosPage, GastoCreate, GastoCreated } from "@/types/expense";
 
 export async function listGastos(
     page = 1,

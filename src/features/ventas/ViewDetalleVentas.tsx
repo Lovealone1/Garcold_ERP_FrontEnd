@@ -15,7 +15,7 @@ import type { Sale } from "@/types/sale";
 import { getSaleById } from "@/services/sales/sale.api";
 import { useVentaDetalles } from "@/hooks/ventas/useVentaDetalles";
 import type { SaleItemView } from "@/types/sale";
-import { useUtilidad } from "@/hooks/utilidades/useUtilidad";
+import { useProfit } from "@/hooks/utilidades/useUtilidad";
 
 type Props = {
     open: boolean;
@@ -57,7 +57,7 @@ export default function VentaView({ open, onClose, venta: ventaProp, ventaId }: 
 
     const { items, loading: loadingDetalles } = useVentaDetalles(venta?.id, { enabled: open && !!venta?.id });
 
-    const { utilidad, loading: loadingUtilidad } = useUtilidad(venta?.id ?? null);
+    const { profit, loading: loadingUtilidad } = useProfit(venta?.id ?? null);
 
     const isCredito = useMemo(
         () => (venta?.status ?? "").toLowerCase().includes("credito") || (venta?.remaining_balance ?? 0) > 0,
@@ -179,7 +179,7 @@ export default function VentaView({ open, onClose, venta: ventaProp, ventaId }: 
                                 >
                                     …
                                 </Box>
-                            ) : utilidad ? (
+                            ) : profit ? (
                                 <Box
                                     sx={{
                                         px: 1.25,
@@ -192,7 +192,7 @@ export default function VentaView({ open, onClose, venta: ventaProp, ventaId }: 
                                         border: "1px solid rgba(22,163,74,.35)",
                                     }}
                                 >
-                                    Utilidad: {money.format(utilidad.utilidad)}
+                                    Utilidad: {money.format(profit.profit)}
                                 </Box>
                             ) : null}
                         </Stack>

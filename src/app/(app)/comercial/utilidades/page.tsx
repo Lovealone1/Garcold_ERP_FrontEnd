@@ -7,19 +7,19 @@ import { es } from "date-fns/locale";
 import type { DateRange } from "react-day-picker";
 
 import { MaterialIcon } from "@/components/ui/material-icon";
-import { fetchAllUtilidades } from "@/services/sales/utilidades.api";
-import { getVentaById } from "@/services/sales/sale.api";
-import type { Utilidad } from "@/types/utilidades";
+import { fetchAllProfits } from "@/services/sales/profit.api";
+import { getSaleById } from "@/services/sales/sale.api";
+import type { Profit } from "@/types/profit";
 import UtilidadView from "@/features/utilidades/ViewDetalleUtilidades";
 import DateRangeInput from "@/components/ui/DateRangePicker/DateRangePicker";
 
 const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 
 export default function UtilidadesPage() {
-    const [all, setAll] = useState<Utilidad[]>([]);
+    const [all, setAll] = useState<Profit[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // mapa venta_id -> nombre cliente
+    // mapa sale_id -> nombre cliente
     const [clienteByVenta, setClienteByVenta] = useState<Record<number, string>>({});
 
     // filtros
@@ -39,21 +39,21 @@ export default function UtilidadesPage() {
         (async () => {
             setLoading(true);
             try {
-                const data = await fetchAllUtilidades(Date.now());
+                const data = await fetchAllProfits(Date.now());
                 if (alive) setAll(data);
             } finally {
                 if (alive) setLoading(false);
             }
         })();
-        return () => { alive = false; };
+        return () => {
+            alive = false;
+        };
     }, []);
 
     // Cargar nombres de clientes para ventas no cacheadas (lotes de 25)
     useEffect(() => {
         if (!all.length) return;
-        const missing = Array.from(
-            new Set(all.map(u => u.venta_id).filter(id => clienteByVenta[id] == null))
-        );
+        const missing = Array.from(new Set(all.map(u => u.sale_id).filter(id => clienteByVenta[id] == null)));
         if (missing.length === 0) return;
 
         let cancelled = false;
@@ -63,36 +63,37 @@ export default function UtilidadesPage() {
             const nextMap: Record<number, string> = {};
             for (let i = 0; i < missing.length; i += chunk) {
                 const ids = missing.slice(i, i + chunk);
-                const results = await Promise.allSettled(ids.map(id => getVentaById(id)));
+                const results = await Promise.allSettled(ids.map(id => getSaleById(id)));
                 results.forEach((res, idx) => {
                     const id = ids[idx];
                     if (res.status === "fulfilled") {
-                        nextMap[id] = res.value?.cliente ?? "";
+                        nextMap[id] = res.value?.customer ?? "";
                     } else {
                         nextMap[id] = "";
                     }
                 });
                 if (cancelled) return;
-                // merge incremental para ir mostrando nombres
                 setClienteByVenta(prev => ({ ...prev, ...nextMap }));
             }
         })();
 
-        return () => { cancelled = true; };
+        return () => {
+            cancelled = true;
+        };
     }, [all, clienteByVenta]);
 
     // filtros
     const filtered = useMemo(() => {
         const v = q.trim().toLowerCase();
-        const byVentaOrCliente = (u: Utilidad) => {
+        const byVentaOrCliente = (u: Profit) => {
             if (!v) return true;
-            if (String(u.venta_id).includes(v)) return true;
-            const nombre = (clienteByVenta[u.venta_id] ?? "").toLowerCase();
+            if (String(u.sale_id).includes(v)) return true;
+            const nombre = (clienteByVenta[u.sale_id] ?? "").toLowerCase();
             return nombre.includes(v);
         };
-        const byDate = (u: Utilidad) => {
+        const byDate = (u: Profit) => {
             if (!range?.from || !range?.to) return true;
-            const d = new Date(u.fecha);
+            const d = new Date(u.created_at);
             const from = startOfDay(range.from);
             const to = endOfDay(range.to);
             return isWithinInterval(d, { start: from, end: to });
@@ -100,7 +101,9 @@ export default function UtilidadesPage() {
         return all.filter(u => byVentaOrCliente(u) && byDate(u));
     }, [all, q, range, clienteByVenta]);
 
-    useEffect(() => { setPage(1); }, [q, range]);
+    useEffect(() => {
+        setPage(1);
+    }, [q, range]);
 
     // paginado en memoria
     const total = filtered.length;
@@ -159,12 +162,7 @@ export default function UtilidadesPage() {
                             </label>
 
                             {/* Rango fechas */}
-                            <DateRangeInput
-                                value={range}
-                                onChange={setRange}
-                                className="ml-1"
-                                placeholder="dd/mm/aaaa / dd/mm/aaaa"
-                            />
+                            <DateRangeInput value={range} onChange={setRange} className="ml-1" placeholder="dd/mm/aaaa / dd/mm/aaaa" />
 
                             {/* Limpiar */}
                             <span
@@ -209,19 +207,19 @@ export default function UtilidadesPage() {
                                         </tr>
                                     ) : (
                                         rows.map((r) => {
-                                            const nombre = clienteByVenta[r.venta_id];
+                                            const nombre = clienteByVenta[r.sale_id];
                                             return (
                                                 <tr
-                                                    key={`${r.venta_id}-${r.fecha}`}
+                                                    key={`${r.sale_id}-${r.created_at}`}
                                                     className="border-t border-tg hover:bg-black/5 dark:hover:bg-white/5"
                                                 >
                                                     <td className="px-4 py-3">
-                                                        <span className="font-medium">#{r.venta_id}</span>
+                                                        <span className="font-medium">#{r.sale_id}</span>
                                                         <span className="opacity-70"> — {nombre ? nombre : "…"}</span>
                                                     </td>
-                                                    <td className="px-4 py-3 text-right">{money.format(r.utilidad)}</td>
+                                                    <td className="px-4 py-3 text-right">{money.format(r.profit)}</td>
                                                     <td className="px-4 py-3">
-                                                        {format(new Date(r.fecha), "dd MMM yyyy", { locale: es })}
+                                                        {format(new Date(r.created_at), "dd MMM yyyy", { locale: es })}
                                                     </td>
                                                     <td className="px-2 py-2">
                                                         <div className="flex items-center justify-center">
@@ -229,7 +227,7 @@ export default function UtilidadesPage() {
                                                                 className="p-2 rounded-full text-tg-primary hover:bg-[color-mix(in_srgb,var(--tg-primary)_22%,transparent)]"
                                                                 aria-label="ver detalle utilidad"
                                                                 title="Ver detalle de utilidad"
-                                                                onClick={() => onView(r.venta_id)}
+                                                                onClick={() => onView(r.sale_id)}
                                                             >
                                                                 <MaterialIcon name="visibility" size={18} />
                                                             </button>

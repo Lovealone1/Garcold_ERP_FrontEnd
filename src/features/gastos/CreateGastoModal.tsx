@@ -6,7 +6,7 @@ import { listBancos } from "@/services/sales/bank.api";
 import type { Banco } from "@/types/bank";
 import { useCategoriasGastos } from "@/hooks/categoria-gastos/useCategoriaGastos";
 import { useCreateGasto } from "@/hooks/gastos/useCreateGasto";
-import type { GastoCreate, GastoCreated } from "@/types/gastos";
+import type { GastoCreate, GastoCreated } from "@/types/expense";
 import DateInput from "@/components/ui/DateRangePicker/DateInput";
 
 type Props = { open: boolean; onClose: () => void; onCreated?: (g: GastoCreated) => void };

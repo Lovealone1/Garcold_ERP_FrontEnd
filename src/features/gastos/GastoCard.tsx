@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import type { Gasto } from "@/types/gastos";
+import type { Gasto } from "@/types/expense";
 
 const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 

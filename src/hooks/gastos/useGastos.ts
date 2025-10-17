@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import type { Gasto, GastosPage } from "@/types/gastos";
+import type { Gasto, GastosPage } from "@/types/expense";
 import { listGastos } from "@/services/sales/gastos.api";
 
 export function useGastos(page: number, params?: Record<string, any>) {

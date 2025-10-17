@@ -15,17 +15,17 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import { useRouter } from "next/navigation";
 import { useVentas } from "@/hooks/ventas/useVentas";
 import { useDeleteVenta } from "@/hooks/ventas/useDeleteVenta";
-import type { Venta } from "@/types/ventas";
+import type { Sale } from "@/types/sale";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 import { MaterialIcon } from "@/components/ui/material-icon";
-import { listBancos } from "@/services/sales/bancos.api";
-import type { Banco } from "@/types/bancos";
+import { listBanks } from "@/services/sales/bank.api";
+import type { Bank } from "@/types/bank";
 import { useVentaEstados } from "@/hooks/estados/useEstados";
 import type { DateRange } from "react-day-picker";
 import DateRangePicker from "@/components/ui/DateRangePicker/DateRangePicker";
 import VentaView from "@/features/ventas/ViewDetalleVentas";
 import PagoVentaModal from "@/features/ventas/PagoVentaModal";
-import { getVentaById, listVentas } from "@/services/sales/ventas.api";
+import { getSaleById, listSales } from "@/services/sales/sale.api";
 import {
     buildFacturaPreviewUrl,
 } from "@/services/sales/facturas.api";
@@ -49,21 +49,21 @@ export default function VentasPage() {
     const [q, setQ] = useState("");
     const { options: estadoOptions } = useVentaEstados();
     const [estadoSel, setEstadoSel] = useState<string>("");
-    const [bancos, setBancos] = useState<Banco[]>([]);
+    const [bancos, setBancos] = useState<Bank[]>([]);
     const [bancoSel, setBancoSel] = useState<string>("");
     const [range, setRange] = useState<DateRange | undefined>();
 
     useEffect(() => {
         let alive = true;
         (async () => {
-            try { const data = await listBancos(Date.now()); if (alive) setBancos(data); }
+            try { const data = await listBanks(Date.now()); if (alive) setBancos(data); }
             catch { setBancos([]); }
         })();
         return () => { alive = false; };
     }, []);
 
     const bancoOptions = useMemo(
-        () => Array.from(new Set(bancos.map(b => b.nombre))).sort(),
+        () => Array.from(new Set(bancos.map(b => b.name))).sort(),
         [bancos]
     );
 
@@ -76,7 +76,7 @@ export default function VentasPage() {
         return true;
     }
 
-    const [all, setAll] = useState<Venta[] | null>(null);
+    const [all, setAll] = useState<Sale[] | null>(null);
     const [allLoading, setAllLoading] = useState(false);
 
     useEffect(() => {
@@ -87,10 +87,10 @@ export default function VentasPage() {
             setAllLoading(true);
             try {
                 const pages = await Promise.all(
-                    Array.from({ length: totalPages }, (_, i) => listVentas(i + 1, undefined, Date.now()))
+                    Array.from({ length: totalPages }, (_, i) => listSales(i + 1, undefined, Date.now()))
                 );
                 const merged = pages.flatMap(p => p.items);
-                const map = new Map<number, Venta>();
+                const map = new Map<number, Sale>();
                 for (const v of merged) map.set(v.id, v);
                 if (alive) setAll(Array.from(map.values()));
             } catch {
@@ -107,16 +107,16 @@ export default function VentasPage() {
 
     const filtered = useMemo(() => {
         const v = q.trim().toLowerCase();
-        return dataset.filter((r: Venta) => {
+        return dataset.filter((r: Sale) => {
             if (v && !(
                 String(r.id).includes(v) ||
-                r.cliente.toLowerCase().includes(v) ||
-                r.banco.toLowerCase().includes(v) ||
-                r.estado.toLowerCase().includes(v)
+                r.customer.toLowerCase().includes(v) ||
+                r.bank.toLowerCase().includes(v) ||
+                r.status.toLowerCase().includes(v)
             )) return false;
-            if (bancoSel && r.banco !== bancoSel) return false;
-            if (estadoSel && r.estado !== estadoSel) return false;
-            if (!inRange(new Date(r.fecha))) return false;
+            if (bancoSel && r.bank !== bancoSel) return false;
+            if (estadoSel && r.status !== estadoSel) return false;
+            if (!inRange(new Date(r.created_at))) return false;
             return true;
         });
     }, [dataset, q, bancoSel, estadoSel, range]);
@@ -143,17 +143,17 @@ export default function VentasPage() {
     const frameVars: CSSProperties = { ["--content-x" as any]: "16px" };
 
     const [openView, setOpenView] = useState(false);
-    const [ventaSel, setVentaSel] = useState<Venta | null>(null);
-    const onView = (v: Venta) => { setVentaSel(v); setOpenView(true); };
+    const [ventaSel, setVentaSel] = useState<Sale | null>(null);
+    const onView = (v: Sale) => { setVentaSel(v); setOpenView(true); };
 
     const [openPay, setOpenPay] = useState(false);
-    const [ventaPay, setVentaPay] = useState<Venta | null>(null);
-    const onPay = (v: Venta) => { setVentaPay(v); setOpenPay(true); };
+    const [ventaPay, setVentaPay] = useState<Sale | null>(null);
+    const onPay = (v: Sale) => { setVentaPay(v); setOpenPay(true); };
 
     async function handlePaid(ventaId: number) {
         const currentPage = page;
 
-        const fresh = await getVentaById(ventaId);
+        const fresh = await getSaleById(ventaId);
         setVentaPay(fresh);
         if (openView && ventaSel?.id === ventaId) setVentaSel(fresh);
 
@@ -170,7 +170,7 @@ export default function VentasPage() {
 
     const { deleteVenta, loading: deleting } = useDeleteVenta();
     const [openDelete, setOpenDelete] = useState(false);
-    const [ventaDel, setVentaDel] = useState<Venta | null>(null);
+    const [ventaDel, setVentaDel] = useState<Sale | null>(null);
 
     async function confirmDelete() {
         if (!ventaDel) return;
@@ -339,12 +339,12 @@ export default function VentasPage() {
                                         </tr>
                                     ) : paged.map((r) => (
                                         <tr key={r.id} className="border-t border-tg hover:bg-black/5 dark:hover:bg-white/5">
-                                            <td className="px-4 py-3">{r.cliente}</td>
-                                            <td className="px-4 py-3">{r.banco}</td>
-                                            <td className="px-4 py-3">{r.estado}</td>
+                                            <td className="px-4 py-3">{r.customer}</td>
+                                            <td className="px-4 py-3">{r.bank}</td>
+                                            <td className="px-4 py-3">{r.status}</td>
                                             <td className="px-4 py-3 text-right">{money.format(r.total)}</td>
-                                            <td className="px-4 py-3 text-right">{money.format(r.saldo_restante)}</td>
-                                            <td className="px-4 py-3">{format(new Date(r.fecha), "dd MMM yyyy", { locale: es })}</td>
+                                            <td className="px-4 py-3 text-right">{money.format(r.remaining_balance)}</td>
+                                            <td className="px-4 py-3">{format(new Date(r.created_at), "dd MMM yyyy", { locale: es })}</td>
                                             <td className="px-2 py-2">
                                                 <div className="flex items-center justify-center gap-1">
                                                     <Tooltip title="Ver detalles" arrow>

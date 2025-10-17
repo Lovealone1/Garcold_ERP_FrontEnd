@@ -1,19 +1,19 @@
 "use client";
 import { useState } from "react";
-import { createPagoVenta } from "@/services/sales/ventas.api";
-import type { PagoVentaCreate, PagoVenta } from "@/types/ventas";
+import { createSalePayment } from "@/services/sales/sale.api";
+import type { SalePaymentCreate, SalePayment } from "@/types/sale";
 
 export function useCreatePagoVenta() {
-    const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-    async function create(ventaId: number, payload: PagoVentaCreate): Promise<PagoVenta> {
-        setLoading(true);
-        try {
-            return await createPagoVenta(ventaId, payload);
-        } finally {
-            setLoading(false);
-        }
+  async function create(payload: SalePaymentCreate): Promise<SalePayment> {
+    setLoading(true);
+    try {
+      return await createSalePayment(payload);
+    } finally {
+      setLoading(false);
     }
+  }
 
-    return { create, loading };
+  return { create, loading };
 }

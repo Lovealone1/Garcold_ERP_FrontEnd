@@ -1,31 +1,33 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
-import { listBancos } from "@/services/sales/bancos.api";
-import type { Banco } from "@/types/bancos";
+import { listBanks } from "@/services/sales/bank.api";
+import type { Bank } from "@/types/bank";
 
-export function useBanco(bancoId: number | null) {
-  const [banco, setBanco] = useState<Banco | null>(null);
+export function useBank(bankId: number | null) {
+  const [bank, setBank] = useState<Bank | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchIt = useCallback(async () => {
-    if (!bancoId) return;
+    if (!bankId) return;
     setLoading(true);
     setError(null);
     try {
-      const all = await listBancos(Date.now());
-      const found = all.find(b => b.id === bancoId) ?? null;
+      const all = await listBanks(Date.now());
+      const found = all.find((b) => b.id === bankId) ?? null;
       if (!found) throw new Error("Banco no encontrado");
-      setBanco(found);
+      setBank(found);
     } catch (e: any) {
       setError(e?.message ?? "Error al cargar banco");
-      setBanco(null);
+      setBank(null);
     } finally {
       setLoading(false);
     }
-  }, [bancoId]);
+  }, [bankId]);
 
-  useEffect(() => { fetchIt(); }, [fetchIt]);
+  useEffect(() => {
+    fetchIt();
+  }, [fetchIt]);
 
-  return { banco, loading, error, refetch: fetchIt };
+  return { bank, loading, error, refetch: fetchIt };
 }

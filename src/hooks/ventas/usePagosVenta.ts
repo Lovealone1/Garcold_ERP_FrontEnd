@@ -1,10 +1,10 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
-import type { PagoVenta } from "@/types/ventas";
-import { listPagosVenta } from "@/services/sales/ventas.api";
+import type { SalePayment } from "@/types/sale";
+import { listSalePayments } from "@/services/sales/sale.api";
 
 export function usePagosVenta(ventaId: number | null) {
-    const [items, setItems] = useState<PagoVenta[]>([]);
+    const [items, setItems] = useState<SalePayment[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -13,7 +13,7 @@ export function usePagosVenta(ventaId: number | null) {
         setLoading(true);
         setError(null);
         try {
-            const data = await listPagosVenta(ventaId);
+            const data = await listSalePayments(ventaId);
             setItems(data);
         } catch (e: any) {
             setError(e?.response?.data?.detail ?? "Error cargando pagos");

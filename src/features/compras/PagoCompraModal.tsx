@@ -15,9 +15,9 @@ import Grid from "@mui/material/Grid";
 import { usePagosCompra } from "@/hooks/compras/usePagosCompra";
 import { useCreatePagoCompra } from "@/hooks/compras/useCreatePagoCompra";
 import { useDeletePagoCompra } from "@/hooks/compras/useDeletePagoCompra";
-import { listBancos } from "@/services/sales/bancos.api";
+import { listBancos } from "@/services/sales/bank.api";
 import { getCompraById } from "@/services/sales/compras.api";
-import type { Banco } from "@/types/bancos";
+import type { Banco } from "@/types/bank";
 import type { Compra } from "@/types/compras";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 

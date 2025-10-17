@@ -8,7 +8,7 @@ import type { DateRange } from "react-day-picker";
 
 import { MaterialIcon } from "@/components/ui/material-icon";
 import { fetchAllUtilidades } from "@/services/sales/utilidades.api";
-import { getVentaById } from "@/services/sales/ventas.api";
+import { getVentaById } from "@/services/sales/sale.api";
 import type { Utilidad } from "@/types/utilidades";
 import UtilidadView from "@/features/utilidades/ViewDetalleUtilidades";
 import DateRangeInput from "@/components/ui/DateRangePicker/DateRangePicker";

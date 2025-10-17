@@ -2,8 +2,8 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
-import { listBancos } from "@/services/sales/bancos.api";
-import type { Banco } from "@/types/bancos";
+import { listBancos } from "@/services/sales/bank.api";
+import type { Banco } from "@/types/bank";
 import { useCategoriasGastos } from "@/hooks/categoria-gastos/useCategoriaGastos";
 import { useCreateGasto } from "@/hooks/gastos/useCreateGasto";
 import type { GastoCreate, GastoCreated } from "@/types/gastos";

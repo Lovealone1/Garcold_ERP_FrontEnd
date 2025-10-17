@@ -1,13 +1,13 @@
 "use client";
 import { useState } from "react";
-import type { Banco } from "@/types/bancos";
+import type { Bank } from "@/types/bank";
 import { useUpdateSaldoBanco } from "@/hooks/bancos/useUpdateSaldoBanco";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 
-type Props = { banco: Banco; onClose: () => void };
+type Props = { banco: Bank; onClose: () => void };
 
 export default function SaldoForm({ banco, onClose }: Props) {
-    const [value, setValue] = useState<number>(banco.saldo ?? 0);
+    const [value, setValue] = useState<number>(banco.balance ?? 0);
     const { updateSaldo, loading, error: err } = useUpdateSaldoBanco();
     const { success, error } = useNotifications();
 

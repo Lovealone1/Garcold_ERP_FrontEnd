@@ -3,8 +3,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { MaterialIcon } from "@/components/ui/material-icon";
-import { listBancos } from "@/services/sales/bancos.api";
-import type { Banco } from "@/types/bancos";
+import { listBancos } from "@/services/sales/bank.api";
+import type { Banco } from "@/types/bank";
 import type { TransaccionCreate } from "@/types/transacciones";
 
 type Props = {

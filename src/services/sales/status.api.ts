@@ -1,13 +1,13 @@
 import salesApi from "../salesApi";
-import type { Estado } from "@/types/estados";
+import type { Status } from "@/types/status";
 
 
 export async function listEstados(
     nocacheToken?: number
-): Promise<Estado[]> {
-    const { data } = await salesApi.get("/estados/", {
+): Promise<Status[]> {
+    const { data } = await salesApi.get("/statuses/", {
         params: { _ts: nocacheToken ?? Date.now() },
         headers: { "Cache-Control": "no-cache" },
     });
-    return data as Estado[];
+    return data as Status[];
 }

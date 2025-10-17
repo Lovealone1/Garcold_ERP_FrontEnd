@@ -1,4 +1,3 @@
-// features/ventas/VentaView.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -12,16 +11,16 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Divider from "@mui/material/Divider";
 
-import type { Venta } from "@/types/ventas";
-import { getVentaById } from "@/services/sales/ventas.api";
+import type { Sale } from "@/types/sale";
+import { getSaleById } from "@/services/sales/sale.api";
 import { useVentaDetalles } from "@/hooks/ventas/useVentaDetalles";
-import type { DetalleVentaView } from "@/types/ventas";
+import type { SaleItemView } from "@/types/sale";
 import { useUtilidad } from "@/hooks/utilidades/useUtilidad";
 
 type Props = {
     open: boolean;
     onClose: () => void;
-    venta?: Venta | null;
+    venta?: Sale | null;
     ventaId?: number | null;
 };
 
@@ -32,7 +31,7 @@ const money = new Intl.NumberFormat("es-CO", {
 });
 
 export default function VentaView({ open, onClose, venta: ventaProp, ventaId }: Props) {
-    const [venta, setVenta] = useState<Venta | null>(ventaProp ?? null);
+    const [venta, setVenta] = useState<Sale | null>(ventaProp ?? null);
     const [loadingVenta, setLoadingVenta] = useState(false);
 
     useEffect(() => {
@@ -45,7 +44,7 @@ export default function VentaView({ open, onClose, venta: ventaProp, ventaId }: 
         (async () => {
             try {
                 setLoadingVenta(true);
-                const v = await getVentaById(ventaId);
+                const v = await getSaleById(ventaId);
                 if (alive) setVenta(v);
             } finally {
                 if (alive) setLoadingVenta(false);
@@ -61,11 +60,11 @@ export default function VentaView({ open, onClose, venta: ventaProp, ventaId }: 
     const { utilidad, loading: loadingUtilidad } = useUtilidad(venta?.id ?? null);
 
     const isCredito = useMemo(
-        () => (venta?.estado ?? "").toLowerCase().includes("credito") || (venta?.saldo_restante ?? 0) > 0,
+        () => (venta?.status ?? "").toLowerCase().includes("credito") || (venta?.remaining_balance ?? 0) > 0,
         [venta]
     );
     const isContado = useMemo(
-        () => (venta?.estado ?? "").toLowerCase().includes("contado") && (venta?.saldo_restante ?? 0) === 0,
+        () => (venta?.status ?? "").toLowerCase().includes("contado") && (venta?.remaining_balance ?? 0) === 0,
         [venta]
     );
 
@@ -102,7 +101,7 @@ export default function VentaView({ open, onClose, venta: ventaProp, ventaId }: 
                     <Stack direction="row" alignItems="flex-start" justifyContent="space-between" gap={2}>
                         <Box>
                             <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
-                                {venta?.cliente ?? (loadingVenta ? "Cargando…" : "—")}
+                                {venta?.customer ?? (loadingVenta ? "Cargando…" : "—")}
                             </Typography>
                             <Typography variant="caption" sx={{ opacity: 0.8 }}>
                                 ID interno: {venta?.id ?? (loadingVenta ? "…" : "—")}
@@ -146,7 +145,7 @@ export default function VentaView({ open, onClose, venta: ventaProp, ventaId }: 
                             </Box>
 
                             {/* Saldo restante si aplica */}
-                            {!!(venta && venta.saldo_restante > 0) && (
+                            {!!(venta && venta.remaining_balance > 0) && (
                                 <Box
                                     sx={{
                                         px: 1.25,
@@ -159,7 +158,7 @@ export default function VentaView({ open, onClose, venta: ventaProp, ventaId }: 
                                         border: "1px solid rgba(239,68,68,.35)",
                                     }}
                                 >
-                                    Saldo: {money.format(venta.saldo_restante)}
+                                    Saldo: {money.format(venta.remaining_balance)}
                                 </Box>
                             )}
 
@@ -200,9 +199,9 @@ export default function VentaView({ open, onClose, venta: ventaProp, ventaId }: 
                     </Stack>
 
                     {/* Línea 2 con fecha */}
-                    {venta?.fecha && (
+                    {venta?.created_at && (
                         <Typography variant="caption" sx={{ display: "block", mt: 1, opacity: 0.7 }}>
-                            Fecha de venta: {new Date(venta.fecha).toLocaleString()}
+                            Fecha de venta: {new Date(venta.created_at).toLocaleString()}
                         </Typography>
                     )}
                 </Box>
@@ -266,7 +265,7 @@ export default function VentaView({ open, onClose, venta: ventaProp, ventaId }: 
                     ) : items.length === 0 ? (
                         <Box sx={{ px: 2, py: 3, textAlign: "center", color: "var(--tg-muted)" }}>Sin ítems</Box>
                     ) : (
-                        items.map((it: DetalleVentaView, idx) => (
+                        items.map((it: SaleItemView, idx) => (
                             <Box
                                 key={idx}
                                 sx={{
@@ -278,12 +277,12 @@ export default function VentaView({ open, onClose, venta: ventaProp, ventaId }: 
                                     alignItems: "center",
                                 }}
                             >
-                                <Typography variant="body2">{it.producto_referencia}</Typography>
+                                <Typography variant="body2">{it.product_reference}</Typography>
                                 <Typography variant="body2" sx={{ textAlign: "right" }}>
-                                    {it.cantidad}
+                                    {it.quantity}
                                 </Typography>
                                 <Typography variant="body2" sx={{ textAlign: "right" }}>
-                                    {money.format(it.precio)}
+                                    {money.format(it.unit_price)}
                                 </Typography>
                                 <Typography variant="body2" sx={{ textAlign: "right", fontWeight: 600 }}>
                                     {money.format(it.total)}

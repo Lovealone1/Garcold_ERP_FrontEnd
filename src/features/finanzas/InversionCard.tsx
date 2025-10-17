@@ -1,5 +1,5 @@
 "use client";
-import type { Inversion } from "@/types/inversiones";
+import type { Investment } from "@/types/investment";
 
 const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 
@@ -8,12 +8,12 @@ export default function InversionCard({
     selected = false,
     onSelect,
 }: {
-    inversion: Inversion;
+    inversion: Investment;
     selected?: boolean;
     onSelect?: (checked: boolean) => void;
 }) {
     const now = new Date().getTime();
-    const venc = new Date(inversion.fecha_vencimiento).getTime();
+    const venc = new Date(inversion.maturity_date).getTime();
     const dot = now < venc ? "bg-emerald-500" : "bg-red-500";
 
     return (
@@ -24,12 +24,12 @@ export default function InversionCard({
                 }`}
         >
             <div className="flex items-center justify-between gap-3">
-                <h3 className="text-base font-semibold">{inversion.nombre}</h3>
+                <h3 className="text-base font-semibold">{inversion.name}</h3>
                 <span className={`inline-block h-3 w-3 rounded-full ${dot}`} />
             </div>
-            <div className="mt-2 text-2xl font-bold">{money.format(inversion.saldo)}</div>
+            <div className="mt-2 text-2xl font-bold">{money.format(inversion.balance)}</div>
             <div className="mt-1 text-xs text-tg-muted">
-                Vence: {new Date(inversion.fecha_vencimiento).toLocaleDateString("es-CO")}
+                Vence: {new Date(inversion.maturity_date).toLocaleDateString("es-CO")}
             </div>
         </button>
     );

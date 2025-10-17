@@ -1,17 +1,17 @@
 "use client";
 import { useState, useCallback } from "react";
-import { createCredito } from "@/services/sales/creditos.api";
-import type { Credito, CreditoCreate } from "@/types/creditos";
+import { createLoan } from "@/services/sales/loan.api";
+import type { Loan, LoanCreate } from "@/types/loan";
 
-export function useCreateCredito(onSuccess?: (c: Credito) => void) {
+export function useCreateLoan(onSuccess?: (l: Loan) => void) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<unknown>(null);
 
-  const mutate = useCallback(async (payload: CreditoCreate) => {
+  const create = useCallback(async (payload: LoanCreate) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await createCredito(payload);
+      const res = await createLoan(payload);
       onSuccess?.(res);
       return res;
     } catch (e) {
@@ -22,5 +22,5 @@ export function useCreateCredito(onSuccess?: (c: Credito) => void) {
     }
   }, [onSuccess]);
 
-  return { create: mutate, loading, error };
+  return { create, loading, error };
 }

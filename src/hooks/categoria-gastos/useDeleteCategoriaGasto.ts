@@ -1,8 +1,8 @@
 "use client";
 import { useState } from "react";
-import { deleteCategoriaGastos } from "@/services/sales/categoria-gastos.api";
+import { deleteExpenseCategory } from "@/services/sales/expense-category.api";
 
-export function useDeleteCategoriaGasto(onDeleted?: (id: number) => void) {
+export function useDeleteExpenseCategory(onDeleted?: (id: number) => void) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -10,10 +10,10 @@ export function useDeleteCategoriaGasto(onDeleted?: (id: number) => void) {
         setLoading(true);
         setError(null);
         try {
-            await deleteCategoriaGastos(id);
+            await deleteExpenseCategory(id);
             onDeleted?.(id);
         } catch (e: any) {
-            setError(e?.message ?? "Error eliminando categoría");
+            setError(e?.message ?? "Failed to delete expense category");
             throw e;
         } finally {
             setLoading(false);

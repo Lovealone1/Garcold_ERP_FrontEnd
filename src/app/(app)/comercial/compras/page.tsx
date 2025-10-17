@@ -10,6 +10,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import AttachMoneyOutlinedIcon from "@mui/icons-material/AttachMoneyOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
 import { useRouter } from "next/navigation";
 
 import { usePurchases } from "@/hooks/compras/useCompras";
@@ -24,6 +25,7 @@ import type { DateRange } from "react-day-picker";
 import DateRangePicker from "@/components/ui/DateRangePicker/DateRangePicker";
 import CompraView from "@/features/compras/ViewDetalleCompras";
 import PagoCompraModal from "@/features/compras/PagoCompraModal";
+import PurchaseReceiptModal from "@/features/compras/PurchaseReceiptModal";
 import { getPurchaseById, listPurchases } from "@/services/sales/purchase.api";
 
 const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
@@ -143,6 +145,11 @@ export default function ComprasPage() {
     const [compraPay, setCompraPay] = useState<Purchase | null>(null);
     const onPay = (c: Purchase) => { setCompraPay(c); setOpenPay(true); };
 
+    // nuevo: modal de comprobantes
+    const [openReceipts, setOpenReceipts] = useState(false);
+    const [purchaseForUpload, setPurchaseForUpload] = useState<Purchase | null>(null);
+    const onUploadReceipts = (c: Purchase) => { setPurchaseForUpload(c); setOpenReceipts(true); };
+
     async function handlePaid(compraId: number) {
         const currentPage = page;
         const fresh = await getPurchaseById(compraId);
@@ -199,7 +206,7 @@ export default function ComprasPage() {
                         <select
                             value={estadoSel}
                             onChange={(e) => { setEstadoSel(e.target.value); setPage(1); }}
-                            className="h-10 min-w-[160px] rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-card"
+                            className="h-10 min-w=[160px] rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-card"
                             aria-label="Filtro por estado"
                             title="Filtrar por estado"
                         >
@@ -307,6 +314,18 @@ export default function ComprasPage() {
                                                         </IconButton>
                                                     </Tooltip>
 
+                                                    {/* nuevo botón: comprobantes / carga de archivos */}
+                                                    <Tooltip title="Comprobantes / adjuntar archivos" arrow>
+                                                        <IconButton
+                                                            size="small"
+                                                            aria-label="adjuntar comprobantes"
+                                                            onClick={() => onUploadReceipts(r)}
+                                                            sx={{ color: "var(--tg-primary)", borderRadius: "9999px", "&:hover": { backgroundColor: "color-mix(in srgb, var(--tg-primary) 22%, transparent)" } }}
+                                                        >
+                                                            <FileUploadOutlinedIcon fontSize="small" />
+                                                        </IconButton>
+                                                    </Tooltip>
+
                                                     <Tooltip title="Eliminar" arrow>
                                                         <IconButton
                                                             size="small"
@@ -385,6 +404,17 @@ export default function ComprasPage() {
                     onClose={() => setOpenPay(false)}
                     compra={compraPay}
                     onPaid={handlePaid}
+                />
+            )}
+
+            {/* nuevo modal: comprobantes */}
+            {openReceipts && purchaseForUpload && (
+                <PurchaseReceiptModal
+                    open={openReceipts}
+                    onClose={() => setOpenReceipts(false)}
+                    purchaseId={purchaseForUpload.id}
+                    max={6}
+                    ratio="3/4"
                 />
             )}
 

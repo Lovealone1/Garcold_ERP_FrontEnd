@@ -1,16 +1,16 @@
 "use client";
 import { useState, useCallback } from "react";
-import { deleteInversion } from "@/services/sales/inversiones.api";
+import { deleteInvestment } from "@/services/sales/investment.api";
 
-export function useDeleteInversion(onSuccess?: () => void) {
+export function useDeleteInvestment(onSuccess?: () => void) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<unknown>(null);
 
-  const mutate = useCallback(async (id: number) => {
+  const remove = useCallback(async (id: number) => {
     setLoading(true);
     setError(null);
     try {
-      await deleteInversion(id);
+      await deleteInvestment(id);
       onSuccess?.();
     } catch (e) {
       setError(e);
@@ -20,5 +20,5 @@ export function useDeleteInversion(onSuccess?: () => void) {
     }
   }, [onSuccess]);
 
-  return { remove: mutate, loading, error };
+  return { remove, loading, error };
 }

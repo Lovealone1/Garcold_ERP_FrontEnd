@@ -15,16 +15,16 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import ProductoAgregate from "@/features/productos/ProductoForm";
 
 import { useProductosAll } from "@/hooks/productos/useProductosAll";
-import { useProveedorOptions, type ProveedorOption } from "@/hooks/proveedores/useProveedorOptions";
+import { useSupplierOptions, type SupplierOption } from "@/hooks/proveedores/useProveedorOptions";
 import { useCompraEstados } from "@/hooks/estados/useEstados";
-import { listBancos } from "@/services/sales/bank.api";
-import type { Producto } from "@/types/product";
-import type { Banco } from "@/types/bank";
+import { listBanks } from "@/services/sales/bank.api";
+import type { ProductDTO } from "@/types/product";
+import type { Bank } from "@/types/bank";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 import { useRouter } from "next/navigation";
 
 import { useCreateCompra } from "@/hooks/compras/useCreateCompra";
-import type { CompraCreate } from "@/types/compras";
+import type { PurchaseCreate, PurchaseItemInput } from "@/types/purchase";
 
 type ItemCompra = {
     idTmp: string;
@@ -59,12 +59,12 @@ export default function CompraCrearPage() {
     const { error } = useNotifications();
 
     const { items: catalogo, loading: loadingProd } = useProductosAll();
-    const { options: proveedorOptions } = useProveedorOptions();
+    const { options: proveedorOptions } = useSupplierOptions();
     const { options: estadoOptions, byName: estadoByName } = useCompraEstados();
 
-    const [bancos, setBancos] = useState<Banco[]>([]);
+    const [bancos, setBancos] = useState<Bank[]>([]);
     const bancoOptions: Option[] = useMemo(
-        () => bancos.map((b) => ({ value: b.id, label: b.nombre })),
+        () => bancos.map((b) => ({ value: b.id, label: b.name })),
         [bancos]
     );
 
@@ -72,7 +72,7 @@ export default function CompraCrearPage() {
         let alive = true;
         (async () => {
             try {
-                const data = await listBancos(Date.now());
+                const data = await listBanks(Date.now());
                 if (alive) setBancos(data);
             } catch {
                 setBancos([]);
@@ -83,12 +83,12 @@ export default function CompraCrearPage() {
         };
     }, []);
 
-    const [proveedorSel, setProveedorSel] = useState<ProveedorOption | null>(null);
+    const [proveedorSel, setProveedorSel] = useState<SupplierOption | null>(null);
     const [bancoSel, setBancoSel] = useState<Option | null>(null);
     const [estadoSel, setEstadoSel] = useState<string | null>(null);
 
     const [queryProd, setQueryProd] = useState("");
-    const [selProd, setSelProd] = useState<Producto | null>(null);
+    const [selProd, setSelProd] = useState<ProductDTO | null>(null);
 
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [modalDefaults, setModalDefaults] = useState<ProductoAgregateDefaults | null>(null);
@@ -152,16 +152,16 @@ export default function CompraCrearPage() {
         },
     } as const;
 
-    const openConfirm = (p: Producto) => {
+    const openConfirm = (p: ProductDTO) => {
         setSelProd(p);
         setEditIdTmp(null);
         setModalDefaults({
-            referencia: p.referencia,
-            descripcion: p.descripcion,
-            precio_unitario: p.precio_compra,
+            referencia: p.reference,
+            descripcion: p.description,
+            precio_unitario: p.purchase_price,
             cantidad: 1,
-            stock: p.cantidad,
-            precio_compra: p.precio_compra,
+            stock: p.quantity,
+            precio_compra: p.purchase_price,
         });
         setConfirmOpen(true);
     };
@@ -198,8 +198,8 @@ export default function CompraCrearPage() {
                     {
                         idTmp: crypto.randomUUID(),
                         productoId: selProd.id,
-                        referencia: selProd.referencia,
-                        descripcion: selProd.descripcion,
+                        referencia: selProd.reference,
+                        descripcion: selProd.description,
                         precioUnit: data.precio_unitario,
                         cantidad: data.cantidad,
                     },
@@ -259,17 +259,17 @@ export default function CompraCrearPage() {
             return;
         }
 
-        const carrito: CompraCreate["carrito"] = items.map((it) => ({
-            producto_id: it.productoId,
-            cantidad: it.cantidad,
-            precio: it.precioUnit,
+        const itemsInput: PurchaseItemInput[] = items.map(it => ({
+            product_id: it.productoId,
+            quantity: it.cantidad,
+            unit_price: it.precioUnit,
         }));
 
-        const payload: CompraCreate = {
-            proveedor_id: Number(proveedorSel!.value),
-            banco_id: Number(bancoSel!.value),
-            estado_id,
-            carrito,
+        const payload: PurchaseCreate = {
+            supplier_id: Number(proveedorSel!.value),
+            bank_id: Number(bancoSel!.value),
+            status_id: estado_id,
+            items: itemsInput,
         };
 
         await createCompra(payload);
@@ -345,7 +345,7 @@ export default function CompraCrearPage() {
                                 options={catalogo}
                                 loading={loadingProd}
                                 isOptionEqualToValue={(o, v) => o.id === v.id}
-                                getOptionLabel={(o) => `${o.referencia} — ${o.descripcion}`}
+                                getOptionLabel={(o) => `${o.reference} — ${o.description}`}
                                 clearOnBlur
                                 onChange={(_, val, reason) => {
                                     if (reason === "clear") {
@@ -578,7 +578,7 @@ export default function CompraCrearPage() {
                         setEditIdTmp(null);
                     }}
                     loading={false}
-                    variant="compra"               
+                    variant="compra"
                     defaults={modalDefaults}
                     onConfirm={onConfirmProducto}
                 />

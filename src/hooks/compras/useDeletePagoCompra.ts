@@ -1,19 +1,23 @@
 "use client";
 import { useState } from "react";
-import { deletePagoCompra } from "@/services/sales/compras.api";
+import { deletePurchasePayment } from "@/services/sales/purchase.api";
 
-export function useDeletePagoCompra() {
+export function useDeletePurchasePayment() {
     const [loading, setLoading] = useState(false);
 
-    async function remove(pagoId: number): Promise<boolean> {
+    async function remove(paymentId: number): Promise<boolean> {
         setLoading(true);
         try {
-            const { ok } = await deletePagoCompra(pagoId);
-            return !!ok;
+            await deletePurchasePayment(paymentId);
+            return true;
         } finally {
             setLoading(false);
         }
     }
 
     return { remove, loading };
+}
+
+export function useDeletePagoCompra() {
+    return useDeletePurchasePayment();
 }

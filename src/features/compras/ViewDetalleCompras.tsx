@@ -12,15 +12,15 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Divider from "@mui/material/Divider";
 
-import type { Compra } from "@/types/compras";
-import { getCompraById } from "@/services/sales/compras.api";
+import type { Purchase } from "@/types/purchase";
+import { getPurchaseById } from "@/services/sales/purchase.api";
 import { useCompraDetalles } from "@/hooks/compras/useCompraDetalles";
-import type { DetalleCompraView } from "@/types/compras";
+import type { PurchaseDetailItem } from "@/types/purchase";
 
 type Props = {
     open: boolean;
     onClose: () => void;
-    compra?: Compra | null;
+    compra?: Purchase | null;
     compraId?: number | null;
 };
 
@@ -31,7 +31,7 @@ const money = new Intl.NumberFormat("es-CO", {
 });
 
 export default function CompraView({ open, onClose, compra: compraProp, compraId }: Props) {
-    const [compra, setCompra] = useState<Compra | null>(compraProp ?? null);
+    const [compra, setCompra] = useState<Purchase | null>(compraProp ?? null);
     const [loadingCompra, setLoadingCompra] = useState(false);
 
     useEffect(() => {
@@ -44,7 +44,7 @@ export default function CompraView({ open, onClose, compra: compraProp, compraId
         (async () => {
             try {
                 setLoadingCompra(true);
-                const c = await getCompraById(compraId);
+                const c = await getPurchaseById(compraId);
                 if (alive) setCompra(c);
             } finally {
                 if (alive) setLoadingCompra(false);
@@ -58,11 +58,11 @@ export default function CompraView({ open, onClose, compra: compraProp, compraId
     const { items, loading: loadingDetalles } = useCompraDetalles(compra?.id, { enabled: open && !!compra?.id });
 
     const isCredito = useMemo(
-        () => (compra?.estado ?? "").toLowerCase().includes("credito") || (compra?.saldo ?? 0) > 0,
+        () => (compra?.status ?? "").toLowerCase().includes("credito") || (compra?.balance ?? 0) > 0,
         [compra]
     );
     const isContado = useMemo(
-        () => (compra?.estado ?? "").toLowerCase().includes("contado") && (compra?.saldo ?? 0) === 0,
+        () => (compra?.status ?? "").toLowerCase().includes("contado") && (compra?.balance ?? 0) === 0,
         [compra]
     );
 
@@ -86,7 +86,6 @@ export default function CompraView({ open, onClose, compra: compraProp, compraId
             <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Detalle de compra</DialogTitle>
 
             <DialogContent dividers sx={{ borderColor: "var(--panel-border)" }}>
-                {/* Encabezado */}
                 <Box
                     sx={{
                         p: 2,
@@ -99,7 +98,7 @@ export default function CompraView({ open, onClose, compra: compraProp, compraId
                     <Stack direction="row" alignItems="flex-start" justifyContent="space-between" gap={2}>
                         <Box>
                             <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
-                                {compra?.proveedor ?? (loadingCompra ? "Cargando…" : "—")}
+                                {compra?.supplier ?? (loadingCompra ? "Cargando…" : "—")}
                             </Typography>
                             <Typography variant="caption" sx={{ opacity: 0.8 }}>
                                 ID interno: {compra?.id ?? (loadingCompra ? "…" : "—")}
@@ -107,7 +106,6 @@ export default function CompraView({ open, onClose, compra: compraProp, compraId
                         </Box>
 
                         <Stack direction="row" gap={1} flexWrap="wrap" justifyContent="flex-end">
-                            {/* Estado */}
                             {compra && (
                                 <Box
                                     sx={{
@@ -125,7 +123,6 @@ export default function CompraView({ open, onClose, compra: compraProp, compraId
                                 </Box>
                             )}
 
-                            {/* Total */}
                             <Box
                                 sx={{
                                     px: 1.25,
@@ -141,8 +138,7 @@ export default function CompraView({ open, onClose, compra: compraProp, compraId
                                 {compra ? money.format(compra.total) : "—"}
                             </Box>
 
-                            {/* Saldo si aplica */}
-                            {!!(compra && (compra.saldo ?? 0) > 0) && (
+                            {!!(compra && (compra.balance ?? 0) > 0) && (
                                 <Box
                                     sx={{
                                         px: 1.25,
@@ -155,21 +151,19 @@ export default function CompraView({ open, onClose, compra: compraProp, compraId
                                         border: "1px solid rgba(239,68,68,.35)",
                                     }}
                                 >
-                                    Saldo: {money.format(compra.saldo ?? 0)}
+                                    Saldo: {money.format(compra.balance ?? 0)}
                                 </Box>
                             )}
                         </Stack>
                     </Stack>
 
-                    {/* Línea 2 con fecha */}
-                    {compra?.fecha && (
+                    {compra?.purchase_date && (
                         <Typography variant="caption" sx={{ display: "block", mt: 1, opacity: 0.7 }}>
-                            Fecha de compra: {new Date(compra.fecha).toLocaleString()}
+                            Fecha de compra: {new Date(compra.purchase_date).toLocaleString()}
                         </Typography>
                     )}
                 </Box>
 
-                {/* Detalle (tipo factura) */}
                 <Typography sx={{ fontWeight: 700, mb: 1 }}>Productos</Typography>
 
                 <Box
@@ -180,7 +174,6 @@ export default function CompraView({ open, onClose, compra: compraProp, compraId
                         overflow: "hidden",
                     }}
                 >
-                    {/* Header tabla */}
                     <Box
                         sx={{
                             display: "grid",
@@ -200,7 +193,6 @@ export default function CompraView({ open, onClose, compra: compraProp, compraId
                         <span style={{ textAlign: "right" }}>Subtotal</span>
                     </Box>
 
-                    {/* Body */}
                     {loadingDetalles ? (
                         Array.from({ length: 4 }).map((_, i) => (
                             <Box
@@ -222,7 +214,7 @@ export default function CompraView({ open, onClose, compra: compraProp, compraId
                     ) : items.length === 0 ? (
                         <Box sx={{ px: 2, py: 3, textAlign: "center", color: "var(--tg-muted)" }}>Sin ítems</Box>
                     ) : (
-                        items.map((it: DetalleCompraView, idx) => (
+                        items.map((it: PurchaseDetailItem, idx) => (
                             <Box
                                 key={idx}
                                 sx={{
@@ -234,12 +226,12 @@ export default function CompraView({ open, onClose, compra: compraProp, compraId
                                     alignItems: "center",
                                 }}
                             >
-                                <Typography variant="body2">{it.producto_referencia}</Typography>
+                                <Typography variant="body2">{it.product_reference}</Typography>
                                 <Typography variant="body2" sx={{ textAlign: "right" }}>
-                                    {it.cantidad}
+                                    {it.quantity}
                                 </Typography>
                                 <Typography variant="body2" sx={{ textAlign: "right" }}>
-                                    {money.format(it.precio)}
+                                    {money.format(it.unit_price)}
                                 </Typography>
                                 <Typography variant="body2" sx={{ textAlign: "right", fontWeight: 600 }}>
                                     {money.format(it.total)}
@@ -248,7 +240,6 @@ export default function CompraView({ open, onClose, compra: compraProp, compraId
                         ))
                     )}
 
-                    {/* Footer totales */}
                     {!loadingDetalles && items.length > 0 && (
                         <>
                             <Divider sx={{ borderColor: "var(--panel-border)" }} />

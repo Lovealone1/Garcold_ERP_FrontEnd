@@ -12,19 +12,19 @@ import AttachMoneyOutlinedIcon from "@mui/icons-material/AttachMoneyOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import { useRouter } from "next/navigation";
 
-import { useCompras } from "@/hooks/compras/useCompras";
+import { usePurchases } from "@/hooks/compras/useCompras";
 import { useDeleteCompra } from "@/hooks/compras/useDeleteCompra";
-import type { Compra } from "@/types/compras";
+import type { Purchase } from "@/types/purchase";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 import { MaterialIcon } from "@/components/ui/material-icon";
-import { listBancos } from "@/services/sales/bank.api";
-import type { Banco } from "@/types/bank";
+import { listBanks } from "@/services/sales/bank.api";
+import type { Bank } from "@/types/bank";
 import { useCompraEstados } from "@/hooks/estados/useEstados";
 import type { DateRange } from "react-day-picker";
 import DateRangePicker from "@/components/ui/DateRangePicker/DateRangePicker";
 import CompraView from "@/features/compras/ViewDetalleCompras";
 import PagoCompraModal from "@/features/compras/PagoCompraModal";
-import { getCompraById, listCompras } from "@/services/sales/compras.api";
+import { getPurchaseById, listPurchases } from "@/services/sales/purchase.api";
 
 const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 
@@ -32,27 +32,31 @@ export default function ComprasPage() {
     const router = useRouter();
     const { success, error } = useNotifications();
 
-    const { items, page, setPage, pageSize, loading, reload, totalPages } = useCompras();
+    const { items, page, setPage, pageSize, loading, reload, totalPages } = usePurchases();
 
-    // filtros UI
     const [q, setQ] = useState("");
     const { options: estadoOptions } = useCompraEstados();
     const [estadoSel, setEstadoSel] = useState<string>("");
-    const [bancos, setBancos] = useState<Banco[]>([]);
+
+    const [bancos, setBancos] = useState<Bank[]>([]);
     const [bancoSel, setBancoSel] = useState<string>("");
     const [range, setRange] = useState<DateRange | undefined>();
 
     useEffect(() => {
         let alive = true;
         (async () => {
-            try { const data = await listBancos(Date.now()); if (alive) setBancos(data); }
-            catch { setBancos([]); }
+            try {
+                const data = await listBanks(Date.now()); // Bank[]
+                if (alive) setBancos(data);
+            } catch {
+                if (alive) setBancos([]);
+            }
         })();
         return () => { alive = false; };
     }, []);
 
     const bancoOptions = useMemo(
-        () => Array.from(new Set(bancos.map(b => b.nombre))).sort(),
+        () => Array.from(new Set(bancos.map(b => b.name))).sort(),
         [bancos]
     );
 
@@ -65,8 +69,7 @@ export default function ComprasPage() {
         return true;
     }
 
-    // hidratar todas las páginas para filtrar en el cliente (igual que ventas)
-    const [all, setAll] = useState<Compra[] | null>(null);
+    const [all, setAll] = useState<Purchase[] | null>(null);
     const [allLoading, setAllLoading] = useState(false);
 
     useEffect(() => {
@@ -77,10 +80,10 @@ export default function ComprasPage() {
             setAllLoading(true);
             try {
                 const pages = await Promise.all(
-                    Array.from({ length: totalPages }, (_, i) => listCompras(i + 1, undefined, Date.now()))
+                    Array.from({ length: totalPages }, (_, i) => listPurchases(i + 1, undefined, Date.now()))
                 );
                 const merged = pages.flatMap(p => p.items);
-                const map = new Map<number, Compra>();
+                const map = new Map<number, Purchase>();
                 for (const c of merged) map.set(c.id, c);
                 if (alive) setAll(Array.from(map.values()));
             } catch {
@@ -95,19 +98,18 @@ export default function ComprasPage() {
 
     const dataset = all ?? items;
 
-    // búsqueda: por proveedor, banco, estado e ID compra
     const filtered = useMemo(() => {
         const v = q.trim().toLowerCase();
-        return dataset.filter((r: Compra) => {
+        return dataset.filter((r: Purchase) => {
             if (v && !(
                 String(r.id).includes(v) ||
-                r.proveedor.toLowerCase().includes(v) ||
-                r.banco.toLowerCase().includes(v) ||
-                r.estado.toLowerCase().includes(v)
+                r.supplier.toLowerCase().includes(v) ||
+                r.bank.toLowerCase().includes(v) ||
+                r.status.toLowerCase().includes(v)
             )) return false;
-            if (bancoSel && r.banco !== bancoSel) return false;
-            if (estadoSel && r.estado !== estadoSel) return false;
-            if (!inRange(new Date(r.fecha))) return false;
+            if (bancoSel && r.bank !== bancoSel) return false;
+            if (estadoSel && r.status !== estadoSel) return false;
+            if (!inRange(new Date(r.purchase_date))) return false;
             return true;
         });
     }, [dataset, q, bancoSel, estadoSel, range]);
@@ -133,18 +135,17 @@ export default function ComprasPage() {
 
     const frameVars: CSSProperties = { ["--content-x" as any]: "16px" };
 
-    // Modales y acciones
     const [openView, setOpenView] = useState(false);
-    const [compraSel, setCompraSel] = useState<Compra | null>(null);
-    const onView = (c: Compra) => { setCompraSel(c); setOpenView(true); };
+    const [compraSel, setCompraSel] = useState<Purchase | null>(null);
+    const onView = (c: Purchase) => { setCompraSel(c); setOpenView(true); };
 
     const [openPay, setOpenPay] = useState(false);
-    const [compraPay, setCompraPay] = useState<Compra | null>(null);
-    const onPay = (c: Compra) => { setCompraPay(c); setOpenPay(true); };
+    const [compraPay, setCompraPay] = useState<Purchase | null>(null);
+    const onPay = (c: Purchase) => { setCompraPay(c); setOpenPay(true); };
 
     async function handlePaid(compraId: number) {
         const currentPage = page;
-        const fresh = await getCompraById(compraId);
+        const fresh = await getPurchaseById(compraId);
         setCompraPay(fresh);
         if (openView && compraSel?.id === compraId) setCompraSel(fresh);
         await reload();
@@ -153,7 +154,7 @@ export default function ComprasPage() {
 
     const { deleteCompra, loading: deleting } = useDeleteCompra();
     const [openDelete, setOpenDelete] = useState(false);
-    const [compraDel, setCompraDel] = useState<Compra | null>(null);
+    const [compraDel, setCompraDel] = useState<Purchase | null>(null);
 
     async function confirmDelete() {
         if (!compraDel) return;
@@ -276,12 +277,12 @@ export default function ComprasPage() {
                                         </tr>
                                     ) : paged.map((r) => (
                                         <tr key={r.id} className="border-t border-tg hover:bg-black/5 dark:hover:bg-white/5">
-                                            <td className="px-4 py-3">{r.proveedor}</td>
-                                            <td className="px-4 py-3">{r.banco}</td>
-                                            <td className="px-4 py-3">{r.estado}</td>
+                                            <td className="px-4 py-3">{r.supplier}</td>
+                                            <td className="px-4 py-3">{r.bank}</td>
+                                            <td className="px-4 py-3">{r.status}</td>
                                             <td className="px-4 py-3 text-right">{money.format(r.total)}</td>
-                                            <td className="px-4 py-3 text-right">{money.format(r.saldo)}</td>
-                                            <td className="px-4 py-3">{format(new Date(r.fecha), "dd MMM yyyy", { locale: es })}</td>
+                                            <td className="px-4 py-3 text-right">{money.format(r.balance)}</td>
+                                            <td className="px-4 py-3">{format(new Date(r.purchase_date), "dd MMM yyyy", { locale: es })}</td>
                                             <td className="px-2 py-2">
                                                 <div className="flex items-center justify-center gap-1">
                                                     <Tooltip title="Ver detalles" arrow>
@@ -325,7 +326,6 @@ export default function ComprasPage() {
                         </table>
                     </div>
 
-                    {/* Paginación (igual a ventas) */}
                     <div className="flex flex-wrap items-center justify-between gap-3 border-t border-tg px-4 py-3">
                         <div className="flex items-center gap-2">
                             <span className="text-sm">Líneas por página</span>
@@ -371,7 +371,6 @@ export default function ComprasPage() {
                 </div>
             </div>
 
-            {/* Modales */}
             {openView && (
                 <CompraView
                     open={openView}
@@ -389,7 +388,6 @@ export default function ComprasPage() {
                 />
             )}
 
-            {/* Confirmación eliminar */}
             {openDelete && (
                 <div
                     role="dialog"
@@ -405,7 +403,7 @@ export default function ComprasPage() {
                         </div>
                         <div className="px-4 py-4 text-sm">¿Seguro que deseas eliminar la compra #{compraDel?.id}? Esta acción no se puede deshacer.</div>
                         <div className="px-4 py-3 border-t border-tg flex justify-end gap-2">
-                            <button onClick={() => setOpenDelete(false)} className="h-9 rounded-md px-3 text-sm hover:bg-black/10 dark:hover:bg-white/10" disabled={deleting}>Cancelar</button>
+                            <button onClick={() => setOpenDelete(false)} className="h-9 rounded-md px-3 text-sm hover:bg-black/10 dark:hover:bg:white/10" disabled={deleting}>Cancelar</button>
                             <button onClick={confirmDelete} className="h-9 rounded-md bg-red-600 px-3 text-sm font-medium text-white disabled:opacity-60" disabled={deleting}>{deleting ? "Eliminando…" : "Eliminar"}</button>
                         </div>
                     </div>

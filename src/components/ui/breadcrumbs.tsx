@@ -66,7 +66,6 @@ export default function Breadcrumbs({
     items,
     className = "",
     rootLabel = "Inicio",
-    rootHref = "/inicio",
 }: {
     items?: Crumb[];
     className?: string;
@@ -124,7 +123,6 @@ export default function Breadcrumbs({
                                 className="inline-flex items-center gap-1 font-medium text-[15px] md:text-[16px]"
                                 style={{ color: "var(--tg-primary)" }}
                             >
-                                {iconFor(c.href, true)}
                                 <span className="truncate max-w-[240px]">{c.label}</span>
                             </span>
                         ) : (

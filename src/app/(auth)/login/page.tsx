@@ -63,7 +63,7 @@ export default function LoginPage() {
         setE("");
         setL(true);
         try {
-            const { data, error } = await supabase.auth.signInWithPassword({
+            const { data, error } = await supabase().auth.signInWithPassword({
                 email,
                 password,
             });
@@ -85,11 +85,16 @@ export default function LoginPage() {
     }
 
     async function signInGoogle() {
-        const origin = window.location.origin;
-        await supabase.auth.signInWithOAuth({
-            provider: "google",
-            options: { redirectTo: `${origin}/auth/callback?next=/inicio` },
-        });
+        try {
+            const origin = window.location.origin;
+            const { error } = await supabase().auth.signInWithOAuth({
+                provider: "google",
+                options: { redirectTo: `${origin}/auth/callback?next=/inicio` },
+            });
+            if (error) throw error;
+        } catch (err: any) {
+            setE(err?.message ?? "No se pudo iniciar sesión con Google");
+        }
     }
 
     return (

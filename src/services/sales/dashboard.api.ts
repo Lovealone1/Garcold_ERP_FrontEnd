@@ -1,4 +1,3 @@
-// services/dashboardService.ts
 import salesApi from "../salesApi";
 import type { FinalReportDTO, RequestMetaDTO } from "@/types/reporte-general";
 

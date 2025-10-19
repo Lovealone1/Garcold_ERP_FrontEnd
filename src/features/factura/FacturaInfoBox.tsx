@@ -1,9 +1,9 @@
 "use client";
 import * as React from "react";
-import type { CompaniaDTO } from "@/types/factura";
+import type { CompanyDTO } from "@/types/sale-invoice";
 
 type Props = {
-    compania: CompaniaDTO;
+    compania: CompanyDTO;
     fecha: string;
     className?: string;
 };

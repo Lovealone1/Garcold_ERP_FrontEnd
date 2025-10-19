@@ -27,7 +27,6 @@ export async function getSession() {
   return data.session;
 }
 
-/** Llama al backend para provisionar/actualizar el usuario. */
 export async function syncBackend(): Promise<MeDTO | null> {
   const u = await getCurrentUser();
   if (!u) return null;
@@ -35,24 +34,20 @@ export async function syncBackend(): Promise<MeDTO | null> {
   return await syncSelf(payload);
 }
 
-/** Email/password */
 export async function login({ username, password }: LoginPayload): Promise<MeDTO> {
   const { data, error } = await supabase().auth.signInWithPassword({ email: username, password });
   if (error) throw error;
-  // tras tener sesión → sincroniza con backend
   const me = await syncBackend();
   if (!me) throw new Error("No session after login");
   return me;
 }
 
-/** OAuth Google: llama syncBackend en la página /auth/callback */
 export async function loginWithGoogle(redirectTo?: string) {
   const url = redirectTo ?? `${window.location.origin}/auth/callback`;
   const { error } = await supabase().auth.signInWithOAuth({ provider: "google", options: { redirectTo: url } });
   if (error) throw error;
 }
 
-/** Suscripción: cuando hay sesión, sincroniza. Devuelve unsubscribe. */
 export function onAuthStateChange(callback?: () => void) {
   const { data: { subscription } } = supabase().auth.onAuthStateChange(async (_evt, session) => {
     if (session) await syncBackend();
@@ -61,7 +56,6 @@ export function onAuthStateChange(callback?: () => void) {
   return () => subscription.unsubscribe();
 }
 
-/** Utilízalo en el layout al montar la app si ya existe sesión. */
 export async function bootstrapAuth(): Promise<MeDTO | null> {
   const session = await getSession();
   if (!session) return null;

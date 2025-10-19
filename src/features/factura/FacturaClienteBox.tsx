@@ -1,9 +1,9 @@
 "use client";
 import * as React from "react";
-import type { Cliente } from "@/types/customer";
+import type { Customer } from "@/types/customer";
 
 type Props = {
-    cliente: Cliente;
+    cliente: Customer;
     className?: string;
 };
 
@@ -13,18 +13,18 @@ export default function FacturaClienteBox({ cliente, className }: Props) {
             <div className="grid grid-cols-[270px_1fr_160px] gap-y-0 gap-x-4 leading-tight">
                 {/* Encabezado */}
                 <div className="text-[15px] font-bold text-[#111827]">Cliente:</div>
-                <div className="text-[14px] text-[#6b7280]">CC/NIT: {cliente.cc_nit}</div>
+                <div className="text-[14px] text-[#6b7280]">CC/NIT: {cliente.tax_id}</div>
                 <div className="text-[13px] text-[#6b7280] text-right">
-                    Cel: {cliente.celular ?? "-"}
+                    Cel: {cliente.phone ?? "-"}
                 </div>
 
                 {/* Fila 2 */}
-                <div className="text-[13px] text-[#111827] col-span-1">{cliente.nombre}</div>
+                <div className="text-[13px] text-[#111827] col-span-1">{cliente.name}</div>
                 <div className="text-[13px] text-[#6b7280] col-span-1">
-                    {cliente.correo ?? "-"}
+                    {cliente.email ?? "-"}
                 </div>
                 <div className="text-[13px] text-[#6b7280] text-right col-span-1">
-                    {cliente.ciudad} - {cliente.direccion}
+                    {cliente.city} - {cliente.address}
                 </div>
             </div>
 

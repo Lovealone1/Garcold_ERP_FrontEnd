@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase/client";
-import { syncSelf } from "@/services/sales/auth.api";
+import { syncSelf } from "@/services/auth.api";
 
 export default function AuthBootstrap({ children }: { children: React.ReactNode }) {
   const started = useRef(false);

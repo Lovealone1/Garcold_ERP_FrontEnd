@@ -1,5 +1,5 @@
 import axios from "axios";
-import salesApi from "../salesApi";
+import salesApi from "./salesApi";
 import type { AuthSyncDTO, MeDTO } from "@/types/auth";
 
 export async function syncSelf(payload: AuthSyncDTO = {}): Promise<MeDTO | null> {

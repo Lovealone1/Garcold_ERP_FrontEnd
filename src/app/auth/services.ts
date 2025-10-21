@@ -1,7 +1,7 @@
 "use client";
 
 import { supabase } from "@/lib/supabase/client";
-import { syncSelf } from "@/services/sales/auth.api";
+import { syncSelf } from "@/services/auth.api";
 import type { AuthSyncDTO, MeDTO } from "@/types/auth";
 
 export interface LoginPayload { username: string; password: string }

@@ -21,14 +21,11 @@ export function buildFacturaPdfUrl(
     u.searchParams.set("_ts", String(opts?.nocacheToken ?? Date.now()));
     return u.toString();
 }
-
-/** Nueva ruta del front en inglés */
 export function buildFacturaPreviewUrl(
     ventaId: number,
     opts?: { companyId?: number; nocacheToken?: number }
 ): string {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
-    // antes: /comercial/ventas/facturas/{id}
     const u = new URL(`/comercial/ventas/facturas/${ventaId}`, origin);
     u.searchParams.set("print", "1");
     u.searchParams.set("embed", "1");

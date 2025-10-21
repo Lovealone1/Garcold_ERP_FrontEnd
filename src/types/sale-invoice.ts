@@ -1,26 +1,10 @@
 import type { Customer } from "@/types/customer";
+import { CompanyDTO } from "@/types/company";
 
-/* ====== Company ====== */
-export interface CompanyDTO {
-    id: number;
-    razon_social: string;
-    nombre_completo: string;
-    cc_nit: string;
-    email_facturacion: string;
-    celular?: string | null;
-    direccion: string;
-    municipio: string;
-    departamento: string;
-    codigo_postal?: string | null;
-    regimen: "COMUN" | "NO_RESPONSABLE" | "SIMPLE";
-}
-
-/* ====== Bank ====== */
 export interface SaleInvoiceBankDTO {
     account_number: string;
 }
 
-/* ====== Items ====== */
 export interface SaleItemViewDesc {
     sale_id: number;
     product_reference: string;
@@ -30,10 +14,9 @@ export interface SaleItemViewDesc {
     total: number;
 }
 
-/* ====== Invoice ====== */
 export interface SaleInvoiceDTO {
     sale_id: number;
-    date: string;                    // ISO "YYYY-MM-DD" o ISO8601
+    date: string;                    
     status: string;
     total: number;
     remaining_balance: number;

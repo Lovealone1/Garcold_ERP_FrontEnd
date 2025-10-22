@@ -11,6 +11,12 @@ import { createProduct, updateProduct, deleteProduct, toggleProductActive } from
 import type { ProductDTO, ProductCreate, ProductUpdate } from "@/types/product";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 
+// IO
+import { useImport } from "@/hooks/io/useImport";
+import { useExport } from "@/hooks/io/useExport";
+import ImportDialog from "@/features/io/ImportDialog";
+import ExportDialog from "@/features/io/ExportDialog";
+
 const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 
 export default function ProductosPage() {
@@ -48,6 +54,12 @@ export default function ProductosPage() {
   // Media
   const [mediaProductId, setMediaProductId] = useState<number | null>(null);
   const [openMedia, setOpenMedia] = useState(false);
+
+  // IO
+  const [openImport, setOpenImport] = useState(false);
+  const [openExport, setOpenExport] = useState(false);
+  const imp = useImport();
+  const exp = useExport();
 
   const from = useMemo(() => (total === 0 ? 0 : (page - 1) * pageSize + 1), [page, pageSize, total]);
   const to = useMemo(() => Math.min(page * pageSize, total), [page, pageSize, total]);
@@ -127,7 +139,7 @@ export default function ProductosPage() {
 
   return (
     <div className="app-shell__frame overflow-hidden" style={frameVars}>
-      <div className="bg-[var(--page-bg)] rounded-xl h-full flex flex-col px-[var(--content-x)] pt-3 pb-5">
+      <div className="bg-[var(--page-bg)] rounded-xl h-full flex flex-col px-[var(--content-x)] pt-3 pb-5 relative">
         <div className="shrink-0">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-2xl font-semibold text-tg-fg">Productos</h2>
@@ -141,8 +153,7 @@ export default function ProductosPage() {
                 <input
                   type="search"
                   placeholder="Buscar.."
-                  className="h-10 w-full rounded-md border border-tg bg-tg-card text-tg-card pl-9 pr-3 
-             focus:outline-none focus:ring-tg-primary"
+                  className="h-10 w-full rounded-md border border-tg bg-tg-card text-tg-card pl-9 pr-3 focus:outline-none focus:ring-tg-primary"
                   value={filters.q ?? ""}
                   onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
                 />
@@ -150,8 +161,7 @@ export default function ProductosPage() {
 
               {/* Estado */}
               <select
-                className="h-10 flex-none w-[160px] rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted 
-             focus:outline-none"
+                className="h-10 flex-none w-[160px] rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted focus:outline-none"
                 value={filters.estado ?? ""}
                 onChange={(e) =>
                   setFilters((f) => ({ ...f, estado: (e.target.value || undefined) as "activos" | "inactivos" | undefined }))
@@ -206,7 +216,7 @@ export default function ProductosPage() {
                     <tr key={`sk-${i}`} className="border-t border-tg">
                       {Array.from({ length: 7 }).map((__, j) => (
                         <td key={j} className="px-4 py-3">
-                          <div className="h-4 w-full animate-pulse rounded bg-black/10 dark:bg.white/10 dark:bg-white/10" />
+                          <div className="h-4 w-full animate-pulse rounded bg-black/10 dark:bg-white/10" />
                         </td>
                       ))}
                     </tr>
@@ -230,7 +240,6 @@ export default function ProductosPage() {
                       </td>
                       <td className="px-2 py-2">
                         <div className="flex items-center justify-center gap-1">
-                          {/* Ver */}
                           <button
                             className="p-2 rounded-full text-tg-primary hover:bg-[color-mix(in_srgb,var(--tg-primary)_22%,transparent)]"
                             aria-label="ver"
@@ -238,8 +247,6 @@ export default function ProductosPage() {
                           >
                             <MaterialIcon name="visibility" size={18} />
                           </button>
-
-                          {/* Editar */}
                           <button
                             className="p-2 rounded-full text-tg-primary hover:bg-[color-mix(in_srgb,var(--tg-primary)_22%,transparent)]"
                             aria-label="editar"
@@ -247,8 +254,6 @@ export default function ProductosPage() {
                           >
                             <MaterialIcon name="edit" size={18} />
                           </button>
-
-                          {/* Media */}
                           <button
                             className="p-2 rounded-full text-tg-primary hover:bg-[color-mix(in_srgb,var(--tg-primary)_22%,transparent)]"
                             aria-label="media"
@@ -257,8 +262,6 @@ export default function ProductosPage() {
                           >
                             <MaterialIcon name="photo_camera" size={18} />
                           </button>
-
-                          {/* Activar/Desactivar */}
                           <button
                             className="p-2 rounded-full hover:bg-[color-mix(in_srgb,var(--tg-primary)_22%,transparent)]"
                             aria-label={r.is_active ? "desactivar" : "activar"}
@@ -271,8 +274,6 @@ export default function ProductosPage() {
                               className={r.is_active ? "text-tg-primary" : "text-tg-muted"}
                             />
                           </button>
-
-                          {/* Eliminar */}
                           <button
                             className="p-2 rounded-full text-tg-primary hover:bg-[color-mix(in_srgb,var(--tg-primary)_22%,transparent)]"
                             aria-label="eliminar"
@@ -282,7 +283,6 @@ export default function ProductosPage() {
                           </button>
                         </div>
                       </td>
-
                     </tr>
                   ))
                 )}
@@ -300,23 +300,10 @@ export default function ProductosPage() {
             </div>
 
             <nav className="flex items-center gap-1">
-              <button
-                disabled={!hasPrev}
-                onClick={() => setPage(1)}
-                className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary"
-                aria-label="Primera página"
-                title="Primera página"
-              >
+              <button disabled={!hasPrev} onClick={() => setPage(1)} className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary" aria-label="Primera página" title="Primera página">
                 <MaterialIcon name="first_page" size={18} />
               </button>
-
-              <button
-                disabled={!hasPrev}
-                onClick={() => setPage(page - 1)}
-                className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary"
-                aria-label="Anterior"
-                title="Anterior"
-              >
+              <button disabled={!hasPrev} onClick={() => setPage(page - 1)} className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary" aria-label="Anterior" title="Anterior">
                 <MaterialIcon name="chevron_left" size={18} />
               </button>
 
@@ -326,8 +313,7 @@ export default function ProductosPage() {
                   <button
                     key={p}
                     onClick={() => setPage(p)}
-                    className={`h-8 min-w-8 rounded px-2 text-sm ${active ? "bg-tg-primary text-tg-on-primary" : "hover:bg-black/10 dark:hover:bg-white/10"
-                      } focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary`}
+                    className={`h-8 min-w-8 rounded px-2 text-sm ${active ? "bg-tg-primary text-tg-on-primary" : "hover:bg-black/10 dark:hover:bg-white/10"} focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary`}
                     aria-current={active ? "page" : undefined}
                   >
                     {p}
@@ -337,23 +323,10 @@ export default function ProductosPage() {
 
               {end < totalPages && <span className="px-1">…</span>}
 
-              <button
-                disabled={!hasNext}
-                onClick={() => setPage(page + 1)}
-                className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary"
-                aria-label="Próximo"
-                title="Próximo"
-              >
+              <button disabled={!hasNext} onClick={() => setPage(page + 1)} className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary" aria-label="Próximo" title="Próximo">
                 <MaterialIcon name="chevron_right" size={18} />
               </button>
-
-              <button
-                disabled={!hasNext}
-                onClick={() => setPage(totalPages)}
-                className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary"
-                aria-label="Última página"
-                title="Última página"
-              >
+              <button disabled={!hasNext} onClick={() => setPage(totalPages)} className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary" aria-label="Última página" title="Última página">
                 <MaterialIcon name="last_page" size={18} />
               </button>
             </nav>
@@ -361,7 +334,70 @@ export default function ProductosPage() {
             <div className="text-sm text-tg-muted">Exhibiendo {from}-{to} de {total} registros</div>
           </div>
         </div>
+
+        {/* Botonera flotante inferior derecha: Importar / Exportar */}
+        <div className="fixed bottom-6 right-6 z-40 flex gap-2 pointer-events-auto">
+          <button
+            type="button"
+            onClick={() => setOpenImport(true)}
+            className="h-10 rounded-md border border-tg bg-[var(--panel-bg)] px-3 text-sm text-tg-muted inline-flex items-center gap-2"
+            aria-label="Importar datos"
+            title="Importar datos"
+          >
+            <MaterialIcon name="file_upload" size={18} />
+            Importar
+          </button>
+          <button
+            type="button"
+            onClick={() => setOpenExport(true)}
+            className="h-10 rounded-md border border-tg bg-[var(--panel-bg)] px-3 text-sm text-tg-muted inline-flex items-center gap-2"
+            aria-label="Exportar datos"
+            title="Exportar datos"
+          >
+            <MaterialIcon name="file_download" size={18} />
+            Exportar
+          </button>
+        </div>
       </div>
+
+      {/* IO dialogs */}
+      <ImportDialog
+        open={openImport}
+        onClose={() => { imp.reset(); setOpenImport(false); }}
+        onRun={async (opts) => {
+          try {
+            await imp.importFile({ ...opts, entity: "products" });
+            success("Importación completada");
+            reload?.();
+          } catch (e: any) {
+            err(e?.message ?? "Error al importar");
+          }
+        }}
+        loading={imp.loading}
+        error={imp.error?.message ?? null}
+        report={imp.data}
+        fixedEntity="products"
+        title="Importar productos"
+      />
+
+      <ExportDialog
+        open={openExport}
+        onClose={() => { exp.reset(); setOpenExport(false); }}
+        onDownload={async (_entity, fmt, filename) => {
+          try {
+            await exp.download("products", fmt, filename);
+            success("Exportación generada");
+          } catch (e: any) {
+            err(e?.message ?? "Error al exportar");
+          }
+        }}
+        loading={exp.loading}
+        error={exp.error?.message ?? null}
+        entities={["customers", "products", "suppliers"]}
+        fixedEntity="products"
+        title="Exportar productos"
+        defaultName="products"
+      />
 
       {/* Crear */}
       {openCreate && (

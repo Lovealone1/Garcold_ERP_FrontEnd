@@ -10,6 +10,12 @@ import { createCustomer, updateCustomer, deleteCustomer } from "@/services/sales
 import type { Customer, CustomerCreate, CustomerUpdate } from "@/types/customer";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 
+// IO hooks + dialogs
+import { useImport } from "@/hooks/io/useImport";
+import { useExport } from "@/hooks/io/useExport";
+import ImportDialog from "@/features/io/ImportDialog";
+import ExportDialog from "@/features/io/ExportDialog";
+
 const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 
 export default function ClientesPage() {
@@ -39,6 +45,12 @@ export default function ClientesPage() {
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [openDelete, setOpenDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // IO state
+  const [openImport, setOpenImport] = useState(false);
+  const [openExport, setOpenExport] = useState(false);
+  const imp = useImport();
+  const exp = useExport();
 
   const from = useMemo(() => (total === 0 ? 0 : (page - 1) * pageSize + 1), [page, pageSize, total]);
   const to = useMemo(() => Math.min(page * pageSize, total), [page, pageSize, total]);
@@ -164,7 +176,7 @@ export default function ClientesPage() {
                         const checked = selectedCities.includes(ci);
                         return (
                           <li key={ci}>
-                            <label className="flex items-center gap-2 text-sm cursor-pointer px-1 py-1 rounded hover:bg-black/10 dark:hover:bg-white/10">
+                            <label className="flex items-center gap-2 text-sm cursor-pointer px-1 py-1 rounded hover:bg.black/10 dark:hover:bg-white/10">
                               <input type="checkbox" className="accent-current" checked={checked} onChange={() => toggleCity(ci)} />
                               <span>{ci}</span>
                             </label>
@@ -296,23 +308,10 @@ export default function ClientesPage() {
             </div>
 
             <nav className="flex items-center gap-1">
-              <button
-                disabled={!hasPrev}
-                onClick={() => setPage(1)}
-                className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary"
-                aria-label="Primera página"
-                title="Primera página"
-              >
+              <button disabled={!hasPrev} onClick={() => setPage(1)} className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary" aria-label="Primera página" title="Primera página">
                 <MaterialIcon name="first_page" size={18} />
               </button>
-
-              <button
-                disabled={!hasPrev}
-                onClick={() => setPage(page - 1)}
-                className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary"
-                aria-label="Anterior"
-                title="Anterior"
-              >
+              <button disabled={!hasPrev} onClick={() => setPage(page - 1)} className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary" aria-label="Anterior" title="Anterior">
                 <MaterialIcon name="chevron_left" size={18} />
               </button>
 
@@ -332,23 +331,10 @@ export default function ClientesPage() {
 
               {end < totalPages && <span className="px-1">…</span>}
 
-              <button
-                disabled={!hasNext}
-                onClick={() => setPage(page + 1)}
-                className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary"
-                aria-label="Próximo"
-                title="Próximo"
-              >
+              <button disabled={!hasNext} onClick={() => setPage(page + 1)} className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary" aria-label="Próximo" title="Próximo">
                 <MaterialIcon name="chevron_right" size={18} />
               </button>
-
-              <button
-                disabled={!hasNext}
-                onClick={() => setPage(totalPages)}
-                className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary"
-                aria-label="Última página"
-                title="Última página"
-              >
+              <button disabled={!hasNext} onClick={() => setPage(totalPages)} className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary" aria-label="Última página" title="Última página">
                 <MaterialIcon name="last_page" size={18} />
               </button>
             </nav>
@@ -361,6 +347,7 @@ export default function ClientesPage() {
         <div className="fixed bottom-6 right-6 z-40 flex gap-2 pointer-events-auto">
           <button
             type="button"
+            onClick={() => setOpenImport(true)}
             className="h-10 rounded-md border border-tg bg-[var(--panel-bg)] px-3 text-sm text-tg-muted inline-flex items-center gap-2"
             aria-label="Importar datos"
             title="Importar datos"
@@ -370,6 +357,7 @@ export default function ClientesPage() {
           </button>
           <button
             type="button"
+            onClick={() => setOpenExport(true)}
             className="h-10 rounded-md border border-tg bg-[var(--panel-bg)] px-3 text-sm text-tg-muted inline-flex items-center gap-2"
             aria-label="Exportar datos"
             title="Exportar datos"
@@ -379,6 +367,45 @@ export default function ClientesPage() {
           </button>
         </div>
       </div>
+
+      {/* Dialogs IO */}
+      <ImportDialog
+        open={openImport}
+        onClose={() => { imp.reset(); setOpenImport(false); }}
+        onRun={async (opts) => {
+          try {
+            await imp.importFile({ ...opts, entity: "customers" });
+            success("Importación completada");
+            reload?.();
+          } catch (e: any) {
+            error(e?.message ?? "Error al importar");
+          }
+        }}
+        loading={imp.loading}
+        error={imp.error?.message ?? null}
+        report={imp.data}
+        fixedEntity="customers"
+        title="Importar clientes"
+      />
+
+      <ExportDialog
+        open={openExport}
+        onClose={() => { exp.reset(); setOpenExport(false); }}
+        onDownload={async (_entity, fmt, filename) => {
+          try {
+            await exp.download("customers", fmt, filename);
+            success("Exportación generada");
+          } catch (e: any) {
+            error(e?.message ?? "Error al exportar");
+          }
+        }}
+        loading={exp.loading}
+        error={exp.error?.message ?? null}
+        entities={["customers", "products", "suppliers"]}
+        fixedEntity="customers"
+        title="Exportar clientes"
+        defaultName="customers"
+      />
 
       {openCreate && (
         <ClienteForm

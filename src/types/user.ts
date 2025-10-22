@@ -35,3 +35,18 @@ export interface UpdateUserIn {
   full_name?: string | null;
   phone?: string | null;
 }
+
+export type SetUserRoleIn = { role_id: number };
+
+export type SetUserActiveIn ={is_active: boolean };
+
+export interface UserDTO {
+  id: number;
+  external_sub: string;
+  email: string | null;
+  display_name: string | null;
+  role: string | null;
+  is_active: boolean;
+  created_at: string;       
+  updated_at: string | null; 
+}

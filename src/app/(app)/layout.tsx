@@ -1,7 +1,9 @@
+// app/(app)/layout.tsx
 import { redirect } from "next/navigation";
 import AppShell from "@/components/layout/appshell";
 import { supabaseServer } from "@/lib/supabase/server";
-import AuthBootstrap from "@/components/providers/AuthBoostrap";
+import AuthBootstrap from "@/components/providers/AuthBoostrap"; // ← typo fixed
+import { RouteMemory } from "@/components/providers/RouteMemory";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await supabaseServer();
@@ -10,8 +12,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <AppShell>
-      <AuthBootstrap />   
-      {children}
+      <RouteMemory />
+      <AuthBootstrap>
+        {children}
+      </AuthBootstrap>
     </AppShell>
   );
 }

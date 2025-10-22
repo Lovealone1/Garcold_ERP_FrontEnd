@@ -10,7 +10,6 @@ import type {
 
 const BASE = "/roles";
 
-// --- ROLES ---
 export async function listRoles(
   opts?: { nocacheToken?: number; signal?: AbortSignal }
 ): Promise<RoleDTO[]> {
@@ -22,7 +21,6 @@ export async function listRoles(
   return data as RoleDTO[];
 }
 
-// --- CATALOGO (si existe endpoint) ---
 export async function listPermissionsCatalog(
   opts?: { nocacheToken?: number; signal?: AbortSignal }
 ): Promise<PermissionDTO[]> {
@@ -34,7 +32,6 @@ export async function listPermissionsCatalog(
   return data as PermissionDTO[];
 }
 
-// --- PERMISOS POR ROL ---
 export async function listRolePermissions(
   roleId: number,
   opts?: { nocacheToken?: number; signal?: AbortSignal }

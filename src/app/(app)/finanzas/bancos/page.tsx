@@ -2,12 +2,7 @@
 
 import { useMemo, useState } from "react";
 import {
-    IconButton,
-    Menu,
-    MenuItem,
-    Checkbox,
-    ListItemIcon,
-    ListItemText,
+    IconButton, Menu, MenuItem, Checkbox, ListItemIcon, ListItemText,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
@@ -17,75 +12,67 @@ import { useBancos } from "@/hooks/bancos/useBancos";
 import { useDeleteBanco } from "@/hooks/bancos/useDeleteBanco";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 import SaldoForm from "@/features/bancos/SaldoForm";
-const money = new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-    maximumFractionDigits: 0,
-});
+import BankCreateForm from "@/features/bancos/BankCreateForm";
+
+const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 
 export default function BancosPage() {
     const { items, loading, reload } = useBancos();
     const { deleteBanco, loading: deleting } = useDeleteBanco();
     const { success, error } = useNotifications();
 
-    // Selección explícita (desde el dropdown)
     const [visibleIds, setVisibleIds] = useState<number[]>([]);
-    // Selección de tarjetas (acciones superiores)
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
-    // Primeros 6 por id si no se eligió nada en el dropdown
     const defaultFirst6 = useMemo(
         () => items.slice().sort((a, b) => a.id - b.id).slice(0, 6).map((b) => b.id),
         [items]
     );
 
     const effectiveIds = visibleIds.length ? visibleIds : defaultFirst6;
-    const visibles = useMemo(
-        () => items.filter((b) => effectiveIds.includes(b.id)),
-        [items, effectiveIds]
-    );
+    const visibles = useMemo(() => items.filter((b) => effectiveIds.includes(b.id)), [items, effectiveIds]);
+    const totalVisible = useMemo(() => visibles.reduce((acc, b) => acc + (b.balance ?? 0), 0), [visibles]);
 
+<<<<<<< Updated upstream
     const totalVisible = useMemo(
         () => visibles.reduce((acc, b) => acc + (b.saldo ?? 0), 0),
         [visibles]
     );
 
     // Dropdown
+=======
+>>>>>>> Stashed changes
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
-    const handleOpen = (e: React.MouseEvent<HTMLButtonElement>) =>
-        setAnchorEl(e.currentTarget);
+    const handleOpen = (e: React.MouseEvent<HTMLButtonElement>) => setAnchorEl(e.currentTarget);
     const handleClose = () => setAnchorEl(null);
 
     function toggleDropdownId(id: number) {
         setVisibleIds((curr) => {
             const set = new Set(curr);
-            if (set.has(id)) {
-                set.delete(id);
-                return Array.from(set);
-            }
+            if (set.has(id)) { set.delete(id); return Array.from(set); }
             if (set.size >= 6) return curr;
-            set.add(id);
-            return Array.from(set);
+            set.add(id); return Array.from(set);
         });
-
-        // Si estaba seleccionado para acciones y sale de visibles, lo deseleccionamos
         setSelectedIds((sel) => {
             if (!effectiveIds.includes(id)) return sel;
             const next = new Set(sel);
-            if (!Array.from(next).some((x) => x === id)) return sel;
+            if (!next.has(id)) return sel;
             next.delete(id);
             return next;
         });
     }
 
-    function clearSelection() {
-        setVisibleIds([]);
-    }
+    function clearSelection() { setVisibleIds([]); }
 
+<<<<<<< Updated upstream
     // Acciones (arriba) controladas por selección de cards
     const [editBanco, setEditBanco] = useState<Banco | null>(null);
     const [delBanco, setDelBanco] = useState<Banco | null>(null);
+=======
+    const [editBanco, setEditBanco] = useState<Bank | null>(null);
+    const [delBanco, setDelBanco] = useState<Bank | null>(null);
+>>>>>>> Stashed changes
 
     function openUpdate() {
         const first = visibles.find((v) => selectedIds.has(v.id));
@@ -111,36 +98,25 @@ export default function BancosPage() {
     function toggleCardSelect(id: number) {
         setSelectedIds((prev) => {
             const next = new Set(prev);
-            if (next.has(id)) next.delete(id);
-            else next.add(id);
+            if (next.has(id)) next.delete(id); else next.add(id);
             return next;
         });
     }
 
+    // ---- crear banco (modal) ----
+    const [openCreate, setOpenCreate] = useState(false);
+
     return (
         <div className="px-4 pb-6 pt-3">
-            {/* HEADER: Bancos + Total (izq) | Selector + Crear (der) */}
             <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div className="flex items-center gap-4">
                     <h1 className="text-4xl font-extrabold text-tg-fg">Bancos</h1>
-
-                    {/* Card de total (sin etiqueta) justo al lado del título */}
-                    <div
-                        className="rounded-xl border px-4 py-2 min-w-[200px]"
-                        style={{
-                            borderColor: "var(--tg-border)",
-                            background: "var(--tg-card-bg)",
-                        }}
-                        aria-label="total-visible"
-                    >
-                        <span className="text-2xl md:text-3xl font-extrabold tracking-tight">
-                            {money.format(totalVisible)}
-                        </span>
+                    <div className="rounded-xl border px-4 py-2 min-w-[200px]" style={{ borderColor: "var(--tg-border)", background: "var(--tg-card-bg)" }} aria-label="total-visible">
+                        <span className="text-2xl md:text-3xl font-extrabold tracking-tight">{money.format(totalVisible)}</span>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-2">
-                    {/* Botón de selección (dropdown) */}
                     <button
                         type="button"
                         onClick={handleOpen}
@@ -150,9 +126,7 @@ export default function BancosPage() {
                         title="Elegir bancos a mostrar (máx. 6)"
                     >
                         <span className="text-tg-muted">Elegir bancos a mostrar</span>
-                        <span className="text-tg-muted">
-                            ({visibleIds.length || defaultFirst6.length}/6)
-                        </span>
+                        <span className="text-tg-muted">({visibleIds.length || defaultFirst6.length}/6)</span>
                         <ExpandMoreIcon fontSize="small" />
                     </button>
 
@@ -160,17 +134,7 @@ export default function BancosPage() {
                         anchorEl={anchorEl}
                         open={open}
                         onClose={handleClose}
-                        slotProps={{
-                            paper: {
-                                sx: {
-                                    bgcolor: "var(--tg-card-bg)",
-                                    color: "var(--tg-card-fg)",
-                                    border: "1px solid var(--tg-border)",
-                                    minWidth: 280,
-                                    maxHeight: 360,
-                                },
-                            },
-                        }}
+                        slotProps={{ paper: { sx: { bgcolor: "var(--tg-card-bg)", color: "var(--tg-card-fg)", border: "1px solid var(--tg-border)", minWidth: 280, maxHeight: 360 } } }}
                     >
                         {items.map((b) => {
                             const checked = visibleIds.includes(b.id);
@@ -178,39 +142,26 @@ export default function BancosPage() {
                                 <MenuItem
                                     key={b.id}
                                     onClick={() => toggleDropdownId(b.id)}
-                                    sx={{
-                                        gap: 1,
-                                        "&:hover": {
-                                            bgcolor: "color-mix(in srgb, var(--tg-primary) 12%, transparent)",
-                                        },
-                                    }}
+                                    sx={{ gap: 1, "&:hover": { bgcolor: "color-mix(in srgb, var(--tg-primary) 12%, transparent)" } }}
                                 >
                                     <ListItemIcon sx={{ minWidth: 28 }}>
-                                        <Checkbox
-                                            size="small"
-                                            checked={checked}
-                                            sx={{
-                                                color: "var(--tg-muted)",
-                                                "&.Mui-checked": { color: "var(--tg-primary)" },
-                                                pointerEvents: "none",
-                                            }}
-                                        />
+                                        <Checkbox size="small" checked={checked} sx={{ color: "var(--tg-muted)", "&.Mui-checked": { color: "var(--tg-primary)" }, pointerEvents: "none" }} />
                                     </ListItemIcon>
+<<<<<<< Updated upstream
                                     <ListItemText
                                         slotProps={{ primary: { sx: { color: "var(--tg-card-fg)" } } }}
                                         primary={b.nombre}
                                     />
+=======
+                                    <ListItemText slotProps={{ primary: { sx: { color: "var(--tg-card-fg)" } } }} primary={b.name} />
+>>>>>>> Stashed changes
                                 </MenuItem>
                             );
                         })}
                     </Menu>
 
                     {visibleIds.length > 0 && (
-                        <button
-                            type="button"
-                            onClick={clearSelection}
-                            className="h-10 rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-card"
-                        >
+                        <button type="button" onClick={clearSelection} className="h-10 rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-card">
                             Limpiar selecciones
                         </button>
                     )}
@@ -218,44 +169,28 @@ export default function BancosPage() {
                     <button
                         type="button"
                         className="h-10 rounded-md bg-tg-primary px-3 text-sm font-medium text-tg-on-primary inline-flex items-center gap-1 shadow-sm"
-                        onClick={() => {
-                            /* abrir modal crear */
-                        }}
+                        onClick={() => setOpenCreate(true)}
                     >
                         <AddIcon fontSize="small" /> Crear banco
                     </button>
                 </div>
             </div>
 
-            {/* Acciones superiores (aparecen al seleccionar cards) */}
             {selectedIds.size > 0 && (
                 <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <button
-                        type="button"
-                        onClick={openUpdate}
-                        className="h-9 rounded-md bg-tg-primary px-3 text-sm font-medium text-tg-on-primary"
-                    >
+                    <button type="button" onClick={openUpdate} className="h-9 rounded-md bg-tg-primary px-3 text-sm font-medium text-tg-on-primary">
                         Actualizar saldo
                     </button>
-                    <button
-                        type="button"
-                        onClick={openDelete}
-                        className="h-9 rounded-md border border-red-500 px-3 text-sm font-medium text-red-500 disabled:opacity-60"
-                        disabled={deleting}
-                    >
+                    <button type="button" onClick={openDelete} className="h-9 rounded-md border border-red-500 px-3 text-sm font-medium text-red-500 disabled:opacity-60" disabled={deleting}>
                         {deleting ? "Eliminando…" : "Eliminar banco"}
                     </button>
                 </div>
             )}
 
-            {/* GRID de tarjetas */}
             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {loading &&
                     Array.from({ length: 6 }).map((_, i) => (
-                        <div
-                            key={i}
-                            className="h-[160px] rounded-xl border border-tg bg-[var(--tg-card-bg)]"
-                        >
+                        <div key={i} className="h-[160px] rounded-xl border border-tg bg-[var(--tg-card-bg)]">
                             <div className="h-full animate-pulse bg-black/10 dark:bg-white/10 rounded-xl" />
                         </div>
                     ))}
@@ -271,25 +206,26 @@ export default function BancosPage() {
                                 onClick={() => toggleCardSelect(b.id)}
                                 onKeyDown={(e) => e.key === "Enter" && toggleCardSelect(b.id)}
                                 className={`rounded-xl border p-5 relative outline-none transition-colors ${isSelected
-                                    ? "border-[var(--tg-primary)] ring-2 ring-[var(--tg-primary)] bg-[color-mix(in_srgb,var(--tg-primary)10%,var(--tg-card-bg))]"
-                                    : "border-tg bg-[var(--tg-card-bg)] hover:border-[var(--tg-primary)]"
+                                        ? "border-[var(--tg-primary)] ring-2 ring-[var(--tg-primary)] bg-[color-mix(in_srgb,var(--tg-primary)10%,var(--tg-card-bg))]"
+                                        : "border-tg bg-[var(--tg-card-bg)] hover:border-[var(--tg-primary)]"
                                     }`}
                             >
                                 <div className="absolute right-2 top-2">
-                                    <IconButton
-                                        size="small"
-                                        sx={{ color: "var(--tg-muted)" }}
-                                        onClick={(e) => e.stopPropagation()}
-                                    >
+                                    <IconButton size="small" sx={{ color: "var(--tg-muted)" }} onClick={(e) => e.stopPropagation()}>
                                         <InfoOutlinedIcon fontSize="small" />
                                     </IconButton>
                                 </div>
 
+<<<<<<< Updated upstream
                                 <h3
                                     className="text-lg font-semibold"
                                     style={{ color: "var(--tg-primary)" }}
                                 >
                                     {b.nombre}
+=======
+                                <h3 className="text-lg font-semibold" style={{ color: "var(--tg-primary)" }}>
+                                    {b.name}
+>>>>>>> Stashed changes
                                 </h3>
 
                                 <div className="mt-2 text-4xl lg:text-5xl font-extrabold tracking-tight">
@@ -297,17 +233,43 @@ export default function BancosPage() {
                                 </div>
 
                                 <div className="mt-2 text-xs text-tg-muted">
+<<<<<<< Updated upstream
                                     Última actualización:{" "}
                                     <span className="font-light">
                                         {b.fecha_actualizacion
                                             ? new Date(b.fecha_actualizacion).toLocaleString()
                                             : "—"}
                                     </span>
+=======
+                                    Última actualización: <span className="font-light">{b.updated_at ? new Date(b.updated_at).toLocaleString() : "—"}</span>
+>>>>>>> Stashed changes
                                 </div>
                             </div>
                         );
                     })}
             </div>
+
+            {/* Modal crear banco */}
+            {openCreate && (
+                <div
+                    role="dialog"
+                    aria-modal="true"
+                    className="fixed inset-0 z-50 grid place-items-center bg-black/50"
+                    onClick={(e) => { if (e.target === e.currentTarget) setOpenCreate(false); }}
+                >
+                    <div className="w-[420px] rounded-lg border border-tg bg-[var(--panel-bg)] shadow-xl p-4">
+                        <h3 className="text-base font-semibold mb-3">Nuevo banco</h3>
+                        <BankCreateForm
+                            onCreated={() => {
+                                setOpenCreate(false);
+                                setSelectedIds(new Set());
+                                reload();
+                            }}
+                            onCancel={() => setOpenCreate(false)}
+                        />
+                    </div>
+                </div>
+            )}
 
             {/* Modal editar saldo */}
             {editBanco && (
@@ -315,14 +277,16 @@ export default function BancosPage() {
                     role="dialog"
                     aria-modal="true"
                     className="fixed inset-0 z-50 grid place-items-center bg-black/50"
-                    onClick={(e) => {
-                        if (e.target === e.currentTarget) setEditBanco(null);
-                    }}
+                    onClick={(e) => { if (e.target === e.currentTarget) setEditBanco(null); }}
                 >
                     <div className="w-[420px] rounded-lg border border-tg bg-[var(--panel-bg)] shadow-xl p-4">
+<<<<<<< Updated upstream
                         <h3 className="text-base font-semibold mb-3">
                             Actualizar saldo — {editBanco.nombre}
                         </h3>
+=======
+                        <h3 className="text-base font-semibold mb-3">Actualizar saldo — {editBanco.name}</h3>
+>>>>>>> Stashed changes
                         <SaldoForm
                             banco={editBanco}
                             onClose={() => {
@@ -341,32 +305,26 @@ export default function BancosPage() {
                     role="dialog"
                     aria-modal="true"
                     className="fixed inset-0 z-50 grid place-items-center bg-black/50"
-                    onClick={(e) => {
-                        if (e.target === e.currentTarget) setDelBanco(null);
-                    }}
+                    onClick={(e) => { if (e.target === e.currentTarget) setDelBanco(null); }}
                 >
                     <div className="w-[420px] rounded-lg border border-tg bg-[var(--panel-bg)] shadow-xl">
                         <div className="px-4 py-3 border-b border-tg">
                             <h3 className="text-base font-semibold">Eliminar banco</h3>
                         </div>
                         <div className="px-4 py-4 text-sm">
+<<<<<<< Updated upstream
                             ¿Seguro que deseas eliminar{" "}
                             <span className="font-medium">{delBanco.nombre}</span>? Esta acción
                             no se puede deshacer.
+=======
+                            ¿Seguro que deseas eliminar <span className="font-medium">{delBanco.name}</span>? Esta acción no se puede deshacer.
+>>>>>>> Stashed changes
                         </div>
                         <div className="px-4 py-3 border-t border-tg flex justify-end gap-2">
-                            <button
-                                className="h-9 rounded-md px-3 text-sm hover:bg-black/10 dark:hover:bg-white/10"
-                                onClick={() => setDelBanco(null)}
-                                disabled={deleting}
-                            >
+                            <button className="h-9 rounded-md px-3 text-sm hover:bg-black/10 dark:hover:bg-white/10" onClick={() => setDelBanco(null)} disabled={deleting}>
                                 Cancelar
                             </button>
-                            <button
-                                className="h-9 rounded-md bg-red-600 px-3 text-sm font-medium text-white disabled:opacity-60"
-                                onClick={confirmDelete}
-                                disabled={deleting}
-                            >
+                            <button className="h-9 rounded-md bg-red-600 px-3 text-sm font-medium text-white disabled:opacity-60" onClick={confirmDelete} disabled={deleting}>
                                 {deleting ? "Eliminando…" : "Eliminar"}
                             </button>
                         </div>
@@ -376,4 +334,3 @@ export default function BancosPage() {
         </div>
     );
 }
-

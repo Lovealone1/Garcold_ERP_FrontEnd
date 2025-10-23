@@ -1,10 +1,9 @@
-// components/top/TopProductosGrid.tsx
 "use client";
 import * as React from "react";
-import type { TopProductoItemDTO } from "@/types/reporte-general";
+import { TopProductItemDTO } from "@/types/reporte-general";
 
 type Props = {
-  items: TopProductoItemDTO[];
+  items: TopProductItemDTO[];
   className?: string;
 };
 
@@ -23,7 +22,7 @@ export default function TopProductosGrid({ items, className }: Props) {
       >
         {top.map((p, i) => (
           <article
-            key={p.producto_id ?? i}
+            key={p.product_id ?? i}
             className="flex items-center gap-2 rounded-lg border border-tg p-2
                        bg-[color-mix(in_srgb,var(--panel-bg) 94%,transparent)]"
           >
@@ -34,11 +33,11 @@ export default function TopProductosGrid({ items, className }: Props) {
               {i + 1}
             </div>
             <div className="min-w-0 flex-1">
-              <div className="truncate text-[var(--tg-fg)] text-xs font-medium" title={p.producto}>
-                {p.producto}
+              <div className="truncate text-[var(--tg-fg)] text-xs font-medium" title={p.product}>
+                {p.product}
               </div>
               <div className="text-[var(--tg-muted)] text-[10px]">
-                Cant: <span className="text-[var(--tg-fg)] font-semibold">{p.cantidad_total}</span>
+                Cant: <span className="text-[var(--tg-fg)] font-semibold">{p.total_quantity}</span>
               </div>
             </div>
           </article>

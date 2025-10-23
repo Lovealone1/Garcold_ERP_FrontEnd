@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Session } from "@supabase/supabase-js";
+import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase/client";
 
 export function useSupabaseSession() {
@@ -10,32 +10,34 @@ export function useSupabaseSession() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        let mounted = true;
+        let alive = true;
 
-        supabase.auth.getSession().then(({ data }) => {
-            if (mounted) {
-                setSession(data.session ?? null);
-                setLoading(false);
-            }
+        supabase().auth.getSession().then(({ data }) => {
+            if (!alive) return;
+            setSession(data.session ?? null);
+            setLoading(false);
         });
 
-        const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
+        const { data: { subscription } } = supabase().auth.onAuthStateChange((_e, s) => {
+            if (!alive) return;
             setSession(s);
+            setLoading(false);
         });
 
         return () => {
-            mounted = false;
-            sub.subscription.unsubscribe();
+            alive = false;
+            subscription?.unsubscribe();
         };
     }, []);
 
-    return { session, user: session?.user ?? null, loading };
+    const user: User | null = session?.user ?? null;
+    return { session, user, loading };
 }
 
 export function useLogout() {
     const router = useRouter();
     return async () => {
-        await supabase.auth.signOut();
+        await supabase().auth.signOut();
         router.replace("/adios?next=/login");
     };
 }

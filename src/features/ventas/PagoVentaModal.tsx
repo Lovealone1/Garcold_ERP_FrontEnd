@@ -15,10 +15,10 @@ import Grid from "@mui/material/Grid";
 import { usePagosVenta } from "@/hooks/ventas/usePagosVenta";
 import { useCreatePagoVenta } from "@/hooks/ventas/useCreatePagoVenta";
 import { useDeletePagoVenta } from "@/hooks/ventas/useDeletePagoVenta";
-import { listBancos } from "@/services/sales/bancos.api";
-import { getVentaById } from "@/services/sales/ventas.api";
-import type { Banco } from "@/types/bancos";
-import type { Venta } from "@/types/ventas";
+import { listBanks } from "@/services/sales/bank.api";
+import { getSaleById } from "@/services/sales/sale.api";
+import type { Bank } from "@/types/bank";
+import type { Sale } from "@/types/sale";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 
 const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
@@ -26,14 +26,14 @@ const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP
 type Props = {
     open: boolean;
     onClose: () => void;
-    venta: Venta | null;
+    venta: Sale | null;
     onPaid?: (ventaId: number) => void;
 };
 
 export default function PagoVentaModal({ open, onClose, venta, onPaid }: Props) {
     const ventaId = venta?.id ?? null;
 
-    const [ventaInfo, setVentaInfo] = useState<Venta | null>(venta ?? null);
+    const [ventaInfo, setVentaInfo] = useState<Sale | null>(venta ?? null);
     useEffect(() => { setVentaInfo(venta ?? null); }, [venta, open]);
 
     const { items, loading, reload } = usePagosVenta(ventaId);
@@ -41,17 +41,17 @@ export default function PagoVentaModal({ open, onClose, venta, onPaid }: Props) 
     const { remove, loading: deleting } = useDeletePagoVenta();
     const { success, error } = useNotifications();
 
-    const [bancos, setBancos] = useState<Banco[]>([]);
+    const [bancos, setBancos] = useState<Bank[]>([]);
     const [bancoId, setBancoId] = useState<number | "">("");
     const [monto, setMonto] = useState<string>("");
 
-    useEffect(() => { (async () => { try { setBancos(await listBancos(Date.now())); } catch { setBancos([]); } })(); }, []);
+    useEffect(() => { (async () => { try { setBancos(await listBanks(Date.now())); } catch { setBancos([]); } })(); }, []);
     useEffect(() => { setBancoId(""); setMonto(""); }, [ventaId, open]);
 
     const estadoColor = useMemo(() => {
         if (!ventaInfo) return undefined;
-        if (ventaInfo.saldo_restante > 0) return "bg-yellow-500/20 text-yellow-400";
-        if (ventaInfo.estado.toLowerCase().includes("contado") || ventaInfo.estado.toLowerCase().includes("cancelada"))
+        if (ventaInfo.remaining_balance > 0) return "bg-yellow-500/20 text-yellow-400";
+        if (ventaInfo.status.toLowerCase().includes("contado") || ventaInfo.status.toLowerCase().includes("cancelada"))
             return "bg-emerald-500/20 text-emerald-400";
         return "bg-sky-500/20 text-sky-400";
     }, [ventaInfo]);
@@ -59,7 +59,7 @@ export default function PagoVentaModal({ open, onClose, venta, onPaid }: Props) 
     async function refreshVenta() {
         if (!ventaId) return;
         try {
-            const fresh = await getVentaById(ventaId, Date.now());
+            const fresh = await getSaleById(ventaId, Date.now());
             setVentaInfo(fresh);
         } catch { }
     }
@@ -69,7 +69,7 @@ export default function PagoVentaModal({ open, onClose, venta, onPaid }: Props) 
         const num = Number(monto);
         if (!bancoId || !num || num <= 0) { error("Selecciona banco y un monto válido"); return; }
         try {
-            await create(ventaId, { banco_id: Number(bancoId), monto: num });
+            await create({ sale_id: ventaId, bank_id: Number(bancoId), amount: num });
             success("Abono registrado");
             await reload();
             await refreshVenta();
@@ -110,25 +110,25 @@ export default function PagoVentaModal({ open, onClose, venta, onPaid }: Props) 
                     <div className="mb-4 rounded-lg border border-tg p-3">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                             <div>
-                                <div className="text-base font-semibold">{ventaInfo.cliente}</div>
+                                <div className="text-base font-semibold">{ventaInfo.customer}</div>
                                 <div className="text-xs opacity-70">ID venta: {ventaInfo.id}</div>
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className={`px-2 py-1 rounded text-xs font-medium ${estadoColor}`}>
-                                    {ventaInfo.saldo_restante > 0 ? "Venta crédito" : ventaInfo.estado}
+                                    {ventaInfo.remaining_balance > 0 ? "Venta crédito" : ventaInfo.status}
                                 </span>
                                 <span className="px-2 py-1 rounded bg-black/10 text-xs">
                                     Total: {money.format(ventaInfo.total)}
                                 </span>
                                 <span className="px-2 py-1 rounded bg-black/10 text-xs">
-                                    Saldo: {money.format(ventaInfo.saldo_restante)}
+                                    Saldo: {money.format(ventaInfo.remaining_balance)}
                                 </span>
                             </div>
                         </div>
                     </div>
                 )}
 
-                {ventaInfo?.saldo_restante ? (
+                {ventaInfo?.remaining_balance ? (
                     <Stack gap={2} sx={{ mb: 3 }}>
                         <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Registrar abono</Typography>
                         <Grid container spacing={2}>
@@ -139,7 +139,7 @@ export default function PagoVentaModal({ open, onClose, venta, onPaid }: Props) 
                                     onChange={(e) => setBancoId((e.target.value ? Number(e.target.value) : "") as any)}
                                 >
                                     <option value="">Selecciona banco</option>
-                                    {bancos.map((b) => (<option key={b.id} value={b.id}>{b.nombre}</option>))}
+                                    {bancos.map((b) => (<option key={b.id} value={b.id}>{b.name}</option>))}
                                 </select>
                             </Grid>
                             <Grid size={{ xs: 12, md: 5 }}>
@@ -199,9 +199,9 @@ export default function PagoVentaModal({ open, onClose, venta, onPaid }: Props) 
                             ) : (
                                 items.map((p) => (
                                     <tr key={p.id} className="border-t border-tg">
-                                        <td className="px-3 py-2">{new Date(p.fecha_creacion).toLocaleString()}</td>
-                                        <td className="px-3 py-2">{p.banco}</td>
-                                        <td className="px-3 py-2 text-right">{money.format(p.monto_abonado)}</td>
+                                        <td className="px-3 py-2">{new Date(p.created_at).toLocaleString()}</td>
+                                        <td className="px-3 py-2">{p.bank}</td>
+                                        <td className="px-3 py-2 text-right">{money.format(p.amount_paid)}</td>
                                         <td className="px-2 py-1 text-center">
                                             <Tooltip title="Eliminar" arrow>
                                                 <span>

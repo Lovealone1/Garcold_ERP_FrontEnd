@@ -4,11 +4,17 @@ import { useMemo, useState, CSSProperties } from "react";
 import { MaterialIcon } from "@/components/ui/material-icon";
 import ProveedorForm from "@/features/proveedores/ProveedorForm";
 import ProveedorView from "@/features/proveedores/ProveedorView";
-import { useSuppliers } from "@/hooks/proveedores/useProveedores"; // ← ya refactorizado a Supplier internamente
+import { useSuppliers } from "@/hooks/proveedores/useProveedores";
 import { useSupplier } from "@/hooks/proveedores/useProveedor";
 import { createSupplier, updateSupplier, deleteSupplier } from "@/services/sales/supplier.api";
 import type { Supplier, SupplierCreate, SupplierUpdate } from "@/types/supplier";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
+
+// IO
+import { useImport } from "@/hooks/io/useImport";
+import { useExport } from "@/hooks/io/useExport";
+import ImportDialog from "@/features/io/ImportDialog";
+import ExportDialog from "@/features/io/ExportDialog";
 
 export default function ProveedoresPage() {
   const {
@@ -41,6 +47,12 @@ export default function ProveedoresPage() {
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [openDelete, setOpenDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // IO
+  const [openImport, setOpenImport] = useState(false);
+  const [openExport, setOpenExport] = useState(false);
+  const imp = useImport();
+  const exp = useExport();
 
   const from = useMemo(() => (total === 0 ? 0 : (page - 1) * pageSize + 1), [page, pageSize, total]);
   const to = useMemo(() => Math.min(page * pageSize, total), [page, pageSize, total]);
@@ -126,7 +138,7 @@ export default function ProveedoresPage() {
 
   return (
     <div className="app-shell__frame overflow-hidden" style={frameVars}>
-      <div className="bg-[var(--page-bg)] rounded-xl h-full flex flex-col px-[var(--content-x)] pt-3 pb-5">
+      <div className="bg-[var(--page-bg)] rounded-xl h-full flex flex-col px-[var(--content-x)] pt-3 pb-5 relative">
         <div className="shrink-0">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-2xl font-semibold text-tg-fg">Proveedores</h2>
@@ -140,8 +152,7 @@ export default function ProveedoresPage() {
                 <input
                   type="search"
                   placeholder="Buscar"
-                  className="h-10 w-full rounded-md border border-tg bg-tg-card text-tg-card pl-9 pr-3
-                             focus:outline-none"
+                  className="h-10 w-full rounded-md border border-tg bg-tg-card text-tg-card pl-9 pr-3 focus:outline-none"
                   value={filters.q ?? ""}
                   onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
                 />
@@ -152,8 +163,7 @@ export default function ProveedoresPage() {
                 <button
                   type="button"
                   onClick={() => setCitiesOpen((o) => !o)}
-                  className="h-10 w-full rounded-md border border-tg bg-tg-card px-3 text-left text-sm text-tg-muted inline-flex items-center justify-between
-                             focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary"
+                  className="h-10 w-full rounded-md border border-tg bg-tg-card px-3 text-left text-sm text-tg-muted inline-flex items-center justify-between focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary"
                 >
                   <span>{citiesLabel}</span>
                   <MaterialIcon name={citiesOpen ? "expand_less" : "expand_more"} size={18} />
@@ -197,8 +207,7 @@ export default function ProveedoresPage() {
               {/* Nuevo */}
               <button
                 onClick={() => setOpenCreate(true)}
-                className="h-10 rounded-md bg-tg-primary px-4 text-sm font-medium text-tg-on-primary shadow-sm
-                           focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary/60"
+                className="h-10 rounded-md bg-tg-primary px-4 text-sm font-medium text-tg-on-primary shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary/60"
               >
                 Nuevo proveedor
               </button>
@@ -247,7 +256,6 @@ export default function ProveedoresPage() {
                       <td className="px-4 py-3">{r.city || "—"}</td>
                       <td className="px-2 py-2">
                         <div className="flex items-center justify-center gap-1">
-                          {/* Ver */}
                           <button
                             className="rounded p-2 hover:bg-black/10 dark:hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary"
                             aria-label="ver"
@@ -255,7 +263,6 @@ export default function ProveedoresPage() {
                           >
                             <MaterialIcon name="visibility" size={18} className="text-tg-primary" />
                           </button>
-                          {/* Editar */}
                           <button
                             className="rounded p-2 hover:bg-black/10 dark:hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary"
                             aria-label="editar"
@@ -263,7 +270,6 @@ export default function ProveedoresPage() {
                           >
                             <MaterialIcon name="edit" size={18} className="text-tg-primary" />
                           </button>
-                          {/* Eliminar */}
                           <button
                             className="rounded p-2 hover:bg-black/10 dark:hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary"
                             aria-label="eliminar"
@@ -290,37 +296,20 @@ export default function ProveedoresPage() {
             </div>
 
             <nav className="flex items-center gap-1">
-              {/* Ir al inicio */}
-              <button
-                disabled={!hasPrev}
-                onClick={() => setPage(1)}
-                className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary"
-                aria-label="Primera página"
-                title="Primera página"
-              >
+              <button disabled={!hasPrev} onClick={() => setPage(1)} className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary" aria-label="Primera página" title="Primera página">
                 <MaterialIcon name="first_page" size={18} />
               </button>
-
-              {/* Anterior */}
-              <button
-                disabled={!hasPrev}
-                onClick={() => setPage(page - 1)}
-                className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary"
-                aria-label="Anterior"
-                title="Anterior"
-              >
+              <button disabled={!hasPrev} onClick={() => setPage(page - 1)} className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary" aria-label="Anterior" title="Anterior">
                 <MaterialIcon name="chevron_left" size={18} />
               </button>
 
-              {/* Números */}
               {Array.from({ length: end - start + 1 }, (_, i) => start + i).map((p) => {
                 const active = p === page;
                 return (
                   <button
                     key={p}
                     onClick={() => setPage(p)}
-                    className={`h-8 min-w-8 rounded px-2 text-sm ${active ? "bg-tg-primary text-tg-on-primary" : "hover:bg-black/10 dark:hover:bg-white/10"
-                      } focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary`}
+                    className={`h-8 min-w-8 rounded px-2 text-sm ${active ? "bg-tg-primary text-tg-on-primary" : "hover:bg-black/10 dark:hover:bg-white/10"} focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary`}
                     aria-current={active ? "page" : undefined}
                   >
                     {p}
@@ -330,55 +319,81 @@ export default function ProveedoresPage() {
 
               {end < totalPages && <span className="px-1">…</span>}
 
-              {/* Siguiente */}
-              <button
-                disabled={!hasNext}
-                onClick={() => setPage(page + 1)}
-                className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary"
-                aria-label="Próximo"
-                title="Próximo"
-              >
+              <button disabled={!hasNext} onClick={() => setPage(page + 1)} className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary" aria-label="Próximo" title="Próximo">
                 <MaterialIcon name="chevron_right" size={18} />
               </button>
-
-              {/* Ir al final */}
-              <button
-                disabled={!hasNext}
-                onClick={() => setPage(totalPages)}
-                className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary"
-                aria-label="Última página"
-                title="Última página"
-              >
+              <button disabled={!hasNext} onClick={() => setPage(totalPages)} className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary" aria-label="Última página" title="Última página">
                 <MaterialIcon name="last_page" size={18} />
               </button>
             </nav>
 
             <div className="text-sm text-tg-muted">Exhibiendo {from}-{to} de {total} registros</div>
           </div>
+        </div>
 
-          {/* Botones Importar / Exportar debajo de la tabla */}
-          <div className="shrink-0 flex items-center justify-end gap-2 border-t border-tg px-4 py-3">
-            <button
-              type="button"
-              className="h-10 rounded-md border border-tg bg-[var(--panel-bg)] px-3 text-sm text-tg-muted inline-flex items-center gap-2"
-              aria-label="Importar datos"
-              title="Importar datos"
-            >
-              <MaterialIcon name="file_upload" size={18} />
-              Importar
-            </button>
-            <button
-              type="button"
-              className="h-10 rounded-md border border-tg bg-[var(--panel-bg)] px-3 text-sm text-tg-muted inline-flex items-center gap-2"
-              aria-label="Exportar datos"
-              title="Exportar datos"
-            >
-              <MaterialIcon name="file_download" size={18} />
-              Exportar
-            </button>
-          </div>
+        {/* Botonera flotante inferior derecha: Importar / Exportar */}
+        <div className="fixed bottom-6 right-6 z-40 flex gap-2 pointer-events-auto">
+          <button
+            type="button"
+            onClick={() => setOpenImport(true)}
+            className="h-10 rounded-md border border-tg bg-[var(--panel-bg)] px-3 text-sm text-tg-muted inline-flex items-center gap-2"
+            aria-label="Importar datos"
+            title="Importar datos"
+          >
+            <MaterialIcon name="file_upload" size={18} />
+            Importar
+          </button>
+          <button
+            type="button"
+            onClick={() => setOpenExport(true)}
+            className="h-10 rounded-md border border-tg bg-[var(--panel-bg)] px-3 text-sm text-tg-muted inline-flex items-center gap-2"
+            aria-label="Exportar datos"
+            title="Exportar datos"
+          >
+            <MaterialIcon name="file_download" size={18} />
+            Exportar
+          </button>
         </div>
       </div>
+
+      {/* IO dialogs */}
+      <ImportDialog
+        open={openImport}
+        onClose={() => { imp.reset(); setOpenImport(false); }}
+        onRun={async (opts) => {
+          try {
+            await imp.importFile({ ...opts, entity: "suppliers" });
+            success("Importación completada");
+            reload?.();
+          } catch (e: any) {
+            error(e?.message ?? "Error al importar");
+          }
+        }}
+        loading={imp.loading}
+        error={imp.error?.message ?? null}
+        report={imp.data}
+        fixedEntity="suppliers"
+        title="Importar proveedores"
+      />
+
+      <ExportDialog
+        open={openExport}
+        onClose={() => { exp.reset(); setOpenExport(false); }}
+        onDownload={async (_entity, fmt, filename) => {
+          try {
+            await exp.download("suppliers", fmt, filename);
+            success("Exportación generada");
+          } catch (e: any) {
+            error(e?.message ?? "Error al exportar");
+          }
+        }}
+        loading={exp.loading}
+        error={exp.error?.message ?? null}
+        entities={["customers", "products", "suppliers"]}
+        fixedEntity="suppliers"
+        title="Exportar proveedores"
+        defaultName="suppliers"
+      />
 
       {/* Crear */}
       {openCreate && (

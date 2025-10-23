@@ -1,27 +1,33 @@
 import { useEffect, useState, useCallback } from "react";
-import { getUtilidadByVentaId } from "@/services/sales/utilidades.api";
-import type { Utilidad } from "@/types/utilidades";
+import { getProfitBySaleId } from "@/services/sales/profit.api";
+import type { Profit } from "@/types/profit";
 
-export function useUtilidad(ventaId: number | null) {
-    const [utilidad, setUtilidad] = useState<Utilidad | null>(null);
+export function useProfit(saleId: number | null | undefined) {
+    const [profit, setProfit] = useState<Profit | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const fetchIt = useCallback(async () => {
-        if (!ventaId) return;
+        if (!saleId) {
+            setProfit(null);
+            setLoading(false);
+            setError(null);
+            return;
+        }
         setLoading(true);
         setError(null);
         try {
-            const data = await getUtilidadByVentaId(ventaId);
-            setUtilidad(data);
+            const data = await getProfitBySaleId(saleId);
+            setProfit(data);
         } catch (e: any) {
-            setError(e?.message ?? "Error al cargar utilidad");
+            setError(e?.message ?? "Failed to load profit");
+            setProfit(null);
         } finally {
             setLoading(false);
         }
-    }, [ventaId]);
+    }, [saleId]);
 
     useEffect(() => { fetchIt(); }, [fetchIt]);
 
-    return { utilidad, loading, error, refetch: fetchIt };
+    return { profit, loading, error, refetch: fetchIt };
 }

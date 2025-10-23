@@ -1,38 +1,37 @@
-// hooks/transacciones/useTransacciones.ts
+// hooks/transactions/useTransactions.ts
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { TransaccionResponse, TransaccionesPage, TransaccionVM } from "@/types/transacciones";
-import { listTransacciones } from "@/services/sales/transaccion.api";
-import { origenFromDescripcion, type Origen } from "@/utils/transacciones";
+import type { TransactionView, TransactionPageDTO } from "@/types/transaction";
+import { listTransactions } from "@/services/sales/transaction.api";
 
-export type OrigenFilter = "all" | Origen;
+export type OriginFilter = "all" | "auto" | "manual";
 
-export interface TransaccionesFilters {
+export interface TransactionFilters {
     q?: string;
-    banco?: string;   // nombre del banco (no id)
-    tipo?: string;    // tipo_str
-    origen?: OrigenFilter;
+    bank?: string;   // bank name
+    type?: string;   // type_str
+    origin?: OriginFilter;
 }
 
 /**
- * Carga TODO el dataset y pagina en cliente.
- * Filtros y opciones globales listos para combos.
+ * Loads all transactions (paginated fetch) and paginates locally.
+ * Supports global filters and combo options.
  */
-export function useTransacciones(initialPage = 1, pageSize = 10) {
+export function useTransactions(initialPage = 1, pageSize = 10) {
     const [page, setPage] = useState(initialPage);
-    const [all, setAll] = useState<TransaccionVM[]>([]);
+    const [all, setAll] = useState<TransactionView[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [filters, setFilters] = useState<TransaccionesFilters>({ q: "", banco: "", tipo: "", origen: "all" });
+    const [filters, setFilters] = useState<TransactionFilters>({
+        q: "",
+        bank: "",
+        type: "",
+        origin: "all",
+    });
 
     const nonceRef = useRef<number>(0);
     const mounted = useRef(true);
-
-    const toVM = (r: TransaccionResponse): TransaccionVM => {
-        const origen = origenFromDescripcion(r.descripcion);
-        return { ...r, origen, locked: origen === "auto" };
-    };
 
     const fetchAll = useCallback(async () => {
         setLoading(true);
@@ -40,20 +39,22 @@ export function useTransacciones(initialPage = 1, pageSize = 10) {
         const nonce = Date.now();
         nonceRef.current = nonce;
         try {
-            const first: TransaccionesPage = await listTransacciones(1, nonce);
+            const first: TransactionPageDTO = await listTransactions(1, nonce);
             if (!mounted.current || nonceRef.current !== nonce) return;
 
-            const acc: TransaccionVM[] = first.items.map(toVM);
+            const acc: TransactionView[] = [...first.items];
             for (let p = 2; p <= first.total_pages; p++) {
-                const res = await listTransacciones(p, nonce);
+                const res = await listTransactions(p, nonce);
                 if (!mounted.current || nonceRef.current !== nonce) return;
-                acc.push(...res.items.map(toVM));
+                acc.push(...res.items);
             }
 
             if (!mounted.current || nonceRef.current !== nonce) return;
             setAll(acc);
         } catch (e: any) {
-            if (mounted.current && nonceRef.current === nonce) setError(e?.message ?? "Error");
+            if (mounted.current && nonceRef.current === nonce) {
+                setError(e?.message ?? "Error al cargar transacciones");
+            }
         } finally {
             if (mounted.current && nonceRef.current === nonce) setLoading(false);
         }
@@ -62,41 +63,47 @@ export function useTransacciones(initialPage = 1, pageSize = 10) {
     useEffect(() => {
         mounted.current = true;
         fetchAll();
-        return () => { mounted.current = false; };
+        return () => {
+            mounted.current = false;
+        };
     }, [fetchAll]);
 
-    // Opciones globales
+    // Opciones únicas globales
     const options = useMemo(() => {
-        const bancos = Array.from(new Set(all.map(x => x.banco))).sort();
-        const tipos = Array.from(new Set(all.map(x => x.tipo_str))).sort();
-        return { bancos, tipos };
+        const banks = Array.from(new Set(all.map(x => x.bank))).sort();
+        const types = Array.from(new Set(all.map(x => x.type_str))).sort();
+        return { banks, types };
     }, [all]);
 
-    // Filtros globales
+    // Filtros
     const filtered = useMemo(() => {
         const v = (filters.q ?? "").trim().toLowerCase();
-        const origenF = (filters.origen ?? "all") as OrigenFilter;
+        const originF = (filters.origin ?? "all") as OriginFilter;
 
         return all.filter(r => {
             const byQ =
                 !v ||
                 String(r.id).includes(v) ||
-                r.banco.toLowerCase().includes(v) ||
-                r.tipo_str.toLowerCase().includes(v) ||
-                (r.descripcion ?? "").toLowerCase().includes(v);
+                r.bank.toLowerCase().includes(v) ||
+                r.type_str.toLowerCase().includes(v) ||
+                (r.description ?? "").toLowerCase().includes(v);
 
-            const byBanco = !filters.banco || r.banco === filters.banco;
-            const byTipo = !filters.tipo || r.tipo_str === filters.tipo;
-            const byOrigen = origenF === "all" || r.origen === origenF;
+            const byBank = !filters.bank || r.bank === filters.bank;
+            const byType = !filters.type || r.type_str === filters.type;
+            const byOrigin =
+                originF === "all" ||
+                (originF === "auto" ? r.is_auto : !r.is_auto);
 
-            return byQ && byBanco && byTipo && byOrigen;
+            return byQ && byBank && byType && byOrigin;
         });
     }, [all, filters]);
 
-    // Reset página al cambiar filtros
-    useEffect(() => { setPage(1); }, [filters.q, filters.banco, filters.tipo, filters.origen]);
+    // Reset page when filters change
+    useEffect(() => {
+        setPage(1);
+    }, [filters.q, filters.bank, filters.type, filters.origin]);
 
-    // Paginación en cliente
+    // Client-side pagination
     const total = filtered.length;
     const total_pages = Math.max(1, Math.ceil(total / pageSize));
     const safePage = Math.min(page, total_pages);

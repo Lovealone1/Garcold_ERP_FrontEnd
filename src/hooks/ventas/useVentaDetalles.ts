@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { listDetallesVenta } from "@/services/sales/ventas.api";
-import type { DetalleVentaView } from "@/types/ventas";
+import { listSaleItems } from "@/services/sales/sale.api";
+import type { SaleItemView } from "@/types/sale";
 
 type Options = { enabled?: boolean };
 
 export function useVentaDetalles(ventaId?: number, options?: Options) {
     const enabled = options?.enabled ?? true;
 
-    const [items, setItems] = useState<DetalleVentaView[]>([]);
+    const [items, setItems] = useState<SaleItemView[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<unknown>(null);
 
@@ -18,7 +18,7 @@ export function useVentaDetalles(ventaId?: number, options?: Options) {
         setLoading(true);
         setError(null);
         try {
-            const data = await listDetallesVenta(ventaId, Date.now());
+            const data = await listSaleItems(ventaId, Date.now());
             setItems(data);
         } catch (e) {
             setItems([]);
@@ -36,7 +36,7 @@ export function useVentaDetalles(ventaId?: number, options?: Options) {
         }
         setLoading(true);
         setError(null);
-        listDetallesVenta(ventaId, Date.now())
+        listSaleItems(ventaId, Date.now())
             .then((data) => alive && setItems(data))
             .catch((e) => {
                 if (!alive) return;

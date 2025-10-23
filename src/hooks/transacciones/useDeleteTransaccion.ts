@@ -1,19 +1,21 @@
 "use client";
 import { useCallback, useState } from "react";
-import { deleteTransaccion } from "@/services/sales/transaccion.api";
+import { deleteTransaction } from "@/services/sales/transaction.api";
 
-export function useDeleteTransaccion() {
+export function useDeleteTransaction() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const remove = useCallback(async (transaccionId: number): Promise<string> => {
+    const remove = useCallback(async (transactionId: number): Promise<string> => {
         setLoading(true);
         setError(null);
         try {
-            const res = await deleteTransaccion(transaccionId);
-            return res.mensaje;
+            const res = await deleteTransaction(transactionId);
+            return res.message;
         } catch (e: unknown) {
-            const msg = e instanceof Error ? e.message : "Error desconocido";
+            const msg =
+                (e as any)?.response?.data?.detail ??
+                (e instanceof Error ? e.message : "Error al eliminar la transacción");
             setError(msg);
             throw new Error(msg);
         } finally {

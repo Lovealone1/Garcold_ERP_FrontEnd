@@ -8,7 +8,6 @@ export async function GET(req: NextRequest) {
     if (code) {
         const supabase = await supabaseServer();
         await supabase.auth.exchangeCodeForSession(code);
-        // Envía a la animación si no te lo pidieron explícito
         const target = rawNext.includes("/bienvenido")
             ? rawNext
             : `/bienvenido?next=${encodeURIComponent(rawNext)}`;

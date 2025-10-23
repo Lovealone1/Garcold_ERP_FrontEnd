@@ -1,19 +1,19 @@
 "use client";
 import { useState } from "react";
-import { deletePagoVenta } from "@/services/sales/ventas.api";
+import { deleteSalePayment } from "@/services/sales/sale.api";
 
 export function useDeletePagoVenta() {
-    const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-    async function remove(pagoId: number): Promise<boolean> {
-        setLoading(true);
-        try {
-            const { ok } = await deletePagoVenta(pagoId);
-            return !!ok;
-        } finally {
-            setLoading(false);
-        }
+  async function remove(pagoId: number): Promise<boolean> {
+    setLoading(true);
+    try {
+      await deleteSalePayment(pagoId);
+      return true;
+    } finally {
+      setLoading(false);
     }
+  }
 
-    return { remove, loading };
+  return { remove, loading };
 }

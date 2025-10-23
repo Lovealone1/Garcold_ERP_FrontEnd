@@ -1,16 +1,16 @@
 "use client";
 import { useState, useCallback } from "react";
-import { deleteCredito } from "@/services/sales/creditos.api";
+import { deleteLoan } from "@/services/sales/loan.api";
 
-export function useDeleteCredito(onSuccess?: () => void) {
+export function useDeleteLoan(onSuccess?: () => void) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<unknown>(null);
 
-  const mutate = useCallback(async (id: number) => {
+  const remove = useCallback(async (id: number) => {
     setLoading(true);
     setError(null);
     try {
-      await deleteCredito(id);
+      await deleteLoan(id);
       onSuccess?.();
     } catch (e) {
       setError(e);
@@ -20,5 +20,5 @@ export function useDeleteCredito(onSuccess?: () => void) {
     }
   }, [onSuccess]);
 
-  return { remove: mutate, loading, error };
+  return { remove, loading, error };
 }

@@ -12,7 +12,7 @@ import {
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import AddIcon from "@mui/icons-material/Add";
-import type { Banco } from "@/types/bancos";
+import type { Bank } from "@/types/bank";
 import { useBancos } from "@/hooks/bancos/useBancos";
 import { useDeleteBanco } from "@/hooks/bancos/useDeleteBanco";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
@@ -46,7 +46,7 @@ export default function BancosPage() {
     );
 
     const totalVisible = useMemo(
-        () => visibles.reduce((acc, b) => acc + (b.saldo ?? 0), 0),
+        () => visibles.reduce((acc, b) => acc + (b.balance ?? 0), 0),
         [visibles]
     );
 
@@ -84,8 +84,8 @@ export default function BancosPage() {
     }
 
     // Acciones (arriba) controladas por selección de cards
-    const [editBanco, setEditBanco] = useState<Banco | null>(null);
-    const [delBanco, setDelBanco] = useState<Banco | null>(null);
+    const [editBanco, setEditBanco] = useState<Bank | null>(null);
+    const [delBanco, setDelBanco] = useState<Bank | null>(null);
 
     function openUpdate() {
         const first = visibles.find((v) => selectedIds.has(v.id));
@@ -198,7 +198,7 @@ export default function BancosPage() {
                                     </ListItemIcon>
                                     <ListItemText
                                         slotProps={{ primary: { sx: { color: "var(--tg-card-fg)" } } }}
-                                        primary={b.nombre}
+                                        primary={b.name}
                                     />
                                 </MenuItem>
                             );
@@ -289,18 +289,18 @@ export default function BancosPage() {
                                     className="text-lg font-semibold"
                                     style={{ color: "var(--tg-primary)" }}
                                 >
-                                    {b.nombre}
+                                    {b.name}
                                 </h3>
 
                                 <div className="mt-2 text-4xl lg:text-5xl font-extrabold tracking-tight">
-                                    {money.format(b.saldo ?? 0)}
+                                    {money.format(b.balance ?? 0)}
                                 </div>
 
                                 <div className="mt-2 text-xs text-tg-muted">
                                     Última actualización:{" "}
                                     <span className="font-light">
-                                        {b.fecha_actualizacion
-                                            ? new Date(b.fecha_actualizacion).toLocaleString()
+                                        {b.updated_at
+                                            ? new Date(b.updated_at).toLocaleString()
                                             : "—"}
                                     </span>
                                 </div>
@@ -321,7 +321,7 @@ export default function BancosPage() {
                 >
                     <div className="w-[420px] rounded-lg border border-tg bg-[var(--panel-bg)] shadow-xl p-4">
                         <h3 className="text-base font-semibold mb-3">
-                            Actualizar saldo — {editBanco.nombre}
+                            Actualizar saldo — {editBanco.name}
                         </h3>
                         <SaldoForm
                             banco={editBanco}
@@ -351,7 +351,7 @@ export default function BancosPage() {
                         </div>
                         <div className="px-4 py-4 text-sm">
                             ¿Seguro que deseas eliminar{" "}
-                            <span className="font-medium">{delBanco.nombre}</span>? Esta acción
+                            <span className="font-medium">{delBanco.name}</span>? Esta acción
                             no se puede deshacer.
                         </div>
                         <div className="px-4 py-3 border-t border-tg flex justify-end gap-2">

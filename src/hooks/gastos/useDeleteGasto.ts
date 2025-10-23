@@ -1,8 +1,8 @@
 "use client";
 import { useState } from "react";
-import { deleteGasto } from "@/services/sales/gastos.api";
+import { deleteExpense } from "@/services/sales/expense.api";
 
-export function useDeleteGasto(onDeleted?: () => void) {
+export function useDeleteExpense(onDeleted?: () => void) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -10,11 +10,11 @@ export function useDeleteGasto(onDeleted?: () => void) {
         setLoading(true);
         setError(null);
         try {
-            const res = await deleteGasto(id);
+            const res = await deleteExpense(id);
             onDeleted?.();
             return res;
         } catch (e: any) {
-            setError(e?.message ?? "Error eliminando gasto");
+            setError(e?.message ?? "Failed to delete expense");
             throw e;
         } finally {
             setLoading(false);

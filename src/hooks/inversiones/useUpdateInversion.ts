@@ -1,17 +1,17 @@
 "use client";
 import { useState, useCallback } from "react";
-import { updateInversionSaldo } from "@/services/sales/inversiones.api";
-import type { Inversion, InversionUpdateSaldo } from "@/types/inversiones";
+import { updateInvestmentBalance } from "@/services/sales/investment.api";
+import type { Investment, InvestmentUpdateBalance } from "@/types/investment";
 
-export function useUpdateInversion(onSuccess?: (i: Inversion) => void) {
+export function useUpdateInvestment(onSuccess?: (i: Investment) => void) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<unknown>(null);
 
-  const mutate = useCallback(async (id: number, payload: InversionUpdateSaldo) => {
+  const update = useCallback(async (id: number, payload: InvestmentUpdateBalance) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await updateInversionSaldo(id, payload);
+      const res = await updateInvestmentBalance(id, payload);
       onSuccess?.(res);
       return res;
     } catch (e) {
@@ -22,5 +22,5 @@ export function useUpdateInversion(onSuccess?: (i: Inversion) => void) {
     }
   }, [onSuccess]);
 
-  return { update: mutate, loading, error };
+  return { update, loading, error };
 }

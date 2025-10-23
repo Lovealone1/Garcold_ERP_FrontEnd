@@ -1,9 +1,9 @@
 "use client";
 import * as React from "react";
-import type { DetalleVentaViewDesc } from "@/types/factura";
+import type { SaleItemViewDesc } from "@/types/sale-invoice";
 
 type Props = {
-    items: DetalleVentaViewDesc[];
+    items: SaleItemViewDesc[];
     className?: string;
 };
 
@@ -27,14 +27,14 @@ export default function FacturaItemsTable({ items, className }: Props) {
                     key={i}
                     className="grid [grid-template-columns:140px_1fr_90px_120px_120px] px-3 py-2 border-b border-[#e5e7eb] text-[13px] text-[#111827]"
                 >
-                    <div className="truncate">{it.producto_referencia}</div>
-                    <div className="truncate">{it.producto_descripcion}</div>
+                    <div className="truncate">{it.product_reference}</div>
+                    <div className="truncate">{it.product_description}</div>
 
-                    <div className="qty">{it.cantidad}</div>
+                    <div className="qty">{it.quantity}</div>
 
                     <div className="money">
                         <span className="sym">$</span>
-                        <span className="num">{num.format(it.precio)}</span>
+                        <span className="num">{num.format(it.unit_price)}</span>
                     </div>
                     <div className="money">
                         <span className="sym">$</span>

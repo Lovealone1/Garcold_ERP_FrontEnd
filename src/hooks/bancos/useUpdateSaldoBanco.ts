@@ -1,32 +1,28 @@
-// hooks/bancos/useUpdateSaldoBanco.ts
 "use client";
 
 import { useState } from "react";
-import type { Banco } from "@/types/bancos";
-import { updateSaldoBanco } from "@/services/sales/bancos.api";
+import type { Bank } from "@/types/bank";
+import { updateBankBalance } from "@/services/sales/bank.api";
 
-export function useUpdateSaldoBanco(onSuccess?: (banco: Banco) => void) {
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+export function useUpdateSaldoBanco(onSuccess?: (bank: Bank) => void) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-    async function updateSaldo(id: number, nuevo_saldo: number): Promise<Banco> {
-        setLoading(true);
-        setError(null);
-        try {
-            const banco = await updateSaldoBanco(id, nuevo_saldo);
-            onSuccess?.(banco);
-            return banco;
-        } catch (e: any) {
-            const msg =
-                e?.response?.data?.detail ??
-                e?.message ??
-                "Error actualizando saldo del banco";
-            setError(msg);
-            throw e;
-        } finally {
-            setLoading(false);
-        }
+  async function updateSaldo(id: number, nuevo_saldo: number): Promise<Bank> {
+    setLoading(true);
+    setError(null);
+    try {
+      const bank = await updateBankBalance(id, nuevo_saldo);
+      onSuccess?.(bank);
+      return bank;
+    } catch (e: any) {
+      const msg = e?.response?.data?.detail ?? e?.message ?? "Error actualizando saldo del banco";
+      setError(msg);
+      throw e;
+    } finally {
+      setLoading(false);
     }
+  }
 
-    return { updateSaldo, loading, error };
+  return { updateSaldo, loading, error };
 }

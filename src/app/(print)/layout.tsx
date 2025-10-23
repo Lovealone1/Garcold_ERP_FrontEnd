@@ -1,4 +1,3 @@
-// src/app/(print)/layout.tsx   (sin "use client")
 import "./print.css";
 
 export default function PrintLayout({ children }: { children: React.ReactNode }) {

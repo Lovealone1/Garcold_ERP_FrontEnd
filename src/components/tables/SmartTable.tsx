@@ -1,4 +1,3 @@
-// components/tables/SmartTable.tsx
 "use client";
 
 import * as React from "react";
@@ -17,14 +16,14 @@ export type Column<T> = {
     header: string;
     align?: "left" | "right" | "center";
     width?: number | string;
-    render?: (row: T) => React.ReactNode; // opcional
+    render?: (row: T) => React.ReactNode;
 };
 
 export type SmartTableProps<T> = {
     title: string;
     searchPlaceholder?: string;
     initialSearch?: string;
-    filters?: React.ReactNode[];           // hasta 3 filtros o los que quieras
+    filters?: React.ReactNode[];          
     onSearch?: (q: string) => void;
     onAdd?: () => void;
     addLabel?: string;
@@ -33,18 +32,16 @@ export type SmartTableProps<T> = {
     rows: T[];
     getRowId: (row: T) => string | number;
 
-    // acciones
     onView?: (row: T) => void;
     onEdit?: (row: T) => void;
     onDelete?: (row: T) => void;
 
-    // paginación controlada por el padre (server-side ready)
-    page: number;                 // 1-based
+    page: number;           
     pageSize: number;
     total: number;
     onPageChange: (page: number) => void;
     onPageSizeChange?: (size: number) => void;
-    pageSizeOptions?: number[];   // máx 10 por requerimiento
+    pageSizeOptions?: number[];  
     loading?: boolean;
     emptyHint?: string;
 };

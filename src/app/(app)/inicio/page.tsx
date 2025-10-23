@@ -62,12 +62,12 @@ export default function DashboardPage() {
           iconName="paid"
         />
         <BalanceKpi
-            banks={(data?.banks?.banks ?? []).map(b => ({
-                nombre: b.name,
-                saldo: b.balance,
-            }))}
-            total={data?.banks?.total ?? 0}
-            />
+          banks={(data?.banks?.banks ?? []).map(b => ({
+            nombre: b.name,
+            saldo: b.balance,
+          }))}
+          total={data?.banks?.total ?? 0}
+        />
         <HalfDonutKpi
           creditos={data?.credits?.total ?? 0}
           inversiones={data?.investments?.total ?? 0}
@@ -95,11 +95,12 @@ export default function DashboardPage() {
         {/* Derecha: tablas CxC / CxP */}
         <div className="xl:col-span-6">
           <CuentasCardsPanel
-            cxc={data?.sales?.accounts_receivable ?? []}
-            cxp={data?.purchases?.accounts_payable ?? []}
+            accounts_receivable={data?.sales?.accounts_receivable ?? []}
+            accounts_payable={data?.purchases?.accounts_payable ?? []}
             itemsBeforeScroll={5}
             gapPx={10}
           />
+
         </div>
       </div>
 

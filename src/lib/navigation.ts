@@ -108,31 +108,31 @@ export const sections: NavSection[] = [
       },
     ],
   },
-  {
-    title: 'Reportes',
-    iconName: 'summarize',
-    iconSet: 'rounded',
-    items: [
-      {
-        iconName: 'receipt_long',
-        iconSet: 'rounded',
-        name: 'Reporte de gastos',
-        href: '/reporte/gastos',
-      },
-      {
-        iconName: 'credit_card',
-        iconSet: 'rounded',
-        name: 'Reporte de ventas',
-        href: '/reporte/ventas',
-      },
-      {
-        iconName: 'area_chart',
-        iconSet: 'rounded',
-        name: 'Reporte de utilidades',
-        href: '/reporte/utilidades',
-      },
-    ],
-  },
+  // {
+  //   title: 'Reportes',
+  //   iconName: 'summarize',
+  //   iconSet: 'rounded',
+  //   items: [
+  //     {
+  //       iconName: 'receipt_long',
+  //       iconSet: 'rounded',
+  //       name: 'Reporte de gastos',
+  //       href: '/reporte/gastos',
+  //     },
+  //     {
+  //       iconName: 'credit_card',
+  //       iconSet: 'rounded',
+  //       name: 'Reporte de ventas',
+  //       href: '/reporte/ventas',
+  //     },
+  //     {
+  //       iconName: 'area_chart',
+  //       iconSet: 'rounded',
+  //       name: 'Reporte de utilidades',
+  //       href: '/reporte/utilidades',
+  //     },
+  //   ],
+  // },
 ];
 
 export function getNavSections(): NavSection[] {

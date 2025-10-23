@@ -12,35 +12,36 @@ import Chip from "@mui/material/Chip";
 import type { DateRange } from "react-day-picker";
 
 import DateRangePicker from "@/components/ui/DateRangePicker/DateRangePicker";
-import { useProductosAll } from "@/hooks/productos/useProductosAll";
+import useProductos from "@/hooks/productos/useProductos";
 import useProductosVendidos from "@/hooks/productos/useProductosVendidos";
-import type { Producto } from "@/types/product";
-import type { ProductoVentasDTO } from "@/types/product";
+import type { ProductDTO, SaleProductsDTO } from "@/types/product";
 
 const MAX_SELECT = 6;
 const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 const toISO = (d: Date) => d.toISOString().slice(0, 10);
 
 export default function ProductosExploracionPage() {
-    const { items: catalogo, loading: loadingProd } = useProductosAll();
+    const { items: catalog, loading: loadingProd } = useProductos();
 
-    const [selProds, setSelProds] = useState<Producto[]>([]);
+    const [selProds, setSelProds] = useState<ProductDTO[]>([]);
     const [queryProd, setQueryProd] = useState("");
 
     const [range, setRange] = useState<DateRange | undefined>();
     const date_from = range?.from ? toISO(new Date(range.from)) : toISO(new Date());
     const date_to = range?.to ? toISO(new Date(range.to)) : date_from;
 
-    const product_ids = useMemo(() => selProds.map(p => p.id), [selProds]);
+    const product_ids = useMemo(() => selProds.map((p) => p.id), [selProds]);
 
     const { data, loading, error, reload } = useProductosVendidos({
-        date_from, date_to, product_ids,
+        date_from,
+        date_to,
+        product_ids,
         enabled: false, // solo con botón
     });
 
     // top 6 por cantidad vendida
-    const results = useMemo<ProductoVentasDTO[]>(
-        () => (data ?? []).slice().sort((a, b) => b.cantidad_vendida - a.cantidad_vendida).slice(0, 6),
+    const results = useMemo<SaleProductsDTO[]>(
+        () => (data ?? []).slice().sort((a, b) => b.sold_quanity - a.sold_quanity).slice(0, 6),
         [data]
     );
 
@@ -96,27 +97,27 @@ export default function ProductosExploracionPage() {
                         <Autocomplete
                             size="small"
                             multiple
-                            options={catalogo}
+                            options={catalog}
                             loading={loadingProd}
                             value={selProds}
                             inputValue={queryProd}
                             onInputChange={(_, val, reason) => setQueryProd(reason === "clear" ? "" : val)}
                             isOptionEqualToValue={(o, v) => o.id === v.id}
-                            getOptionLabel={(o) => `${o.referencia} — ${o.descripcion}`}
+                            getOptionLabel={(o) => `${o.reference} — ${o.description}`}
                             filterSelectedOptions
                             limitTags={3}
                             onChange={(_, vals, reason) => {
-                                if (reason === "selectOption" && (vals as Producto[]).length > MAX_SELECT) return;
-                                setSelProds(vals as Producto[]);
+                                if (reason === "selectOption" && (vals as ProductDTO[]).length > MAX_SELECT) return;
+                                setSelProds(vals as ProductDTO[]);
                             }}
-                            renderTags={(value: Producto[], getTagProps: AutocompleteRenderGetTagProps) =>
+                            renderTags={(value: ProductDTO[], getTagProps: AutocompleteRenderGetTagProps) =>
                                 value.map((opt, index) => {
                                     const tagProps = getTagProps({ index });
                                     return (
                                         <Chip
                                             {...tagProps}
                                             key={opt.id}
-                                            label={opt.referencia}
+                                            label={opt.reference}
                                             size="small"
                                             sx={{
                                                 height: 22,
@@ -140,7 +141,7 @@ export default function ProductosExploracionPage() {
                                             sx={{ mr: 1, color: "var(--tg-muted)", "&.Mui-checked": { color: "var(--tg-primary)" } }}
                                         />
                                         <ListItemText
-                                            primary={`${option.referencia} — ${option.descripcion}`}
+                                            primary={`${option.reference} — ${option.description}`}
                                             slotProps={{ primary: { sx: { color: "var(--tg-card-fg)" } } }}
                                         />
                                     </li>
@@ -200,9 +201,9 @@ export default function ProductosExploracionPage() {
 
                 {error ? <div className="text-sm text-red-600 mt-3">{String(error)}</div> : null}
 
-                {/* GRID Resultados: UNA sola columna, cards a lo ancho */}
+                {/* GRID Resultados */}
                 <div className="grid grid-cols-1 gap-4 mt-3">
-                    {(loading && !data)
+                    {loading && !data
                         ? Array.from({ length: 6 }).map((_, i) => (
                             <div key={i} className="h-[96px] rounded-xl border border-tg bg-[var(--tg-card-bg)]">
                                 <div className="h-full animate-pulse bg-black/10 dark:bg-white/10 rounded-xl" />
@@ -219,41 +220,52 @@ export default function ProductosExploracionPage() {
     );
 }
 
-function ProductoCard({ item }: { item: ProductoVentasDTO }) {
-    const totalVendido = item.precio_venta * item.cantidad_vendida;
+function ProductoCard({ item }: { item: SaleProductsDTO }) {
+    const totalSold = item.sale_price * item.sold_quanity;
     return (
-        <div className="rounded-xl border p-4"
-            style={{ borderColor: "var(--tg-border)", background: "var(--tg-card-bg)" }}>
-            <div className="grid gap-3 items-center
-                      md:grid-cols-[1fr_140px_140px_150px_160px]">
+        <div
+            className="rounded-xl border p-4"
+            style={{ borderColor: "var(--tg-border)", background: "var(--tg-card-bg)" }}
+        >
+            <div className="grid gap-3 items-center md:grid-cols-[1fr_140px_140px_150px_160px]">
                 {/* info izquierda */}
                 <div className="min-w-0">
-                    <div className="font-semibold text-[var(--tg-card-fg)] truncate">{item.descripcion}</div>
-                    <div className="text-sm" style={{ color: "var(--tg-muted)" }}>Ref: {item.referencia}</div>
+                    <div className="font-semibold text-[var(--tg-card-fg)] truncate">{item.description}</div>
+                    <div className="text-sm" style={{ color: "var(--tg-muted)" }}>
+                        Ref: {item.reference}
+                    </div>
                 </div>
 
                 {/* precio compra */}
                 <div className="text-right">
-                    <div className="text-sm" style={{ color: "var(--tg-muted)" }}>Precio compra</div>
-                    <div className="font-medium">{money.format(item.precio_compra)}</div>
+                    <div className="text-sm" style={{ color: "var(--tg-muted)" }}>
+                        Precio compra
+                    </div>
+                    <div className="font-medium">{money.format(item.purchase_price)}</div>
                 </div>
 
                 {/* precio venta */}
                 <div className="text-right">
-                    <div className="text-sm" style={{ color: "var(--tg-muted)" }}>Precio venta</div>
-                    <div className="font-medium">{money.format(item.precio_venta)}</div>
+                    <div className="text-sm" style={{ color: "var(--tg-muted)" }}>
+                        Precio venta
+                    </div>
+                    <div className="font-medium">{money.format(item.sale_price)}</div>
                 </div>
 
                 {/* cantidad vendida */}
                 <div className="text-right">
-                    <div className="text-sm" style={{ color: "var(--tg-muted)" }}>Cantidad vendida</div>
-                    <div className="font-semibold">{item.cantidad_vendida}</div>
+                    <div className="text-sm" style={{ color: "var(--tg-muted)" }}>
+                        Cantidad vendida
+                    </div>
+                    <div className="font-semibold">{item.sold_quanity}</div>
                 </div>
 
                 {/* total vendido */}
                 <div className="text-right">
-                    <div className="text-sm" style={{ color: "var(--tg-muted)" }}>Total vendido</div>
-                    <div className="font-semibold">{money.format(totalVendido)}</div>
+                    <div className="text-sm" style={{ color: "var(--tg-muted)" }}>
+                        Total vendido
+                    </div>
+                    <div className="font-semibold">{money.format(totalSold)}</div>
                 </div>
             </div>
         </div>

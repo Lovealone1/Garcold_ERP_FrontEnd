@@ -15,23 +15,21 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import ProductoAgregate from "@/features/productos/ProductoForm";
 
 import { useProductosAll } from "@/hooks/productos/useProductosAll";
-import { useClienteOptions, type ClienteOption } from "@/hooks/clientes/useClienteOptions";
+import { useCustomerOptions, type CustomerOption } from "@/hooks/clientes/useClienteOptions";
 import { useVentaEstados } from "@/hooks/estados/useEstados";
-import { listBancos } from "@/services/sales/bancos.api";
-import type { Producto } from "@/types/product";
-import type { Banco } from "@/types/bancos";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 import { useRouter } from "next/navigation";
-
-// ⬇️ nuevo hook
 import { useCreateVenta } from "@/hooks/ventas/useCreateVenta";
-import type { VentaCreate } from "@/types/ventas";
-
+// entidades refactorizadas
+import { useBancos } from "@/hooks/bancos/useBancos";
+import type { ProductDTO } from "@/types/product";
+import type { SaleCreate } from "@/types/sale";
+import type { SaleItemInput } from "@/types/sale";
 type ItemVenta = {
     idTmp: string;
     productoId: number;
-    referencia: string;
-    descripcion: string;
+    reference: string;
+    description: string;
     precioUnit: number;
     cantidad: number;
 };
@@ -48,10 +46,10 @@ type ProductoAgregateDefaults = {
 };
 
 // ===== Config =====
-const PAGE_SIZE = 5;            // 5 por página (fijas)
-const CARD_H = 80;              // alto de cada card
-const CARD_GAP = 10;            // separación vertical entre cards
-const SHOW_EMPTY_HINT = true;   // mostrar placeholder cuando no hay productos
+const PAGE_SIZE = 5;
+const CARD_H = 80;
+const CARD_GAP = 10;
+const SHOW_EMPTY_HINT = true;
 
 const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 const BLOQUEADA_RE = /venta\s*cancelada/i;
@@ -60,37 +58,23 @@ export default function VentaCrearPage() {
     const router = useRouter();
     const { error } = useNotifications();
 
-    const { items: catalogo, loading: loadingProd } = useProductosAll();
-    const { options: clienteOptions } = useClienteOptions();
+    const { items: catalogo, loading: loadingProd } = useProductosAll(); // -> Product[]
+    const { options: clienteOptions } = useCustomerOptions();
     const { options: estadoOptions, byName: estadoByName } = useVentaEstados();
 
-    const [bancos, setBancos] = useState<Banco[]>([]);
+    // bancos con entidades nuevas
+    const { items: bancos, loading: loadingBancos } = useBancos();
     const bancoOptions: Option[] = useMemo(
-        () => bancos.map((b) => ({ value: b.id, label: b.nombre })),
+        () => bancos.map(b => ({ value: b.id, label: b.name })), // name (no nombre)
         [bancos]
     );
 
-    useEffect(() => {
-        let alive = true;
-        (async () => {
-            try {
-                const data = await listBancos(Date.now());
-                if (alive) setBancos(data);
-            } catch {
-                setBancos([]);
-            }
-        })();
-        return () => {
-            alive = false;
-        };
-    }, []);
-
-    const [clienteSel, setClienteSel] = useState<ClienteOption | null>(null);
+    const [clienteSel, setClienteSel] = useState<CustomerOption | null>(null);
     const [bancoSel, setBancoSel] = useState<Option | null>(null);
     const [estadoSel, setEstadoSel] = useState<string | null>(null);
 
     const [queryProd, setQueryProd] = useState("");
-    const [selProd, setSelProd] = useState<Producto | null>(null);
+    const [selProd, setSelProd] = useState<ProductDTO | null>(null);
 
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [modalDefaults, setModalDefaults] = useState<ProductoAgregateDefaults | null>(null);
@@ -108,7 +92,6 @@ export default function VentaCrearPage() {
     const endIndex = Math.min(page * PAGE_SIZE, items.length);
     const pagedItems = useMemo(() => items.slice(startIndex, endIndex), [items, startIndex, endIndex]);
 
-    // ¿hay algo que limpiar?
     const hasDirty =
         items.length > 0 ||
         Boolean(clienteSel) ||
@@ -116,7 +99,6 @@ export default function VentaCrearPage() {
         Boolean(estadoSel) ||
         queryProd.trim().length > 0;
 
-    // estilos inputs
     const textFieldSx = {
         mt: 0.5,
         "& .MuiOutlinedInput-root": {
@@ -156,16 +138,17 @@ export default function VentaCrearPage() {
         },
     } as const;
 
-    const openConfirm = (p: Producto) => {
+    const openConfirm = (p: ProductDTO) => {
         setSelProd(p);
         setEditIdTmp(null);
+        // El modal aún espera nombres antiguos; mapeamos desde entidades nuevas
         setModalDefaults({
-            referencia: p.referencia,
-            descripcion: p.descripcion,
-            precio_unitario: p.precio_venta,
+            referencia: p.reference,
+            descripcion: p.description,
+            precio_unitario: p.sale_price,
             cantidad: 1,
-            stock: p.cantidad,
-            precio_compra: p.precio_compra,
+            stock: p.quantity,
+            precio_compra: p.purchase_price,
         });
         setConfirmOpen(true);
     };
@@ -173,14 +156,14 @@ export default function VentaCrearPage() {
     // helpers cantidad
     const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
     function incQty(idTmp: string) {
-        setItems(prev => prev.map(it => it.idTmp === idTmp ? { ...it, cantidad: it.cantidad + 1 } : it));
+        setItems(prev => prev.map(it => (it.idTmp === idTmp ? { ...it, cantidad: it.cantidad + 1 } : it)));
     }
     function decQty(idTmp: string) {
-        setItems(prev => prev.map(it => it.idTmp === idTmp ? { ...it, cantidad: clamp(it.cantidad - 1, 1, 1e9) } : it));
+        setItems(prev => prev.map(it => (it.idTmp === idTmp ? { ...it, cantidad: clamp(it.cantidad - 1, 1, 1e9) } : it)));
     }
     function setQty(idTmp: string, v: number) {
         const q = clamp(Number.isFinite(v) ? Math.trunc(v) : 1, 1, 1e9);
-        setItems(prev => prev.map(it => it.idTmp === idTmp ? { ...it, cantidad: q } : it));
+        setItems(prev => prev.map(it => (it.idTmp === idTmp ? { ...it, cantidad: q } : it)));
     }
 
     // merge si se repite producto
@@ -204,8 +187,8 @@ export default function VentaCrearPage() {
                     {
                         idTmp: crypto.randomUUID(),
                         productoId: selProd.id,
-                        referencia: selProd.referencia,
-                        descripcion: selProd.descripcion,
+                        reference: selProd.reference,
+                        description: selProd.description,
                         precioUnit: data.precio_unitario,
                         cantidad: data.cantidad,
                     },
@@ -251,7 +234,7 @@ export default function VentaCrearPage() {
         [items.length, clienteSel, bancoSel, estadoSel]
     );
 
-    // ⬇️ usar hook para crear la venta
+    // crear venta
     const { create: createVenta, loading: creating } = useCreateVenta({
         onSuccess: () => {
             limpiar();
@@ -267,25 +250,23 @@ export default function VentaCrearPage() {
             return;
         }
 
-        // construir el carrito EXACTAMENTE como lo requiere el backend
-        const carrito: VentaCreate["carrito"] = items.map(it => ({
-            producto_id: it.productoId,
-            cantidad: it.cantidad,
-            precio_producto: it.precioUnit,
+        const itemsInput: SaleItemInput[] = items.map(it => ({
+            product_id: it.productoId,
+            quantity: it.cantidad,
+            unit_price: it.precioUnit,
         }));
 
-        const payload: VentaCreate = {
-            cliente_id: Number(clienteSel!.value),
-            banco_id: Number(bancoSel!.value),
-            estado_id,
-            carrito, // [{ producto_id, cantidad, precio_producto }, ...]
+        const payload: SaleCreate = {
+            customer_id: Number(clienteSel!.value),
+            bank_id: Number(bancoSel!.value),
+            status_id: estado_id, // ya resuelto con estadoByName
+            items: itemsInput,
         };
 
         await createVenta(payload);
     }
 
     return (
-        // Pantalla completa y sin scroll
         <div className="app-shell__frame overflow-hidden">
             <div className="bg-[var(--page-bg)] rounded-xl h-full flex flex-col px-4 md:px-5 pb-5 pt-4">
                 <Typography variant="h5" sx={{ mb: 1.25, fontWeight: 600 }}>
@@ -317,6 +298,7 @@ export default function VentaCrearPage() {
                             <Autocomplete
                                 options={bancoOptions}
                                 value={bancoSel}
+                                loading={loadingBancos}
                                 onChange={(_, v) => setBancoSel(v)}
                                 getOptionLabel={(o) => (o?.label ?? "") as string}
                                 slotProps={autoSlotProps}
@@ -357,7 +339,7 @@ export default function VentaCrearPage() {
                                 options={catalogo}
                                 loading={loadingProd}
                                 isOptionEqualToValue={(o, v) => o.id === v.id}
-                                getOptionLabel={(o) => `${o.referencia} — ${o.descripcion}`}
+                                getOptionLabel={(o) => `${o.reference} — ${o.description}`}
                                 clearOnBlur
                                 onChange={(_, val, reason) => {
                                     if (reason === "clear") { setSelProd(null); setQueryProd(""); return; }
@@ -376,10 +358,8 @@ export default function VentaCrearPage() {
                     </Stack>
                 </Box>
 
-                {/* Línea divisoria */}
                 <div className="h-px w-full" style={{ background: "var(--tg-border)" }} />
 
-                {/* ===== Área fija de 5 filas: mismo tamaño/posición siempre ===== */}
                 <div
                     className="flex-1 overflow-hidden mt-2"
                     style={{
@@ -388,7 +368,6 @@ export default function VentaCrearPage() {
                         rowGap: `${CARD_GAP}px`,
                     }}
                 >
-                    {/* placeholder (configurable) cuando no hay items */}
                     {SHOW_EMPTY_HINT && items.length === 0 ? (
                         <div
                             className="rounded-xl border"
@@ -418,11 +397,10 @@ export default function VentaCrearPage() {
                                         style={{
                                             height: CARD_H,
                                             borderColor: "var(--tg-border)",
-                                            background: "var(--tg-card-bg)", // mismo bg que inputs
+                                            background: "var(--tg-card-bg)",
                                         }}
                                     >
                                         <div className="grid items-center gap-3" style={{ gridTemplateColumns: "1fr 140px 180px 160px" }}>
-                                            {/* info */}
                                             <div className="flex items-start gap-3 overflow-hidden">
                                                 <div
                                                     className="h-7 min-w-7 rounded-full border text-xs flex items-center justify-center mt-0.5"
@@ -432,18 +410,16 @@ export default function VentaCrearPage() {
                                                     {number}
                                                 </div>
                                                 <div className="min-w-0">
-                                                    <div className="font-semibold text-[var(--tg-card-fg)] truncate">{it.descripcion}</div>
-                                                    <div className="text-sm" style={{ color: "var(--tg-muted)" }}>Ref: {it.referencia}</div>
+                                                    <div className="font-semibold text-[var(--tg-card-fg)] truncate">{it.description}</div>
+                                                    <div className="text-sm" style={{ color: "var(--tg-muted)" }}>Ref: {it.reference}</div>
                                                 </div>
                                             </div>
 
-                                            {/* precio */}
                                             <div className="text-right">
                                                 <div className="text-sm" style={{ color: "var(--tg-muted)" }}>Precio</div>
                                                 <div className="font-medium">{money.format(it.precioUnit)}</div>
                                             </div>
 
-                                            {/* cantidad */}
                                             <div className="flex items-center justify-center gap-2">
                                                 <button
                                                     type="button"
@@ -473,7 +449,6 @@ export default function VentaCrearPage() {
                                                 </button>
                                             </div>
 
-                                            {/* subtotal + borrar */}
                                             <div className="flex items-center justify-end gap-3">
                                                 <div className="text-right">
                                                     <div className="text-sm" style={{ color: "var(--tg-muted)" }}>Subtotal</div>
@@ -493,7 +468,6 @@ export default function VentaCrearPage() {
                                 );
                             })}
 
-                            {/* placeholders invisibles para completar las 5 filas */}
                             {Array.from({ length: Math.max(0, PAGE_SIZE - pagedItems.length) }).map((_, idx) => (
                                 <div
                                     key={`ph-${idx}`}
@@ -512,7 +486,6 @@ export default function VentaCrearPage() {
                     )}
                 </div>
 
-                {/* Paginación: flechas visibles, números ocultos + indicador numérico al lado */}
                 {items.length > PAGE_SIZE && (
                     <Stack direction="row" alignItems="center" justifyContent="flex-end" gap={1.25} sx={{ mt: 1 }}>
                         <Pagination
@@ -526,7 +499,6 @@ export default function VentaCrearPage() {
                             size="small"
                             sx={{
                                 "& .MuiPaginationItem-root": { color: "var(--tg-muted)" },
-                                // Oculta los números, deja solo las flechas
                                 "& .MuiPaginationItem-text": { display: "none" },
                                 "& .MuiPaginationItem-previousNext": { display: "inline-flex" },
                             }}
@@ -595,7 +567,7 @@ export default function VentaCrearPage() {
                         setEditIdTmp(null);
                     }}
                     loading={false}
-                    variant="venta"          
+                    variant="venta"
                     defaults={modalDefaults}
                     onConfirm={onConfirmProducto}
                 />

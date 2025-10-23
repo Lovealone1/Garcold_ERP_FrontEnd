@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { usePathname } from "next/navigation";
-import { navSections } from "@/lib/navigation";
+import { sections } from "@/lib/navigation";
 
 type IconSet = "rounded" | "outlined" | "sharp";
 type NavMeta = { name?: string; iconName?: string; iconSet?: IconSet };
@@ -15,7 +15,7 @@ function prettify(seg: string) {
 
 function buildHrefIndex() {
     const map = new Map<string, NavMeta>();
-    for (const s of navSections) {
+    for (const s of sections) {
         for (const it of s.items ?? []) {
             map.set(it.href, {
                 name: it.name,

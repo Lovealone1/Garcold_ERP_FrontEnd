@@ -4,9 +4,9 @@ import type { MeDTO } from "@/types/auth";
 import { getMe, syncSelf } from "@/services/auth.api";
 
 type Opts = {
-  refreshOnFocus?: boolean;  
-  syncIfNull?: boolean;      
-  minFocusMs?: number;        
+  refreshOnFocus?: boolean;
+  syncIfNull?: boolean;
+  minFocusMs?: number;
 };
 
 export function useMe(opts: Opts = {}) {
@@ -19,9 +19,9 @@ export function useMe(opts: Opts = {}) {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      let me = await getMe();          
+      let me = await getMe();
       if (!me && opts.syncIfNull) {
-        await syncSelf();             
+        await syncSelf();
         me = await getMe();
       }
       setData(me);
@@ -34,7 +34,7 @@ export function useMe(opts: Opts = {}) {
   }, [opts.syncIfNull]);
 
   useEffect(() => {
-    if (did.current) return;  // evita doble ejecución en StrictMode
+    if (did.current) return;  
     did.current = true;
     void refresh();
   }, [refresh]);

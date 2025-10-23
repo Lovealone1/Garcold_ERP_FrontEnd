@@ -20,6 +20,8 @@ export const MODULE_LABELS: Record<string, string> = {
   invoices: "Facturas",
   reports: "Reportes",
   dashboard: "Dashboard",
+  admin_users: "Gestion de usuarios",
+  company: "Compañia",
 };
 
 export const ACTION_LABELS: Record<string, string> = {
@@ -38,4 +40,12 @@ export const ACTION_LABELS: Record<string, string> = {
   product_upload: "subir productos",
   purchase_read: "ver compras",
   sold_in_range: "ventas en rango",
+  catalog: "catálogo",
+  permissions_read: "leer permisos",
+  permissions_patch: "cambiar permiso",
+  permissions_bulk_set: "asignar masivo",
+  set_role: "asignar",
+  local_read: "leer",
+  local_set_active: "activar",
+  invite: "invitar"
 };

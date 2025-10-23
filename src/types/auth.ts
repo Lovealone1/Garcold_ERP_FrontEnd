@@ -6,10 +6,15 @@ export interface AuthSyncDTO {
   avatar_url?: string | null;
 }
 
+export interface RoleOut {
+  id: number;
+  code: string;
+}
+
 export interface MeDTO {
   user_id: string;
   email?: string | null;
   display_name?: string | null;
-  role?: Role | null;
-  permissions: string[];
+  role: RoleOut | null;
+  permissions: string[]; // códigos activos
 }

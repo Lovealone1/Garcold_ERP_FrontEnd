@@ -227,7 +227,7 @@ export default function ProductosPage() {
                   </tr>
                 ) : (
                   rows.map((r: ProductDTO) => (
-                    <tr key={r.id} className="border-t border-tg hover:bg-black/5 dark:hover:bg-white/5">
+                    <tr key={r.id} className="border-t border-tg hover:bg-black/5 dark:hover:bg:white/5">
                       <td className="px-4 py-3">{r.reference}</td>
                       <td className="px-4 py-3">{r.description}</td>
                       <td className="px-4 py-3 text-right">{r.quantity ?? 0}</td>
@@ -321,7 +321,7 @@ export default function ProductosPage() {
                 );
               })}
 
-              {end < totalPages && <span className="px-1">…</span>}
+              {end < totalPages && <span className="px-1">...</span>}
 
               <button disabled={!hasNext} onClick={() => setPage(page + 1)} className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary" aria-label="Próximo" title="Próximo">
                 <MaterialIcon name="chevron_right" size={18} />
@@ -430,7 +430,7 @@ export default function ProductosPage() {
           loading={editLoading}
           defaults={editProducto ? {
             reference: editProducto.reference,
-            descripcion: editProducto.description,
+            description: editProducto.description, // corregido
             quantity: editProducto.quantity ?? 0,
             purchase_price: editProducto.purchase_price,
             sale_price: editProducto.sale_price,
@@ -468,7 +468,7 @@ export default function ProductosPage() {
                 Cancelar
               </button>
               <button onClick={handleConfirmDelete} className="h-9 rounded-md bg-red-600 px-3 text-sm font-medium text-white disabled:opacity-60" disabled={deleting}>
-                {deleting ? "Eliminando…" : "Eliminar"}
+                {deleting ? "Eliminando..." : "Eliminar"}
               </button>
             </div>
           </div>

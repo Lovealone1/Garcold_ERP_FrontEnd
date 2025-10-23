@@ -4,10 +4,10 @@
 import { useCallback, useMemo, useState } from "react";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { Menu, MenuItem, Checkbox, ListItemIcon, ListItemText } from "@mui/material";
-import type { Producto } from "@/types/product";
+import { ProductDTO } from "@/types/product";
 
 type Props = {
-    items: Producto[];
+    items: ProductDTO[];
     value: number[];                // IDs seleccionados
     onChange: (ids: number[]) => void;
     max?: number;                   // default 6
@@ -66,7 +66,7 @@ export default function ProductosDropdown({
                         </ListItemIcon>
                         <ListItemText
                             slotProps={{ primary: { sx: { color: "var(--tg-card-fg)" } } }}
-                            primary={`${p.referencia} — ${p.descripcion}`}
+                            primary={`${p.reference} — ${p.description}`}
                         />
                     </MenuItem>
                 );

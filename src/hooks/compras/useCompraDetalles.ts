@@ -49,7 +49,7 @@ export function usePurchaseItems(purchaseId?: number, options?: Options) {
     };
   }, [purchaseId, enabled]);
 
-  const total = useMemo(() => items.reduce((s, d) => s + d.line_total, 0), [items]);
+  const total = useMemo(() => items.reduce((s, d) => s + d.total, 0), [items]);
 
   return { items, total, loading, error, reload: fetchData };
 }

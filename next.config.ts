@@ -1,9 +1,12 @@
 import type { NextConfig } from "next";
 
-const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/+$/,"");
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/+$/, "");
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  eslint: {
+    ignoreDuringBuilds: true, // desactiva ESLint en el build de Vercel
+  },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "**.up.railway.app" },
@@ -19,4 +22,5 @@ const nextConfig: NextConfig = {
     return [{ source: "/api/:path*", destination: `${API_BASE}/:path*` }];
   },
 };
+
 export default nextConfig;

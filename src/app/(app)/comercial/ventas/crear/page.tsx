@@ -1,4 +1,3 @@
-// app/(comercial)/ventas/nueva/page.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -20,7 +19,6 @@ import { useVentaEstados } from "@/hooks/estados/useEstados";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 import { useRouter } from "next/navigation";
 import { useCreateVenta } from "@/hooks/ventas/useCreateVenta";
-// entidades refactorizadas
 import { useBancos } from "@/hooks/bancos/useBancos";
 import type { ProductDTO } from "@/types/product";
 import type { SaleCreate } from "@/types/sale";
@@ -45,7 +43,6 @@ type ProductoAgregateDefaults = {
     precio_compra: number;
 };
 
-// ===== Config =====
 const PAGE_SIZE = 5;
 const CARD_H = 80;
 const CARD_GAP = 10;
@@ -194,7 +191,7 @@ export default function VentaCrearPage() {
                     },
                 ];
             });
-            setPage(p => Math.max(1, Math.ceil((items.length + 1) / PAGE_SIZE)));
+            setPage(Math.max(1, Math.ceil((items.length + 1) / PAGE_SIZE)));
         }
 
         setConfirmOpen(false);

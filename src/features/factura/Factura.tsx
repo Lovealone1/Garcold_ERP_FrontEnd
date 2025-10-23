@@ -1,4 +1,3 @@
-// src/features/factura/Factura.tsx
 "use client";
 import * as React from "react";
 import FacturaPaper from "./FacturaPaper";

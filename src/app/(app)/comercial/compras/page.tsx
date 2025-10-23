@@ -1,7 +1,6 @@
-// app/(comercial)/compras/page.tsx
 "use client";
 
-import { useMemo, useState, CSSProperties, useEffect } from "react";
+import { useMemo, useState, CSSProperties, useEffect, useCallback } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import IconButton from "@mui/material/IconButton";
@@ -30,6 +29,8 @@ import { getPurchaseById, listPurchases } from "@/services/sales/purchase.api";
 
 const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 
+type FrameVars = CSSProperties & { ["--content-x"]?: string };
+
 export default function ComprasPage() {
     const router = useRouter();
     const { success, error } = useNotifications();
@@ -54,22 +55,28 @@ export default function ComprasPage() {
                 if (alive) setBancos([]);
             }
         })();
-        return () => { alive = false; };
+        return () => {
+            alive = false;
+        };
     }, []);
 
-    const bancoOptions = useMemo(
-        () => Array.from(new Set(bancos.map(b => b.name))).sort(),
-        [bancos]
-    );
+    const bancoOptions = useMemo(() => Array.from(new Set(bancos.map((b) => b.name))).sort(), [bancos]);
 
-    function inRange(d: Date) {
-        if (!range?.from && !range?.to) return true;
-        const from = range?.from ? new Date(range.from.getFullYear(), range.from.getMonth(), range.from.getDate(), 0, 0, 0, 0) : undefined;
-        const to = range?.to ? new Date(range.to.getFullYear(), range.to.getMonth(), range.to.getDate(), 23, 59, 59, 999) : undefined;
-        if (from && d < from) return false;
-        if (to && d > to) return false;
-        return true;
-    }
+    const inRange = useCallback(
+        (d: Date) => {
+            if (!range?.from && !range?.to) return true;
+            const from = range?.from
+                ? new Date(range.from.getFullYear(), range.from.getMonth(), range.from.getDate(), 0, 0, 0, 0)
+                : undefined;
+            const to = range?.to
+                ? new Date(range.to.getFullYear(), range.to.getMonth(), range.to.getDate(), 23, 59, 59, 999)
+                : undefined;
+            if (from && d < from) return false;
+            if (to && d > to) return false;
+            return true;
+        },
+        [range]
+    );
 
     const [all, setAll] = useState<Purchase[] | null>(null);
     const [allLoading, setAllLoading] = useState(false);
@@ -78,13 +85,16 @@ export default function ComprasPage() {
         let alive = true;
         async function hydrateAll() {
             if (loading) return;
-            if (!totalPages || totalPages < 1) { if (alive) setAll(items); return; }
+            if (!totalPages || totalPages < 1) {
+                if (alive) setAll(items);
+                return;
+            }
             setAllLoading(true);
             try {
                 const pages = await Promise.all(
                     Array.from({ length: totalPages }, (_, i) => listPurchases(i + 1, undefined, Date.now()))
                 );
-                const merged = pages.flatMap(p => p.items);
+                const merged = pages.flatMap((p) => p.items);
                 const map = new Map<number, Purchase>();
                 for (const c of merged) map.set(c.id, c);
                 if (alive) setAll(Array.from(map.values()));
@@ -95,7 +105,9 @@ export default function ComprasPage() {
             }
         }
         hydrateAll();
-        return () => { alive = false; };
+        return () => {
+            alive = false;
+        };
     }, [loading, totalPages, items]);
 
     const dataset = all ?? items;
@@ -103,22 +115,28 @@ export default function ComprasPage() {
     const filtered = useMemo(() => {
         const v = q.trim().toLowerCase();
         return dataset.filter((r: Purchase) => {
-            if (v && !(
-                String(r.id).includes(v) ||
-                r.supplier.toLowerCase().includes(v) ||
-                r.bank.toLowerCase().includes(v) ||
-                r.status.toLowerCase().includes(v)
-            )) return false;
+            if (
+                v &&
+                !(
+                    String(r.id).includes(v) ||
+                    r.supplier.toLowerCase().includes(v) ||
+                    r.bank.toLowerCase().includes(v) ||
+                    r.status.toLowerCase().includes(v)
+                )
+            )
+                return false;
             if (bancoSel && r.bank !== bancoSel) return false;
             if (estadoSel && r.status !== estadoSel) return false;
             if (!inRange(new Date(r.purchase_date))) return false;
             return true;
         });
-    }, [dataset, q, bancoSel, estadoSel, range]);
+    }, [dataset, q, bancoSel, estadoSel, inRange]);
 
     const clientTotal = filtered.length;
     const clientTotalPages = Math.max(1, Math.ceil(clientTotal / pageSize));
-    useEffect(() => { if (page > clientTotalPages) setPage(clientTotalPages); }, [clientTotalPages, page, setPage]);
+    useEffect(() => {
+        if (page > clientTotalPages) setPage(clientTotalPages);
+    }, [clientTotalPages, page, setPage]);
 
     const paged = useMemo(() => {
         const startIdx = (page - 1) * pageSize;
@@ -135,20 +153,29 @@ export default function ComprasPage() {
         return [s, s + (win - 1)] as const;
     }, [page, clientTotalPages]);
 
-    const frameVars: CSSProperties = { ["--content-x" as any]: "16px" };
+    const frameVars: FrameVars = { ["--content-x"]: "16px" };
 
     const [openView, setOpenView] = useState(false);
     const [compraSel, setCompraSel] = useState<Purchase | null>(null);
-    const onView = (c: Purchase) => { setCompraSel(c); setOpenView(true); };
+    const onView = (c: Purchase) => {
+        setCompraSel(c);
+        setOpenView(true);
+    };
 
     const [openPay, setOpenPay] = useState(false);
     const [compraPay, setCompraPay] = useState<Purchase | null>(null);
-    const onPay = (c: Purchase) => { setCompraPay(c); setOpenPay(true); };
+    const onPay = (c: Purchase) => {
+        setCompraPay(c);
+        setOpenPay(true);
+    };
 
     // nuevo: modal de comprobantes
     const [openReceipts, setOpenReceipts] = useState(false);
     const [purchaseForUpload, setPurchaseForUpload] = useState<Purchase | null>(null);
-    const onUploadReceipts = (c: Purchase) => { setPurchaseForUpload(c); setOpenReceipts(true); };
+    const onUploadReceipts = (c: Purchase) => {
+        setPurchaseForUpload(c);
+        setOpenReceipts(true);
+    };
 
     async function handlePaid(compraId: number) {
         const currentPage = page;
@@ -156,7 +183,10 @@ export default function ComprasPage() {
         setCompraPay(fresh);
         if (openView && compraSel?.id === compraId) setCompraSel(fresh);
         await reload();
-        setTimeout(() => { setPage(p => Math.min(currentPage, Math.max(1, clientTotalPages))); }, 0);
+        // no usar updater si no necesitas el valor previo
+        setTimeout(() => {
+            setPage(Math.min(currentPage, Math.max(1, clientTotalPages)));
+        }, 0);
     }
 
     const { deleteCompra, loading: deleting } = useDeleteCompra();
@@ -174,13 +204,19 @@ export default function ComprasPage() {
             setAll(null);
             if (lastInPage) setPage(page - 1);
             else reload();
-        } catch (e: any) {
-            error(e?.response?.data?.detail ?? "Error eliminando compra");
+        } catch (e: unknown) {
+            const msg =
+                (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? "Error eliminando compra";
+            error(msg);
         }
     }
 
     function handleClearFilters() {
-        setQ(""); setEstadoSel(""); setBancoSel(""); setRange(undefined); setPage(1);
+        setQ("");
+        setEstadoSel("");
+        setBancoSel("");
+        setRange(undefined);
+        setPage(1);
     }
 
     return (
@@ -199,37 +235,56 @@ export default function ComprasPage() {
                                 placeholder="Buscar…"
                                 className="h-10 w-[260px] rounded-md border border-tg bg-tg-card text-tg-card pl-9 pr-3 outline-none"
                                 value={q}
-                                onChange={(e) => { setQ(e.target.value); setPage(1); }}
+                                onChange={(e) => {
+                                    setQ(e.target.value);
+                                    setPage(1);
+                                }}
                             />
                         </label>
 
                         <select
                             value={estadoSel}
-                            onChange={(e) => { setEstadoSel(e.target.value); setPage(1); }}
+                            onChange={(e) => {
+                                setEstadoSel(e.target.value);
+                                setPage(1);
+                            }}
                             className="h-10 min-w=[160px] rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-card"
                             aria-label="Filtro por estado"
                             title="Filtrar por estado"
                         >
                             <option value="">Estado</option>
                             {estadoOptions.map((nombre) => (
-                                <option key={nombre} value={nombre}>{nombre}</option>
+                                <option key={nombre} value={nombre}>
+                                    {nombre}
+                                </option>
                             ))}
                         </select>
 
                         <select
                             value={bancoSel}
-                            onChange={(e) => { setBancoSel(e.target.value); setPage(1); }}
+                            onChange={(e) => {
+                                setBancoSel(e.target.value);
+                                setPage(1);
+                            }}
                             className="h-10 min-w-[180px] rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-card"
                             aria-label="Filtro por banco"
                             title="Filtrar por banco"
                         >
                             <option value="">{bancoSel ? "Banco" : "Método pago"}</option>
                             {bancoOptions.map((nombre) => (
-                                <option key={nombre} value={nombre}>{nombre}</option>
+                                <option key={nombre} value={nombre}>
+                                    {nombre}
+                                </option>
                             ))}
                         </select>
 
-                        <DateRangePicker value={range} onChange={(r) => { setRange(r); setPage(1); }} />
+                        <DateRangePicker
+                            value={range}
+                            onChange={(r) => {
+                                setRange(r);
+                                setPage(1);
+                            }}
+                        />
 
                         <span
                             onClick={handleClearFilters}
@@ -268,7 +323,7 @@ export default function ComprasPage() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {(loading || allLoading)
+                                {loading || allLoading
                                     ? Array.from({ length: 10 }).map((_, i) => (
                                         <tr key={`sk-${i}`} className="border-t border-tg">
                                             {Array.from({ length: 8 }).map((__, j) => (
@@ -278,69 +333,92 @@ export default function ComprasPage() {
                                             ))}
                                         </tr>
                                     ))
-                                    : paged.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={8} className="px-4 py-10 text-center text-tg-muted">Sin registros</td>
-                                        </tr>
-                                    ) : paged.map((r) => (
-                                        <tr key={r.id} className="border-t border-tg hover:bg-black/5 dark:hover:bg-white/5">
-                                            <td className="px-4 py-3">{r.supplier}</td>
-                                            <td className="px-4 py-3">{r.bank}</td>
-                                            <td className="px-4 py-3">{r.status}</td>
-                                            <td className="px-4 py-3 text-right">{money.format(r.total)}</td>
-                                            <td className="px-4 py-3 text-right">{money.format(r.balance)}</td>
-                                            <td className="px-4 py-3">{format(new Date(r.purchase_date), "dd MMM yyyy", { locale: es })}</td>
-                                            <td className="px-2 py-2">
-                                                <div className="flex items-center justify-center gap-1">
-                                                    <Tooltip title="Ver detalles" arrow>
-                                                        <IconButton
-                                                            size="small"
-                                                            aria-label="ver detalles"
-                                                            onClick={() => onView(r)}
-                                                            sx={{ color: "var(--tg-primary)", borderRadius: "9999px", "&:hover": { backgroundColor: "color-mix(in srgb, var(--tg-primary) 22%, transparent)" } }}
-                                                        >
-                                                            <VisibilityOutlinedIcon fontSize="small" />
-                                                        </IconButton>
-                                                    </Tooltip>
+                                    : paged.length === 0
+                                        ? (
+                                            <tr>
+                                                <td colSpan={8} className="px-4 py-10 text-center text-tg-muted">
+                                                    Sin registros
+                                                </td>
+                                            </tr>
+                                        )
+                                        : paged.map((r) => (
+                                            <tr key={r.id} className="border-t border-tg hover:bg-black/5 dark:hover:bg-white/5">
+                                                <td className="px-4 py-3">{r.supplier}</td>
+                                                <td className="px-4 py-3">{r.bank}</td>
+                                                <td className="px-4 py-3">{r.status}</td>
+                                                <td className="px-4 py-3 text-right">{money.format(r.total)}</td>
+                                                <td className="px-4 py-3 text-right">{money.format(r.balance)}</td>
+                                                <td className="px-4 py-3">{format(new Date(r.purchase_date), "dd MMM yyyy", { locale: es })}</td>
+                                                <td className="px-2 py-2">
+                                                    <div className="flex items-center justify-center gap-1">
+                                                        <Tooltip title="Ver detalles" arrow>
+                                                            <IconButton
+                                                                size="small"
+                                                                aria-label="ver detalles"
+                                                                onClick={() => onView(r)}
+                                                                sx={{
+                                                                    color: "var(--tg-primary)",
+                                                                    borderRadius: "9999px",
+                                                                    "&:hover": { backgroundColor: "color-mix(in srgb, var(--tg-primary) 22%, transparent)" }
+                                                                }}
+                                                            >
+                                                                <VisibilityOutlinedIcon fontSize="small" />
+                                                            </IconButton>
+                                                        </Tooltip>
 
-                                                    <Tooltip title="Abonar / ver pagos" arrow>
-                                                        <IconButton
-                                                            size="small"
-                                                            aria-label="abonar pago"
-                                                            onClick={() => onPay(r)}
-                                                            sx={{ color: "var(--tg-primary)", borderRadius: "9999px", "&:hover": { backgroundColor: "color-mix(in srgb, var(--tg-primary) 22%, transparent)" } }}
-                                                        >
-                                                            <AttachMoneyOutlinedIcon fontSize="small" />
-                                                        </IconButton>
-                                                    </Tooltip>
+                                                        <Tooltip title="Abonar / ver pagos" arrow>
+                                                            <IconButton
+                                                                size="small"
+                                                                aria-label="abonar pago"
+                                                                onClick={() => onPay(r)}
+                                                                sx={{
+                                                                    color: "var(--tg-primary)",
+                                                                    borderRadius: "9999px",
+                                                                    "&:hover": { backgroundColor: "color-mix(in srgb, var(--tg-primary) 22%, transparent)" }
+                                                                }}
+                                                            >
+                                                                <AttachMoneyOutlinedIcon fontSize="small" />
+                                                            </IconButton>
+                                                        </Tooltip>
 
-                                                    {/* nuevo botón: comprobantes / carga de archivos */}
-                                                    <Tooltip title="Comprobantes / adjuntar archivos" arrow>
-                                                        <IconButton
-                                                            size="small"
-                                                            aria-label="adjuntar comprobantes"
-                                                            onClick={() => onUploadReceipts(r)}
-                                                            sx={{ color: "var(--tg-primary)", borderRadius: "9999px", "&:hover": { backgroundColor: "color-mix(in srgb, var(--tg-primary) 22%, transparent)" } }}
-                                                        >
-                                                            <FileUploadOutlinedIcon fontSize="small" />
-                                                        </IconButton>
-                                                    </Tooltip>
+                                                        {/* nuevo botón: comprobantes / carga de archivos */}
+                                                        <Tooltip title="Comprobantes / adjuntar archivos" arrow>
+                                                            <IconButton
+                                                                size="small"
+                                                                aria-label="adjuntar comprobantes"
+                                                                onClick={() => onUploadReceipts(r)}
+                                                                sx={{
+                                                                    color: "var(--tg-primary)",
+                                                                    borderRadius: "9999px",
+                                                                    "&:hover": { backgroundColor: "color-mix(in srgb, var(--tg-primary) 22%, transparent)" }
+                                                                }}
+                                                            >
+                                                                <FileUploadOutlinedIcon fontSize="small" />
+                                                            </IconButton>
+                                                        </Tooltip>
 
-                                                    <Tooltip title="Eliminar" arrow>
-                                                        <IconButton
-                                                            size="small"
-                                                            aria-label="eliminar"
-                                                            onClick={() => { setCompraDel(r); setOpenDelete(true); }}
-                                                            disabled={deleting}
-                                                            sx={{ color: "var(--tg-primary)", borderRadius: "9999px", "&:hover": { backgroundColor: "color-mix(in srgb, var(--tg-primary) 22%, transparent)" } }}
-                                                        >
-                                                            <DeleteOutlineIcon fontSize="small" />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
+                                                        <Tooltip title="Eliminar" arrow>
+                                                            <IconButton
+                                                                size="small"
+                                                                aria-label="eliminar"
+                                                                onClick={() => {
+                                                                    setCompraDel(r);
+                                                                    setOpenDelete(true);
+                                                                }}
+                                                                disabled={deleting}
+                                                                sx={{
+                                                                    color: "var(--tg-primary)",
+                                                                    borderRadius: "9999px",
+                                                                    "&:hover": { backgroundColor: "color-mix(in srgb, var(--tg-primary) 22%, transparent)" }
+                                                                }}
+                                                            >
+                                                                <DeleteOutlineIcon fontSize="small" />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
                             </tbody>
                         </table>
                     </div>
@@ -354,10 +432,22 @@ export default function ComprasPage() {
                         </div>
 
                         <nav className="flex items-center gap-1">
-                            <button disabled={page <= 1} onClick={() => setPage(1)} className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary" aria-label="Primera página" title="Primera página">
+                            <button
+                                disabled={page <= 1}
+                                onClick={() => setPage(1)}
+                                className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary"
+                                aria-label="Primera página"
+                                title="Primera página"
+                            >
                                 <MaterialIcon name="first_page" size={18} />
                             </button>
-                            <button disabled={page <= 1} onClick={() => setPage(page - 1)} className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary" aria-label="Anterior" title="Anterior">
+                            <button
+                                disabled={page <= 1}
+                                onClick={() => setPage(page - 1)}
+                                className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary"
+                                aria-label="Anterior"
+                                title="Anterior"
+                            >
                                 <MaterialIcon name="chevron_left" size={18} />
                             </button>
 
@@ -367,7 +457,8 @@ export default function ComprasPage() {
                                     <button
                                         key={p}
                                         onClick={() => setPage(p)}
-                                        className={`h-8 min-w-8 rounded px-2 text-sm ${active ? "bg-tg-primary text-tg-on-primary" : "hover:bg-black/10 dark:hover:bg:white/10"} focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary`}
+                                        className={`h-8 min-w-8 rounded px-2 text-sm ${active ? "bg-tg-primary text-tg-on-primary" : "hover:bg-black/10 dark:hover:bg:white/10"
+                                            } focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary`}
                                         aria-current={active ? "page" : undefined}
                                     >
                                         {p}
@@ -377,45 +468,40 @@ export default function ComprasPage() {
 
                             {end < clientTotalPages && <span className="px-1">…</span>}
 
-                            <button disabled={page >= clientTotalPages} onClick={() => setPage(page + 1)} className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary" aria-label="Próximo" title="Próximo">
+                            <button
+                                disabled={page >= clientTotalPages}
+                                onClick={() => setPage(page + 1)}
+                                className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary"
+                                aria-label="Próximo"
+                                title="Próximo"
+                            >
                                 <MaterialIcon name="chevron_right" size={18} />
                             </button>
-                            <button disabled={page >= clientTotalPages} onClick={() => setPage(clientTotalPages)} className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary" aria-label="Última página" title="Última página">
+                            <button
+                                disabled={page >= clientTotalPages}
+                                onClick={() => setPage(clientTotalPages)}
+                                className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary"
+                                aria-label="Última página"
+                                title="Última página"
+                            >
                                 <MaterialIcon name="last_page" size={18} />
                             </button>
                         </nav>
 
-                        <div className="text-sm text-tg-muted">Exhibiendo {Math.min(fromRow, clientTotal)}-{toRow} de {clientTotal} registros</div>
+                        <div className="text-sm text-tg-muted">
+                            Exhibiendo {Math.min(fromRow, clientTotal)}-{toRow} de {clientTotal} registros
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {openView && (
-                <CompraView
-                    open={openView}
-                    onClose={() => setOpenView(false)}
-                    compra={compraSel}
-                />
-            )}
+            {openView && <CompraView open={openView} onClose={() => setOpenView(false)} compra={compraSel} />}
 
-            {openPay && (
-                <PagoCompraModal
-                    open={openPay}
-                    onClose={() => setOpenPay(false)}
-                    compra={compraPay}
-                    onPaid={handlePaid}
-                />
-            )}
+            {openPay && <PagoCompraModal open={openPay} onClose={() => setOpenPay(false)} compra={compraPay} onPaid={handlePaid} />}
 
             {/* nuevo modal: comprobantes */}
             {openReceipts && purchaseForUpload && (
-                <PurchaseReceiptModal
-                    open={openReceipts}
-                    onClose={() => setOpenReceipts(false)}
-                    purchaseId={purchaseForUpload.id}
-                    max={6}
-                    ratio="3/4"
-                />
+                <PurchaseReceiptModal open={openReceipts} onClose={() => setOpenReceipts(false)} purchaseId={purchaseForUpload.id} max={6} ratio="3/4" />
             )}
 
             {openDelete && (
@@ -423,18 +509,36 @@ export default function ComprasPage() {
                     role="dialog"
                     aria-modal="true"
                     className="fixed inset-0 z-50 grid place-items-center bg-black/50"
-                    onKeyDown={(e) => { if (e.key === "Escape") setOpenDelete(false); }}
-                    onClick={(e) => { if (e.target === e.currentTarget && !deleting) setOpenDelete(false); }}
+                    onKeyDown={(e) => {
+                        if (e.key === "Escape") setOpenDelete(false);
+                    }}
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget && !deleting) setOpenDelete(false);
+                    }}
                 >
                     <div className="w-[420px] rounded-lg border border-tg bg-[var(--panel-bg)] shadow-xl">
                         <div className="px-4 py-3 border-b border-tg flex items-center gap-2">
                             <MaterialIcon name="warning" size={18} />
                             <h3 className="text-base font-semibold">Confirmar eliminación</h3>
                         </div>
-                        <div className="px-4 py-4 text-sm">¿Seguro que deseas eliminar la compra #{compraDel?.id}? Esta acción no se puede deshacer.</div>
+                        <div className="px-4 py-4 text-sm">
+                            ¿Seguro que deseas eliminar la compra #{compraDel?.id}? Esta acción no se puede deshacer.
+                        </div>
                         <div className="px-4 py-3 border-t border-tg flex justify-end gap-2">
-                            <button onClick={() => setOpenDelete(false)} className="h-9 rounded-md px-3 text-sm hover:bg-black/10 dark:hover:bg:white/10" disabled={deleting}>Cancelar</button>
-                            <button onClick={confirmDelete} className="h-9 rounded-md bg-red-600 px-3 text-sm font-medium text-white disabled:opacity-60" disabled={deleting}>{deleting ? "Eliminando…" : "Eliminar"}</button>
+                            <button
+                                onClick={() => setOpenDelete(false)}
+                                className="h-9 rounded-md px-3 text-sm hover:bg-black/10 dark:hover:bg:white/10"
+                                disabled={deleting}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={confirmDelete}
+                                className="h-9 rounded-md bg-red-600 px-3 text-sm font-medium text-white disabled:opacity-60"
+                                disabled={deleting}
+                            >
+                                {deleting ? "Eliminando…" : "Eliminar"}
+                            </button>
                         </div>
                     </div>
                 </div>

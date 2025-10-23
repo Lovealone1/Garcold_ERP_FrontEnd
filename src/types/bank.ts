@@ -7,7 +7,7 @@ export interface Bank {
   account_number?: string | null;
 }
 
-export type BankCreate = Omit<Bank, "id" | "balance" | "created_at" | "updated_at">;
+export type BankCreate = Omit<Bank, "id" | "created_at" | "updated_at">;
 
 export type BankUpdate = Pick<Bank, "name">;
 

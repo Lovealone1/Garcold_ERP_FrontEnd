@@ -16,22 +16,19 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
         <div
           className="app-shell__frame flex-1"
-          // Blur = desktop (via --app-blur) + móvil cuando sidebar abierta
           style={{
-            // variable móvil controlada aquí
             // @ts-ignore
             "--app-blur-mobile": isSidebarOpen ? "6px" : "0px",
             filter: "blur(calc(var(--app-blur, 0px) + var(--app-blur-mobile, 0px)))",
             transition: "filter 10ms ease",
           }}
         >
-          <header className="app-shell__topbar">
+          <header
+            className="app-shell__topbar"
+            style={{ background: "var(--tg-bg)" }}  // inline gana la prioridad
+          >
             <div className="app-shell__topbar-left flex items-center gap-3">
-              <button
-                onClick={() => setIsSidebarOpen(true)}
-                className="lg:hidden"
-                aria-label="Abrir menú lateral"
-              >
+              <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden" aria-label="Abrir menú lateral">
                 <MaterialIcon name="menu" size={28} className="text-muted" fill={0} weight={600} />
               </button>
               <Breadcrumbs className="hidden md:flex my-1" />

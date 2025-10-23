@@ -10,7 +10,6 @@ export default function ThemeToggle({
     isDark: boolean;
     onToggle: () => void;
 }) {
-    // Colapsada: solo ícono
     if (!expanded) {
         return (
             <div className="flex items-center justify-center">
@@ -30,7 +29,6 @@ export default function ThemeToggle({
         );
     }
 
-    // Expandida: no-wrap + reserva de ancho para animación fluida
     return (
         <div className="flex items-center justify-between w-full gap-2 px-1 overflow-hidden">
             <div className="flex items-center gap-3 min-w-0">

@@ -1,4 +1,3 @@
-// components/UserMenu.tsx
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -14,13 +13,12 @@ export default function UserMenu({
 }: {
     open: boolean;
     onClose: () => void;
-    anchorEl: HTMLElement | null; // ← referencia del UserTile
+    anchorEl: HTMLElement | null; 
     accentPct?: number;
 }) {
     const menuRef = useRef<HTMLDivElement>(null);
     const [pos, setPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
 
-    // Cerrar con click afuera / Escape
     useEffect(() => {
         if (!open) return;
         const onDown = (e: MouseEvent) => {
@@ -36,7 +34,6 @@ export default function UserMenu({
         };
     }, [open, onClose]);
 
-    // Calcular posición (a la DERECHA del tile) y clamp a viewport
     const recalc = () => {
         if (!anchorEl || !menuRef.current) return;
         const r = anchorEl.getBoundingClientRect();
@@ -45,9 +42,8 @@ export default function UserMenu({
         const pad = 12;
 
         let left = r.right + pad;
-        let top = r.top; // alineado al top del tile
+        let top = r.top; 
 
-        // clamp horizontal / vertical
         left = Math.min(left, window.innerWidth - mw - 8);
         top = Math.min(top, window.innerHeight - mh - 8);
 
@@ -64,7 +60,6 @@ export default function UserMenu({
             window.removeEventListener("resize", onWin);
             window.removeEventListener("scroll", onWin, true);
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open, anchorEl]);
 
     if (!open) return null;

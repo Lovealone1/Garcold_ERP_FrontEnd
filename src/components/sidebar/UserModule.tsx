@@ -12,7 +12,7 @@ export default function UserModule({
     expanded,
     isDark,
     onToggle,
-    configHref = "/configuracion",
+    configHref = "/settings/perfil",
     supportHref = "/soporte",
     accentPct = 14, // ← controla la intensidad del hover
 }: {

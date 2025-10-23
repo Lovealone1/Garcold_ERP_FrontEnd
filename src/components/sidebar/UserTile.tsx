@@ -1,4 +1,3 @@
-// components/sidebar/UserTile.tsx
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -14,8 +13,14 @@ const ACCENT = (pct = 14) =>
 
 /* ---------- Popover ---------- */
 function MenuPopover({
-    open, anchorEl, onClose,
-}: { open: boolean; anchorEl: HTMLElement | null; onClose: () => void }) {
+    open,
+    anchorEl,
+    onClose,
+}: {
+    open: boolean;
+    anchorEl: HTMLElement | null;
+    onClose: () => void;
+}) {
     const ref = useRef<HTMLDivElement>(null);
     const [pos, setPos] = useState({ top: 0, left: 0 });
 
@@ -44,7 +49,9 @@ function MenuPopover({
 
     useEffect(() => {
         if (!open) return;
-        const onDown = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) onClose(); };
+        const onDown = (e: MouseEvent) => {
+            if (!ref.current?.contains(e.target as Node)) onClose();
+        };
         const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
         window.addEventListener("pointerdown", onDown);
         window.addEventListener("keydown", onKey);
@@ -81,7 +88,9 @@ function MenuPopover({
                         onMouseLeave={(e) => (e.currentTarget.style.background = "")}
                         onClick={onClose}
                     >
-                        <span className="material-symbols-rounded text-[18px] text-tg-muted">account_circle</span>
+                        <span className="material-symbols-rounded text-[18px] text-tg-muted">
+                            account_circle
+                        </span>
                         <span className="text-tg-fg">Mi perfil</span>
                     </Link>
                 </li>
@@ -94,7 +103,9 @@ function MenuPopover({
                         onMouseLeave={(e) => (e.currentTarget.style.background = "")}
                         onClick={onClose}
                     >
-                        <span className="material-symbols-rounded text-[18px] text-tg-muted">edit</span>
+                        <span className="material-symbols-rounded text-[18px] text-tg-muted">
+                            edit
+                        </span>
                         <span className="text-tg-fg">Editar perfil</span>
                     </Link>
                 </li>
@@ -105,7 +116,11 @@ function MenuPopover({
 }
 
 /* ------------------------------- UserTile ------------------------------- */
-export default function UserTile({ collapsed, className = "", tintPercent = 2 }: Props) {
+export default function UserTile({
+    collapsed,
+    className = "",
+    tintPercent = 2,
+}: Props) {
     const logout = useLogout();
 
     const [loading, setLoading] = useState(true);
@@ -117,7 +132,6 @@ export default function UserTile({ collapsed, className = "", tintPercent = 2 }:
     const anchorRef = useRef<HTMLDivElement>(null);
     const [logoutHover, setLogoutHover] = useState(false);
 
-    // flag para animar la card cuando pasamos de colapsado → expandido
     const [justExpanded, setJustExpanded] = useState(false);
     useEffect(() => {
         if (!collapsed) {
@@ -127,34 +141,47 @@ export default function UserTile({ collapsed, className = "", tintPercent = 2 }:
         }
     }, [collapsed]);
 
-    useEffect(() => { if (collapsed) setMenuOpen(false); }, [collapsed]);
+    useEffect(() => {
+        if (collapsed) setMenuOpen(false);
+    }, [collapsed]);
 
     useEffect(() => {
-        let mounted = true;
+        let alive = true;
+
         const load = async () => {
             try {
-                const { data } = await supabase.auth.getUser();
+                const { data } = await supabase().auth.getUser();
+                if (!alive) return;
                 const u = data.user;
-                if (!mounted) return;
                 if (u) {
                     const md = u.user_metadata ?? {};
                     setName(md.full_name || md.name || u.email?.split("@")[0] || "Usuario");
                     setEmail(u.email ?? null);
                     setAvatarUrl(md.avatar_url ?? null);
                 } else {
-                    setName("Usuario"); setEmail(null); setAvatarUrl(null);
+                    setName("Usuario");
+                    setEmail(null);
+                    setAvatarUrl(null);
                 }
-            } finally { if (mounted) setLoading(false); }
+            } finally {
+                if (alive) setLoading(false);
+            }
         };
         load();
-        const { data: sub } = supabase.auth.onAuthStateChange((_evt, session) => {
+
+        const { data: { subscription } } = supabase().auth.onAuthStateChange((_evt, session) => {
+            if (!alive) return;
             const u = session?.user;
             const md = u?.user_metadata ?? {};
             setName(u ? md.full_name || md.name || u.email?.split("@")[0] || "Usuario" : "Usuario");
             setEmail(u?.email ?? null);
             setAvatarUrl(u ? md.avatar_url ?? null : null);
         });
-        return () => { mounted = false; sub?.subscription?.unsubscribe(); };
+
+        return () => {
+            alive = false;
+            subscription?.unsubscribe();
+        };
     }, []);
 
     const initial = (name || email || "U").slice(0, 1).toUpperCase();
@@ -177,7 +204,6 @@ export default function UserTile({ collapsed, className = "", tintPercent = 2 }:
         borderColor: `color-mix(in srgb, var(--tg-primary) 40%, var(--tg-border))`,
     } as const;
 
-    /* ---------- Colapsado: SOLO avatar, sin card visible ---------- */
     if (collapsed) {
         return (
             <div ref={anchorRef} className={`relative flex items-center justify-center ${className}`}>
@@ -197,7 +223,6 @@ export default function UserTile({ collapsed, className = "", tintPercent = 2 }:
         );
     }
 
-    /* ---------- Expandido: CARD rectangular con animación suave ---------- */
     return (
         <div ref={anchorRef} className={className}>
             <div
@@ -221,7 +246,10 @@ export default function UserTile({ collapsed, className = "", tintPercent = 2 }:
 
                     <button
                         type="button"
-                        onClick={(e) => { e.stopPropagation(); logout(); }}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            logout();
+                        }}
                         onMouseEnter={() => setLogoutHover(true)}
                         onMouseLeave={() => setLogoutHover(false)}
                         title="Cerrar sesión"

@@ -1,11 +1,11 @@
 "use client";
 import { useEffect, useState } from "react";
-import type { Gasto, GastosPage } from "@/types/gastos";
-import { listGastos } from "@/services/sales/gastos.api";
+import type { ExpenseView, ExpensesPage } from "@/types/expense";
+import { listExpenses } from "@/services/sales/expense.api";
 
-export function useGastos(page: number, params?: Record<string, any>) {
-  const [data, setData] = useState<GastosPage | null>(null);
-  const [items, setItems] = useState<Gasto[]>([]);
+export function useExpenses(page: number, params?: Record<string, any>) {
+  const [data, setData] = useState<ExpensesPage | null>(null);
+  const [items, setItems] = useState<ExpenseView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
@@ -17,13 +17,13 @@ export function useGastos(page: number, params?: Record<string, any>) {
       setLoading(true);
       setError(null);
       try {
-        const res = await listGastos(page, params, Date.now());
+        const res = await listExpenses(page, params, Date.now());
         if (!alive) return;
         setData(res);
         setItems(res.items);
       } catch (e: any) {
         if (!alive) return;
-        setError(e?.message ?? "Error cargando gastos");
+        setError(e?.message ?? "Failed to load expenses");
         setData(null);
         setItems([]);
       } finally {

@@ -4,12 +4,13 @@ import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import AddIcon from "@mui/icons-material/Add";
 import GastoCard from "@/features/gastos/GastoCard";
-import { useGastos } from "@/hooks/gastos/useGastos";
-import { useCategoriasGastos } from "@/hooks/categoria-gastos/useCategoriaGastos";
-import { useDeleteGasto } from "@/hooks/gastos/useDeleteGasto";
+import { useExpenses } from "@/hooks/gastos/useGastos";
+import { useExpenseCategories } from "@/hooks/categoria-gastos/useCategoriaGastos";
+import { useDeleteExpense } from "@/hooks/gastos/useDeleteGasto";
 import DateRangePicker from "@/components/ui/DateRangePicker/DateRangePicker";
 import type { DateRange } from "react-day-picker";
-import CreateGastoModal from "@/features/gastos/CreateGastoModal";
+import CreateExpenseModal from "@/features/gastos/CreateGastoModal";
+import { useNotifications } from "@/components/providers/NotificationsProvider";
 
 function inRange(d: string, range?: DateRange) {
     if (!range?.from && !range?.to) return true;
@@ -34,6 +35,8 @@ export default function GastosPage() {
     const [confirmDelete, setConfirmDelete] = useState(false);
     const [openCreate, setOpenCreate] = useState(false);
 
+    const { success, error } = useNotifications();
+
     const params = useMemo(() => {
         const p: Record<string, any> = {};
         if (categoria) p.categoria = categoria;
@@ -41,34 +44,42 @@ export default function GastosPage() {
         return Object.keys(p).length ? p : undefined;
     }, [categoria, banco]);
 
-    const { data, items, loading, error, refresh } = useGastos(page, params);
-    const { items: categorias, loading: loadingCats } = useCategoriasGastos();
-    const { remove, loading: deleting } = useDeleteGasto(() => {
+    const { data, items, loading, error: loadError, refresh } = useExpenses(page, params);
+    const { items: categorias, loading: loadingCats } = useExpenseCategories();
+    const { remove, loading: deleting } = useDeleteExpense(() => {
         setSelectedIds(new Set());
         refresh();
     });
 
     const bancos = useMemo(
-        () => Array.from(new Set(items.map((g) => g.nombre_banco).filter(Boolean))).sort((a, b) => a.localeCompare(b)),
+        () => Array.from(new Set(items.map((g) => g.bank_name).filter(Boolean))).sort((a, b) => a.localeCompare(b)),
         [items]
     );
 
     const filtered = useMemo(
         () =>
             items.filter((g) => {
-                if (categoria && g.categoria_gasto_id !== categoria) return false;
-                if (banco && g.nombre_banco !== banco) return false;
-                if (!inRange(g.fecha_gasto, range)) return false;
+                if (categoria && g.category_name !== categoria) return false;
+                if (banco && g.bank_name !== banco) return false;
+                if (!inRange(g.expense_date, range)) return false;
                 return true;
             }),
         [items, categoria, banco, range]
     );
 
     async function handleConfirmDelete() {
-        for (const id of selectedIds) {
-            await remove(id);
+        try {
+            for (const id of selectedIds) await remove(id);
+            success(
+                selectedIds.size > 1
+                    ? `Se eliminaron ${selectedIds.size} gastos correctamente.`
+                    : "Gasto eliminado correctamente."
+            );
+        } catch (e) {
+            error(e);
+        } finally {
+            setConfirmDelete(false);
         }
-        setConfirmDelete(false);
     }
 
     function clearFilters() {
@@ -95,13 +106,11 @@ export default function GastosPage() {
                                 setCategoria(val ? val : undefined);
                             }}
                             disabled={loadingCats}
-                            aria-label="Filtro por categoría"
-                            title="Filtrar por categoría"
                         >
                             <option value="">Todas las categorías</option>
                             {categorias.map((c) => (
-                                <option key={c.id} value={c.nombre}>
-                                    {c.nombre}
+                                <option key={c.id} value={c.name}>
+                                    {c.name}
                                 </option>
                             ))}
                         </select>
@@ -115,8 +124,6 @@ export default function GastosPage() {
                                 setBanco(val ? val : undefined);
                             }}
                             disabled={loading}
-                            aria-label="Filtro por banco"
-                            title="Filtrar por banco"
                         >
                             <option value="">Todos los bancos</option>
                             {bancos.map((b) => (
@@ -126,7 +133,13 @@ export default function GastosPage() {
                             ))}
                         </select>
 
-                        <DateRangePicker value={range} onChange={(r) => { setRange(r); setPage(1); }} />
+                        <DateRangePicker
+                            value={range}
+                            onChange={(r) => {
+                                setRange(r);
+                                setPage(1);
+                            }}
+                        />
 
                         <span
                             role="button"
@@ -134,8 +147,6 @@ export default function GastosPage() {
                             onClick={clearFilters}
                             onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && clearFilters()}
                             className="cursor-pointer text-sm text-tg-primary hover:underline ml-2 select-none"
-                            title="Limpiar filtros"
-                            aria-label="Limpiar filtros"
                         >
                             Limpiar filtros
                         </span>
@@ -154,7 +165,6 @@ export default function GastosPage() {
                             className="h-9 w-9 grid place-items-center rounded border border-tg disabled:opacity-50"
                             onClick={() => setPage((p) => Math.max(1, p - 1))}
                             disabled={!data?.has_prev || loading}
-                            aria-label="Página anterior"
                             type="button"
                         >
                             <ChevronLeftIcon fontSize="small" />
@@ -166,7 +176,6 @@ export default function GastosPage() {
                             className="h-9 w-9 grid place-items-center rounded border border-tg disabled:opacity-50"
                             onClick={() => setPage((p) => p + 1)}
                             disabled={!data?.has_next || loading}
-                            aria-label="Página siguiente"
                             type="button"
                         >
                             <ChevronRightIcon fontSize="small" />
@@ -175,7 +184,7 @@ export default function GastosPage() {
                 </div>
             </div>
 
-            {selectedIds.size > 0 ? (
+            {selectedIds.size > 0 && (
                 <div className="flex items-center gap-2">
                     <button
                         type="button"
@@ -186,9 +195,9 @@ export default function GastosPage() {
                         {deleting ? "Eliminando…" : `Eliminar (${selectedIds.size})`}
                     </button>
                 </div>
-            ) : null}
+            )}
 
-            {error ? <div className="text-sm text-red-600">{error}</div> : null}
+            {loadError && <div className="text-sm text-red-600">{String(loadError)}</div>}
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-4">
                 {filtered.map((g) => {
@@ -201,22 +210,12 @@ export default function GastosPage() {
                             onClick={() =>
                                 setSelectedIds((prev) => {
                                     const next = new Set(prev);
-                                    if (next.has(g.id)) next.delete(g.id);
-                                    else next.add(g.id);
+                                    next.has(g.id) ? next.delete(g.id) : next.add(g.id);
                                     return next;
                                 })
                             }
-                            onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                    setSelectedIds((prev) => {
-                                        const next = new Set(prev);
-                                        if (next.has(g.id)) next.delete(g.id);
-                                        else next.add(g.id);
-                                        return next;
-                                    });
-                                }
-                            }}
-                            className={`rounded-xl transition-colors ${isSelected ? "ring-2 ring-[var(--tg-primary)]" : "ring-0"}`}
+                            className={`rounded-xl transition-colors ${isSelected ? "ring-2 ring-[var(--tg-primary)]" : "ring-0"
+                                }`}
                         >
                             <GastoCard gasto={g} />
                         </div>
@@ -224,45 +223,26 @@ export default function GastosPage() {
                 })}
             </div>
 
-            {!loading && filtered.length === 0 ? (
+            {!loading && filtered.length === 0 && (
                 <div className="text-sm text-tg-muted border border-tg rounded-md p-4">Sin resultados.</div>
-            ) : null}
+            )}
 
-            <div className="flex sm:hidden items-center justify-end pt-2">
-                <button
-                    className="h-9 w-9 grid place-items-center rounded border border-tg disabled:opacity-50"
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={!data?.has_prev || loading}
-                    type="button"
-                >
-                    <ChevronLeftIcon fontSize="small" />
-                </button>
-                <span className="mx-2 text-sm">
-                    {data?.page ?? page} / {data?.total_pages ?? 1}
-                </span>
-                <button
-                    className="h-9 w-9 grid place-items-center rounded border border-tg disabled:opacity-50"
-                    onClick={() => setPage((p) => p + 1)}
-                    disabled={!data?.has_next || loading}
-                    type="button"
-                >
-                    <ChevronRightIcon fontSize="small" />
-                </button>
-            </div>
-
-            {confirmDelete ? (
+            {confirmDelete && (
                 <div
                     role="dialog"
                     aria-modal="true"
                     className="fixed inset-0 z-50 grid place-items-center bg-black/50"
-                    onClick={(e) => { if (e.target === e.currentTarget && !deleting) setConfirmDelete(false); }}
-                    onKeyDown={(e) => { if (e.key === "Escape" && !deleting) setConfirmDelete(false); }}
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget && !deleting) setConfirmDelete(false);
+                    }}
                 >
                     <div className="w-[420px] rounded-lg border border-tg bg-[var(--panel-bg)] shadow-xl">
                         <div className="px-4 py-3 border-b border-tg">
                             <h3 className="text-base font-semibold">Confirmar eliminación</h3>
                         </div>
-                        <div className="px-4 py-4 text-sm">¿Eliminar {selectedIds.size} gasto(s)? Esta acción no se puede deshacer.</div>
+                        <div className="px-4 py-4 text-sm">
+                            ¿Eliminar {selectedIds.size} gasto(s)? Esta acción no se puede deshacer.
+                        </div>
                         <div className="px-4 py-3 border-t border-tg flex justify-end gap-2">
                             <button
                                 className="h-9 rounded-md px-3 text-sm hover:bg-black/10 dark:hover:bg-white/10"
@@ -281,14 +261,15 @@ export default function GastosPage() {
                         </div>
                     </div>
                 </div>
-            ) : null}
+            )}
 
-            <CreateGastoModal
+            <CreateExpenseModal
                 open={openCreate}
                 onClose={() => setOpenCreate(false)}
                 onCreated={() => {
                     setOpenCreate(false);
                     refresh();
+                    success("Gasto registrado correctamente.");
                 }}
             />
         </div>

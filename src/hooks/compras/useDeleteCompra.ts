@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { deleteCompra } from "@/services/sales/compras.api";
+import { deletePurchase } from "@/services/sales/purchase.api";
 
 export function useDeleteCompra() {
     const [loading, setLoading] = useState(false);
@@ -10,7 +10,7 @@ export function useDeleteCompra() {
         setLoading(true);
         setError(null);
         try {
-            const res = await deleteCompra(id);
+            const res = await deletePurchase(id);
             return res;
         } catch (e: any) {
             const msg = e?.response?.data?.detail ?? e?.message ?? "Error eliminando compra";

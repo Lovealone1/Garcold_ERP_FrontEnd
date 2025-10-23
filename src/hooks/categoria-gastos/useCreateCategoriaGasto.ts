@@ -1,21 +1,21 @@
 "use client";
 import { useState } from "react";
-import type { CategoriaGastosDTO, CategoriaGastosResponseDTO } from "@/types/categoria-gastos";
-import { createCategoriaGastos } from "@/services/sales/categoria-gastos.api";
+import type { ExpenseCategory, ExpenseCategoryCreate } from "@/types/expense-category";
+import { createExpenseCategory } from "@/services/sales/expense-category.api";
 
-export function useCreateCategoriaGasto(onCreated?: (c: CategoriaGastosResponseDTO) => void) {
+export function useCreateExpenseCategory(onCreated?: (c: ExpenseCategory) => void) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    async function create(payload: CategoriaGastosDTO) {
+    async function create(payload: ExpenseCategoryCreate) {
         setLoading(true);
         setError(null);
         try {
-            const res = await createCategoriaGastos(payload);
+            const res = await createExpenseCategory(payload);
             onCreated?.(res);
             return res;
         } catch (e: any) {
-            setError(e?.message ?? "Error creando categoría");
+            setError(e?.message ?? "Failed to create expense category");
             throw e;
         } finally {
             setLoading(false);

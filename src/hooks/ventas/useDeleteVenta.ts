@@ -1,16 +1,16 @@
 "use client";
 import { useState } from "react";
-import { deleteVenta } from "@/services/sales/ventas.api";
+import { deleteSale } from "@/services/sales/sale.api";
 
 export function useDeleteVenta() {
   const [loading, setLoading] = useState(false);
-  const [error, setError]   = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleDelete(id: number) {
     setLoading(true);
     setError(null);
     try {
-      const res = await deleteVenta(id);
+      const res = await deleteSale(id);
       return res;
     } catch (e: any) {
       const msg = e?.response?.data?.detail ?? e?.message ?? "Error eliminando venta";

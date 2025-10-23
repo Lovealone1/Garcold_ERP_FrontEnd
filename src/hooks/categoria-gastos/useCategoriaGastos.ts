@@ -1,10 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
-import type { CategoriaGastosResponseDTO } from "@/types/categoria-gastos";
-import { listCategoriasGastos } from "@/services/sales/categoria-gastos.api";
+import type { ExpenseCategory } from "@/types/expense-category";
+import { listExpenseCategories } from "@/services/sales/expense-category.api";
 
-export function useCategoriasGastos() {
-    const [items, setItems] = useState<CategoriaGastosResponseDTO[]>([]);
+export function useExpenseCategories() {
+    const [items, setItems] = useState<ExpenseCategory[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -13,10 +13,10 @@ export function useCategoriasGastos() {
         (async () => {
             try {
                 setLoading(true);
-                const data = await listCategoriasGastos();
+                const data = await listExpenseCategories();
                 if (active) setItems(data);
             } catch (e: any) {
-                if (active) setError(e?.message ?? "Error listando categorías");
+                if (active) setError(e?.message ?? "Failed to list expense categories");
             } finally {
                 if (active) setLoading(false);
             }

@@ -1,12 +1,8 @@
-// reporte-general.d.ts (refactor)
-
-// Utilidades
 export type Bucket = "week" | "month" | "year" | "all";
 export type Granularity = "day" | "month" | "year";
-/** ISO date string "YYYY-MM-DD" o "YYYY-MM" o "YYYY" según el caso */
+
 export type DateISO = string;
 
-// Meta de solicitud (Pydantic BaseModel en backend → JSON aquí)
 export interface RequestMetaDTO {
   bucket: Bucket;
   pivot?: DateISO;

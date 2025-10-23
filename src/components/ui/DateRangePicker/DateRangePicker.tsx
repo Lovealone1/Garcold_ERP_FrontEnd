@@ -1,4 +1,3 @@
-// components/DateRangeInput.tsx
 "use client";
 import { useEffect, useId, useState } from "react";
 import { DayPicker, DateRange } from "react-day-picker";

@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { gsap } from "gsap";
 import SplitText from "@/components/SplitText";
 import SoftFlaresBG from "@/components/ui/SoftFlaresBG";
 
-export default function Bienvenido() {
+function BienvenidoInner() {
     const r = useRouter();
     const q = useSearchParams();
     const next = q.get("next") || "/inicio";
@@ -47,12 +47,7 @@ export default function Bienvenido() {
         >
             <SoftFlaresBG />
 
-            {/* Texto (una sola vez) */}
-            <div
-                ref={textWrapRef}
-                style={{ display: phase === "text" ? "block" : "none" }}
-                className="px-4"
-            >
+            <div ref={textWrapRef} style={{ display: phase === "text" ? "block" : "none" }} className="px-4">
                 <SplitText
                     text="Bienvenido a Tienda Garcold"
                     tag="h1"
@@ -70,7 +65,6 @@ export default function Bienvenido() {
                 />
             </div>
 
-            {/* Logo */}
             <div
                 ref={logoRef}
                 style={{ display: phase === "logo" ? "block" : "none" }}
@@ -79,5 +73,13 @@ export default function Bienvenido() {
                 <Image src="/garcold.png" alt="Garcold" width={400} height={400} className="rounded-[28px]" priority />
             </div>
         </div>
+    );
+}
+
+export default function Bienvenido() {
+    return (
+        <Suspense fallback={null}>
+            <BienvenidoInner />
+        </Suspense>
     );
 }

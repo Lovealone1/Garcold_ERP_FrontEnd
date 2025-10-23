@@ -1,29 +1,32 @@
 "use client";
 import { useEffect, useRef, useState, useCallback } from "react";
-import { listCreditos } from "@/services/sales/creditos.api";
-import type { CreditosPage } from "@/types/creditos";
+import { listLoans } from "@/services/sales/loan.api";
+import type { LoansPage } from "@/types/loan";
 
-export function useCreditos(page = 1) {
-  const [data, setData] = useState<CreditosPage | null>(null);
+export function useLoans(page = 1) {
+  const [data, setData] = useState<LoansPage | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  const fetchPage = useCallback(async (p = page) => {
-    setLoading(true);
-    setError(null);
-    abortRef.current?.abort();
-    const ac = new AbortController();
-    abortRef.current = ac;
-    try {
-      const res = await listCreditos(p, Date.now());
-      if (!ac.signal.aborted) setData(res);
-    } catch (e) {
-      if (!ac.signal.aborted) setError(e);
-    } finally {
-      if (!ac.signal.aborted) setLoading(false);
-    }
-  }, [page]);
+  const fetchPage = useCallback(
+    async (p = page) => {
+      setLoading(true);
+      setError(null);
+      abortRef.current?.abort();
+      const ac = new AbortController();
+      abortRef.current = ac;
+      try {
+        const res = await listLoans(p, Date.now());
+        if (!ac.signal.aborted) setData(res);
+      } catch (e) {
+        if (!ac.signal.aborted) setError(e);
+      } finally {
+        if (!ac.signal.aborted) setLoading(false);
+      }
+    },
+    [page]
+  );
 
   useEffect(() => {
     fetchPage(page);

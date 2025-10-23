@@ -1,28 +1,33 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { getCompraById } from "@/services/sales/compras.api";
-import type { Compra } from "@/types/compras";
+import { getPurchaseById } from "@/services/sales/purchase.api";
+import type { Purchase } from "@/types/purchase";
+
+export function usePurchase(purchaseId: number | null) {
+  const [purchase, setPurchase] = useState<Purchase | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchIt = useCallback(async () => {
+    if (!purchaseId) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await getPurchaseById(purchaseId);
+      setPurchase(data);
+    } catch (e: any) {
+      setError(e?.response?.data?.detail ?? e?.message ?? "Failed to load purchase");
+    } finally {
+      setLoading(false);
+    }
+  }, [purchaseId]);
+
+  useEffect(() => { fetchIt(); }, [fetchIt]);
+
+  return { purchase, loading, error, refetch: fetchIt };
+}
 
 export function useCompra(compraId: number | null) {
-    const [compra, setCompra] = useState<Compra | null>(null);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-
-    const fetchIt = useCallback(async () => {
-        if (!compraId) return;
-        setLoading(true);
-        setError(null);
-        try {
-            const data = await getCompraById(compraId);
-            setCompra(data);
-        } catch (e: any) {
-            setError(e?.response?.data?.detail ?? e?.message ?? "Error al cargar compra");
-        } finally {
-            setLoading(false);
-        }
-    }, [compraId]);
-
-    useEffect(() => { fetchIt(); }, [fetchIt]);
-
-    return { compra, loading, error, refetch: fetchIt };
+  const { purchase, ...rest } = usePurchase(compraId);
+  return { compra: purchase, ...rest };
 }

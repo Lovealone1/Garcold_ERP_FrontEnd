@@ -1,11 +1,10 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { fetchAllUtilidades } from "@/services/sales/utilidades.api";
-import type { Utilidad } from "@/types/utilidades";
+import { fetchAllProfits } from "@/services/sales/profit.api";
+import type { Profit } from "@/types/profit";
 
-
-export function useUtilidades(pageSize = 10) {
-    const [all, setAll] = useState<Utilidad[]>([]);
+export function useProfits(pageSize = 10) {
+    const [all, setAll] = useState<Profit[]>([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
     const [refreshTick, setRefreshTick] = useState(0);
@@ -16,7 +15,7 @@ export function useUtilidades(pageSize = 10) {
         (async () => {
             setLoading(true);
             try {
-                const data = await fetchAllUtilidades(Date.now());
+                const data = await fetchAllProfits(Date.now());
                 if (alive) setAll(data);
             } finally {
                 if (alive) setLoading(false);
@@ -37,7 +36,8 @@ export function useUtilidades(pageSize = 10) {
     return {
         loading,
         items,
-        page: safePage, setPage,
+        page: safePage,
+        setPage,
         pageSize,
         total,
         totalPages,

@@ -12,13 +12,17 @@ import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import Grid from "@mui/material/Grid";
+
 import { usePagosCompra } from "@/hooks/compras/usePagosCompra";
 import { useCreatePagoCompra } from "@/hooks/compras/useCreatePagoCompra";
 import { useDeletePagoCompra } from "@/hooks/compras/useDeletePagoCompra";
-import { listBancos } from "@/services/sales/bancos.api";
-import { getCompraById } from "@/services/sales/compras.api";
-import type { Banco } from "@/types/bancos";
-import type { Compra } from "@/types/compras";
+
+import { listBanks } from "@/services/sales/bank.api";
+import { getPurchaseById } from "@/services/sales/purchase.api";
+
+import type { Bank } from "@/types/bank";
+import type { Purchase } from "@/types/purchase";
+
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 
 const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
@@ -26,14 +30,14 @@ const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP
 type Props = {
     open: boolean;
     onClose: () => void;
-    compra: Compra | null;
+    compra: Purchase | null;
     onPaid?: (compraId: number) => void;
 };
 
 export default function PagoCompraModal({ open, onClose, compra, onPaid }: Props) {
     const compraId = compra?.id ?? null;
 
-    const [compraInfo, setCompraInfo] = useState<Compra | null>(compra ?? null);
+    const [compraInfo, setCompraInfo] = useState<Purchase | null>(compra ?? null);
     useEffect(() => { setCompraInfo(compra ?? null); }, [compra, open]);
 
     const { items, loading, reload } = usePagosCompra(compraId);
@@ -41,17 +45,17 @@ export default function PagoCompraModal({ open, onClose, compra, onPaid }: Props
     const { remove, loading: deleting } = useDeletePagoCompra();
     const { success, error } = useNotifications();
 
-    const [bancos, setBancos] = useState<Banco[]>([]);
+    const [bancos, setBancos] = useState<Bank[]>([]);
     const [bancoId, setBancoId] = useState<number | "">("");
     const [monto, setMonto] = useState<string>("");
 
-    useEffect(() => { (async () => { try { setBancos(await listBancos(Date.now())); } catch { setBancos([]); } })(); }, []);
+    useEffect(() => { (async () => { try { setBancos(await listBanks(Date.now())); } catch { setBancos([]); } })(); }, []);
     useEffect(() => { setBancoId(""); setMonto(""); }, [compraId, open]);
 
     const estadoColor = useMemo(() => {
         if (!compraInfo) return undefined;
-        if ((compraInfo.saldo ?? 0) > 0) return "bg-yellow-500/20 text-yellow-400";
-        if (compraInfo.estado.toLowerCase().includes("contado") || compraInfo.estado.toLowerCase().includes("cancelada"))
+        if ((compraInfo.balance ?? 0) > 0) return "bg-yellow-500/20 text-yellow-400";
+        if (compraInfo.status.toLowerCase().includes("contado") || compraInfo.status.toLowerCase().includes("cancelada"))
             return "bg-emerald-500/20 text-emerald-400";
         return "bg-sky-500/20 text-sky-400";
     }, [compraInfo]);
@@ -59,7 +63,7 @@ export default function PagoCompraModal({ open, onClose, compra, onPaid }: Props
     async function refreshCompra() {
         if (!compraId) return;
         try {
-            const fresh = await getCompraById(compraId, Date.now());
+            const fresh = await getPurchaseById(compraId, Date.now());
             setCompraInfo(fresh);
         } catch { /* noop */ }
     }
@@ -69,7 +73,7 @@ export default function PagoCompraModal({ open, onClose, compra, onPaid }: Props
         const num = Number(monto);
         if (!bancoId || !num || num <= 0) { error("Selecciona banco y un monto válido"); return; }
         try {
-            await create(compraId, { banco_id: Number(bancoId), monto: num });
+            await create({ purchase_id: compraId, bank_id: Number(bancoId), amount: num });
             success("Abono registrado");
             await reload();
             await refreshCompra();
@@ -110,25 +114,25 @@ export default function PagoCompraModal({ open, onClose, compra, onPaid }: Props
                     <div className="mb-4 rounded-lg border border-tg p-3">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                             <div>
-                                <div className="text-base font-semibold">{compraInfo.proveedor}</div>
+                                <div className="text-base font-semibold">{compraInfo.supplier}</div>
                                 <div className="text-xs opacity-70">ID compra: {compraInfo.id}</div>
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className={`px-2 py-1 rounded text-xs font-medium ${estadoColor}`}>
-                                    {(compraInfo.saldo ?? 0) > 0 ? "Compra crédito" : compraInfo.estado}
+                                    {(compraInfo.balance ?? 0) > 0 ? "Compra crédito" : compraInfo.status}
                                 </span>
                                 <span className="px-2 py-1 rounded bg-black/10 text-xs">
                                     Total: {money.format(compraInfo.total)}
                                 </span>
                                 <span className="px-2 py-1 rounded bg-black/10 text-xs">
-                                    Saldo: {money.format(compraInfo.saldo ?? 0)}
+                                    Saldo: {money.format(compraInfo.balance ?? 0)}
                                 </span>
                             </div>
                         </div>
                     </div>
                 )}
 
-                {(compraInfo?.saldo ?? 0) > 0 ? (
+                {(compraInfo?.balance ?? 0) > 0 ? (
                     <Stack gap={2} sx={{ mb: 3 }}>
                         <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Registrar abono</Typography>
                         <Grid container spacing={2}>
@@ -139,7 +143,7 @@ export default function PagoCompraModal({ open, onClose, compra, onPaid }: Props
                                     onChange={(e) => setBancoId((e.target.value ? Number(e.target.value) : "") as any)}
                                 >
                                     <option value="">Selecciona banco</option>
-                                    {bancos.map((b) => (<option key={b.id} value={b.id}>{b.nombre}</option>))}
+                                    {bancos.map((b) => (<option key={b.id} value={b.id}>{b.name}</option>))}
                                 </select>
                             </Grid>
                             <Grid size={{ xs: 12, md: 5 }}>
@@ -199,9 +203,9 @@ export default function PagoCompraModal({ open, onClose, compra, onPaid }: Props
                             ) : (
                                 items.map((p) => (
                                     <tr key={p.id} className="border-t border-tg">
-                                        <td className="px-3 py-2">{new Date(p.fecha_creacion).toLocaleString()}</td>
-                                        <td className="px-3 py-2">{p.banco}</td>
-                                        <td className="px-3 py-2 text-right">{money.format(p.monto_abonado)}</td>
+                                        <td className="px-3 py-2">{new Date(p.created_at).toLocaleString()}</td>
+                                        <td className="px-3 py-2">{p.bank}</td>
+                                        <td className="px-3 py-2 text-right">{money.format(p.amount_paid)}</td>
                                         <td className="px-2 py-1 text-center">
                                             <Tooltip title="Eliminar" arrow>
                                                 <span>

@@ -1,17 +1,17 @@
 "use client";
 import Image from "next/image";
 import * as React from "react";
-import type { CompaniaDTO } from "@/types/factura";
+import { CompanyDTO } from "@/types/company";
 
 type Props = {
-  compania: CompaniaDTO;
+  company: CompanyDTO;
   numero: string;
   fecha?: string;
   showDivider?: boolean;
 };
 
-export default function FacturaHeader({ compania, numero, fecha, showDivider = true }: Props) {
-  const raw = (compania.razon_social || "").trim().replace(/\s{2,}/g, " ");
+export default function FacturaHeader({ company, numero, fecha, showDivider = true }: Props) {
+  const raw = (company.razon_social || "").trim().replace(/\s{2,}/g, " ");
   const [first, ...rest] = raw.split(" ");
   const top = (first || "").toUpperCase();
   const bottom = rest.length ? rest.join(" ").toUpperCase() : "";
@@ -21,7 +21,7 @@ export default function FacturaHeader({ compania, numero, fecha, showDivider = t
       <div className="flex items-start justify-between">
         {/* Logo + razón social en dos líneas */}
         <div className="py-3 flex items-center gap-1">
-          <Image src="/garcold.png" alt={`${raw} logo`} width={110} height={96} priority />
+          <Image src="/garcold-dark.png" alt={`${raw} logo`} width={110} height={96} priority />
           <div className="leading-tight brand">
             <div className="brand-top">{top}</div>
             {bottom && <div className="brand-bottom text-[#718093]">{bottom}</div>}

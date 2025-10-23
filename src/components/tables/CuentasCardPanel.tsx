@@ -1,19 +1,15 @@
-// components/cuentas/CuentasCardsPanel.tsx
 "use client";
 import * as React from "react";
-import type { CXCItemDTO, CXPItemDTO } from "@/types/reporte-general";
+import type { ARItemDTO, APItemDTO } from "@/types/reporte-general";
 import { fmtFecha } from "@/builders/cuentas";
 
 type Props = {
-    cxc: CXCItemDTO[] | null | undefined;
-    cxp: CXPItemDTO[] | null | undefined;
+    accounts_receivable: ARItemDTO[];
+    accounts_payable: APItemDTO[];
     defaultKind?: "cobrar" | "pagar";
-    /** Forzar altura. Si no se pasa, se calcula para que empiece a scrollear tras N items. */
     maxHeight?: number;
-    /** Nº de items visibles antes del scroll cuando no pasas maxHeight. */
-    itemsBeforeScroll?: number; // default 3
-    /** Gap vertical entre cards en px (space-y-2 = 8). */
-    gapPx?: number; // default 8
+    itemsBeforeScroll?: number; 
+    gapPx?: number; 
     className?: string;
 };
 
@@ -24,8 +20,8 @@ const money = new Intl.NumberFormat("es-CO", {
 });
 
 export default function CuentasCardsPanel({
-    cxc,
-    cxp,
+    accounts_receivable,
+    accounts_payable,
     defaultKind = "cobrar",
     maxHeight,
     itemsBeforeScroll = 3,
@@ -34,9 +30,9 @@ export default function CuentasCardsPanel({
 }: Props) {
     const [kind, setKind] = React.useState<"cobrar" | "pagar">(defaultKind);
 
-    const safeCxc = Array.isArray(cxc) ? cxc : [];
-    const safeCxp = Array.isArray(cxp) ? cxp : [];
-    const rows = kind === "cobrar" ? safeCxc : safeCxp;
+    const safeAR = Array.isArray(accounts_receivable) ? accounts_receivable : [];
+    const safeAP = Array.isArray(accounts_payable) ? accounts_payable : [];
+    const rows: (ARItemDTO | APItemDTO)[] = kind === "cobrar" ? safeAR : safeAP;
 
     // altura auto para que el scroll empiece después del N-ésimo item
     const listRef = React.useRef<HTMLUListElement>(null);
@@ -87,33 +83,39 @@ export default function CuentasCardsPanel({
 
             <div className="nice-scroll overflow-y-auto px-3 pb-3" style={{ maxHeight: scrollerMaxH ?? undefined }}>
                 <ul ref={listRef} className="space-y-2">
-                    {rows.map((r, i) => (
-                        <li
-                            key={i}
-                            className="w-full rounded-lg border border-tg bg-[color-mix(in_srgb,var(--panel-bg) 94%,transparent)] p-3"
-                        >
-                            <div className="flex items-start justify-between gap-3">
-                                <div className="min-w-0">
-                                    <div className="truncate text-[var(--tg-fg)] text-sm font-medium">
-                                        {"cliente" in r ? r.cliente : r.proveedor}
+                    {rows.map((r, i) => {
+                        const name = kind === "cobrar" ? (r as ARItemDTO).customer : (r as APItemDTO).supplier;
+                        const date = r.date;
+                        const total = r.total ?? 0;
+                        const balance =
+                            kind === "cobrar"
+                                ? (r as ARItemDTO).remaining_balance ?? 0
+                                : (r as APItemDTO).balance ?? 0;
+
+                        return (
+                            <li
+                                key={i}
+                                className="w-full rounded-lg border border-tg bg-[color-mix(in_srgb,var(--panel-bg) 94%,transparent)] p-3"
+                            >
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                        <div className="truncate text-[var(--tg-fg)] text-sm font-medium">{name}</div>
+                                        <div className="text-[var(--tg-muted)] text-xs">{fmtFecha(date)}</div>
                                     </div>
-                                    <div className="text-[var(--tg-muted)] text-xs">{fmtFecha(r.fecha)}</div>
-                                </div>
-                                <div className="text-right">
-                                    <div className="text-[var(--tg-muted)] text-[11px]">Total</div>
-                                    <div className="text-[var(--tg-fg)] text-sm font-semibold">{money.format(r.total ?? 0)}</div>
-                                </div>
-                                <div className="text-right">
-                                    <div className="text-[var(--tg-muted)] text-[11px]">
-                                        {kind === "cobrar" ? "Saldo restante" : "Saldo"}
+                                    <div className="text-right">
+                                        <div className="text-[var(--tg-muted)] text-[11px]">Total</div>
+                                        <div className="text-[var(--tg-fg)] text-sm font-semibold">{money.format(total)}</div>
                                     </div>
-                                    <div className="text-[var(--tg-fg)] text-sm font-semibold">
-                                        {money.format(("saldo_restante" in r ? r.saldo_restante : r.saldo) ?? 0)}
+                                    <div className="text-right">
+                                        <div className="text-[var(--tg-muted)] text-[11px]">
+                                            {kind === "cobrar" ? "Saldo restante" : "Saldo"}
+                                        </div>
+                                        <div className="text-[var(--tg-fg)] text-sm font-semibold">{money.format(balance)}</div>
                                     </div>
                                 </div>
-                            </div>
-                        </li>
-                    ))}
+                            </li>
+                        );
+                    })}
                     {!rows.length && <li className="text-[var(--tg-muted)] text-sm py-6 text-center">Sin datos.</li>}
                 </ul>
             </div>

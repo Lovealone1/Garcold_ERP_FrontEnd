@@ -1,19 +1,19 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { listVentas } from "@/services/sales/ventas.api";
-import type { Venta, VentasPage } from "@/types/ventas";
+import { listSales } from "@/services/sales/sale.api";
+import type { Sale, SalePage } from "@/types/sale";
 
 type Filters = {
   q?: string;
   estado?: string;
   banco?: string;
-  from?: string; 
-  to?: string;   
+  from?: string;
+  to?: string;
 };
 
 export function useVentas(initialFilters: Filters = {}) {
-  const [items, setItems] = useState<Venta[]>([]);
+  const [items, setItems] = useState<Sale[]>([]);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
   const [total, setTotal] = useState(0);
@@ -26,7 +26,7 @@ export function useVentas(initialFilters: Filters = {}) {
   const fetchPage = useCallback(async () => {
     setLoading(true);
     try {
-      const data: VentasPage = await listVentas(page, filters, Date.now());
+      const data: SalePage = await listSales(page, filters, Date.now());
       setItems(data.items);
       setPageSize(data.page_size);
       setTotal(data.total);
@@ -38,14 +38,18 @@ export function useVentas(initialFilters: Filters = {}) {
     }
   }, [page, filters]);
 
-  useEffect(() => { fetchPage(); }, [fetchPage]);
+  useEffect(() => {
+    fetchPage();
+  }, [fetchPage]);
 
-
-  useEffect(() => { setPage(1); }, [filters]);
+  useEffect(() => {
+    setPage(1);
+  }, [filters]);
 
   return {
     items,
-    page, setPage,
+    page,
+    setPage,
     pageSize,
     total,
     totalPages,

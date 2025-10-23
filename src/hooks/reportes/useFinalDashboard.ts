@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchFinalDashboard } from "@/services/sales/dashboardService";
+import { fetchFinalDashboard } from "@/services/sales/dashboard.api";
 import type { FinalReportDTO, RequestMetaDTO } from "@/types/reporte-general";
 
 type Options = { auto?: boolean; topLimit?: number };

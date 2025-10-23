@@ -4,7 +4,7 @@ import { useState } from "react";
 import Sidebar from "@/components/layout/sidebar";
 import { MaterialIcon } from "@/components/ui/material-icon";
 import { NotificationsProvider } from "@/components/providers/NotificationsProvider";
-import Breadcrumbs from "@/components/ui/breadcrumbs";
+import Breadcrumbs from "@/components/ui/Breadcrumbs";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);

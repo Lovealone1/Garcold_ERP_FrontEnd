@@ -33,15 +33,6 @@ export default function BancosPage() {
     const visibles = useMemo(() => items.filter((b) => effectiveIds.includes(b.id)), [items, effectiveIds]);
     const totalVisible = useMemo(() => visibles.reduce((acc, b) => acc + (b.balance ?? 0), 0), [visibles]);
 
-<<<<<<< Updated upstream
-    const totalVisible = useMemo(
-        () => visibles.reduce((acc, b) => acc + (b.balance ?? 0), 0),
-        [visibles]
-    );
-
-    // Dropdown
-=======
->>>>>>> Stashed changes
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
     const handleOpen = (e: React.MouseEvent<HTMLButtonElement>) => setAnchorEl(e.currentTarget);
@@ -65,19 +56,8 @@ export default function BancosPage() {
 
     function clearSelection() { setVisibleIds([]); }
 
-<<<<<<< Updated upstream
-    // Acciones (arriba) controladas por selección de cards
-<<<<<<< HEAD
-    const [editBanco, setEditBanco] = useState<Banco | null>(null);
-    const [delBanco, setDelBanco] = useState<Banco | null>(null);
-=======
     const [editBanco, setEditBanco] = useState<Bank | null>(null);
     const [delBanco, setDelBanco] = useState<Bank | null>(null);
->>>>>>> Stashed changes
-=======
-    const [editBanco, setEditBanco] = useState<Bank | null>(null);
-    const [delBanco, setDelBanco] = useState<Bank | null>(null);
->>>>>>> feature/refactor_to_use_new_api_format
 
     function openUpdate() {
         const first = visibles.find((v) => selectedIds.has(v.id));
@@ -152,14 +132,7 @@ export default function BancosPage() {
                                     <ListItemIcon sx={{ minWidth: 28 }}>
                                         <Checkbox size="small" checked={checked} sx={{ color: "var(--tg-muted)", "&.Mui-checked": { color: "var(--tg-primary)" }, pointerEvents: "none" }} />
                                     </ListItemIcon>
-<<<<<<< Updated upstream
-                                    <ListItemText
-                                        slotProps={{ primary: { sx: { color: "var(--tg-card-fg)" } } }}
-                                        primary={b.name}
-                                    />
-=======
                                     <ListItemText slotProps={{ primary: { sx: { color: "var(--tg-card-fg)" } } }} primary={b.name} />
->>>>>>> Stashed changes
                                 </MenuItem>
                             );
                         })}
@@ -221,20 +194,8 @@ export default function BancosPage() {
                                     </IconButton>
                                 </div>
 
-<<<<<<< Updated upstream
-                                <h3
-                                    className="text-lg font-semibold"
-                                    style={{ color: "var(--tg-primary)" }}
-                                >
-<<<<<<< HEAD
-                                    {b.nombre}
-=======
                                 <h3 className="text-lg font-semibold" style={{ color: "var(--tg-primary)" }}>
                                     {b.name}
->>>>>>> Stashed changes
-=======
-                                    {b.name}
->>>>>>> feature/refactor_to_use_new_api_format
                                 </h3>
 
                                 <div className="mt-2 text-4xl lg:text-5xl font-extrabold tracking-tight">
@@ -242,16 +203,7 @@ export default function BancosPage() {
                                 </div>
 
                                 <div className="mt-2 text-xs text-tg-muted">
-<<<<<<< Updated upstream
-                                    Última actualización:{" "}
-                                    <span className="font-light">
-                                        {b.updated_at
-                                            ? new Date(b.updated_at).toLocaleString()
-                                            : "—"}
-                                    </span>
-=======
                                     Última actualización: <span className="font-light">{b.updated_at ? new Date(b.updated_at).toLocaleString() : "—"}</span>
->>>>>>> Stashed changes
                                 </div>
                             </div>
                         );
@@ -289,13 +241,7 @@ export default function BancosPage() {
                     onClick={(e) => { if (e.target === e.currentTarget) setEditBanco(null); }}
                 >
                     <div className="w-[420px] rounded-lg border border-tg bg-[var(--panel-bg)] shadow-xl p-4">
-<<<<<<< Updated upstream
-                        <h3 className="text-base font-semibold mb-3">
-                            Actualizar saldo — {editBanco.name}
-                        </h3>
-=======
                         <h3 className="text-base font-semibold mb-3">Actualizar saldo — {editBanco.name}</h3>
->>>>>>> Stashed changes
                         <SaldoForm
                             banco={editBanco}
                             onClose={() => {
@@ -321,13 +267,7 @@ export default function BancosPage() {
                             <h3 className="text-base font-semibold">Eliminar banco</h3>
                         </div>
                         <div className="px-4 py-4 text-sm">
-<<<<<<< Updated upstream
-                            ¿Seguro que deseas eliminar{" "}
-                            <span className="font-medium">{delBanco.name}</span>? Esta acción
-                            no se puede deshacer.
-=======
                             ¿Seguro que deseas eliminar <span className="font-medium">{delBanco.name}</span>? Esta acción no se puede deshacer.
->>>>>>> Stashed changes
                         </div>
                         <div className="px-4 py-3 border-t border-tg flex justify-end gap-2">
                             <button className="h-9 rounded-md px-3 text-sm hover:bg-black/10 dark:hover:bg-white/10" onClick={() => setDelBanco(null)} disabled={deleting}>

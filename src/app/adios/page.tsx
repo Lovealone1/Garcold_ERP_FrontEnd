@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { gsap } from "gsap";
 import SplitText from "@/components/SplitText";
 import SoftFlaresBG from "@/components/ui/SoftFlaresBG";
 
-export default function Adios() {
+function AdiosInner() {
     const r = useRouter();
     const q = useSearchParams();
     const next = q.get("next") || "/login";
@@ -41,18 +41,10 @@ export default function Adios() {
     }, [phase, r, next]);
 
     return (
-        <div
-            ref={pageRef}
-            className="relative min-h-dvh w-full grid place-items-center bg-[var(--tg-bg)] text-[var(--tg-fg)] overflow-hidden"
-        >
+        <div ref={pageRef} className="relative min-h-dvh w-full grid place-items-center bg-[var(--tg-bg)] text-[var(--tg-fg)] overflow-hidden">
             <SoftFlaresBG />
 
-            {/* Texto (más padding lateral y SIN recortes) */}
-            <div
-                ref={textWrapRef}
-                style={{ display: phase === "text" ? "block" : "none" }}
-                className="px-6"
-            >
+            <div ref={textWrapRef} style={{ display: phase === "text" ? "block" : "none" }} className="px-6">
                 <SplitText
                     text="Hasta luego"
                     tag="h1"
@@ -70,14 +62,17 @@ export default function Adios() {
                 />
             </div>
 
-            {/* Icono */}
-            <div
-                ref={logoRef}
-                style={{ display: phase === "logo" ? "block" : "none" }}
-                className="select-none pointer-events-none"
-            >
+            <div ref={logoRef} style={{ display: phase === "logo" ? "block" : "none" }} className="select-none pointer-events-none">
                 <Image src="/garcold.png" alt="Garcold" width={400} height={400} className="rounded-[28px]" priority />
             </div>
         </div>
+    );
+}
+
+export default function Page() {
+    return (
+        <Suspense fallback={null}>
+            <AdiosInner />
+        </Suspense>
     );
 }

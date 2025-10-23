@@ -1,4 +1,3 @@
-// app/(comercial)/compras/nueva/page.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -205,7 +204,7 @@ export default function CompraCrearPage() {
                     },
                 ];
             });
-            setPage((p) => Math.max(1, Math.ceil((items.length + 1) / PAGE_SIZE)));
+            setPage(Math.max(1, Math.ceil((items.length + 1) / PAGE_SIZE)));
         }
 
         setConfirmOpen(false);

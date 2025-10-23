@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import type { CompanyDTO } from "@/types/sale-invoice";
+import type { CompanyDTO } from "@/types/company";
 
 type Props = {
     compania: CompanyDTO;

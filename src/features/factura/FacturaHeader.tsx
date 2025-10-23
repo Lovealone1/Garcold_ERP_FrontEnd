@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import * as React from "react";
-import type { CompanyDTO } from "@/types/sale-invoice";
+import { CompanyDTO } from "@/types/company";
 
 type Props = {
   company: CompanyDTO;

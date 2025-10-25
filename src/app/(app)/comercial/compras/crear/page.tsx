@@ -12,24 +12,23 @@ import Pagination from "@mui/material/Pagination";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 
 import ProductoAgregate from "@/features/productos/ProductoForm";
+import DateInput from "@/components/ui/DateRangePicker/DateInput";
 
 import { useProductosAll } from "@/hooks/productos/useProductosAll";
-import { useSupplierOptions, type SupplierOption } from "@/hooks/proveedores/useProveedorOptions";
-import { useCompraEstados } from "@/hooks/estados/useEstados";
-import { listBanks } from "@/services/sales/bank.api";
-import type { ProductDTO } from "@/types/product";
-import type { Bank } from "@/types/bank";
+import { useCustomerOptions, type CustomerOption } from "@/hooks/clientes/useClienteOptions";
+import { useVentaEstados } from "@/hooks/estados/useEstados";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 import { useRouter } from "next/navigation";
+import { useCreateVenta } from "@/hooks/ventas/useCreateVenta";
+import { useBancos } from "@/hooks/bancos/useBancos";
+import type { ProductDTO } from "@/types/product";
+import type { SaleCreate, SaleItemInput } from "@/types/sale";
 
-import { useCreateCompra } from "@/hooks/compras/useCreateCompra";
-import type { PurchaseCreate, PurchaseItemInput } from "@/types/purchase";
-
-type ItemCompra = {
+type ItemVenta = {
     idTmp: string;
     productoId: number;
-    referencia: string;
-    descripcion: string;
+    reference: string;
+    description: string;
     precioUnit: number;
     cantidad: number;
 };
@@ -51,40 +50,24 @@ const CARD_GAP = 10;
 const SHOW_EMPTY_HINT = true;
 
 const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
-const BLOQUEADA_RE = /compra\s*cancelada/i;
+const BLOQUEADA_RE = /venta\s*cancelada/i;
 
-export default function CompraCrearPage() {
+export default function VentaCrearPage() {
     const router = useRouter();
     const { error } = useNotifications();
 
     const { items: catalogo, loading: loadingProd } = useProductosAll();
-    const { options: proveedorOptions } = useSupplierOptions();
-    const { options: estadoOptions, byName: estadoByName } = useCompraEstados();
+    const { options: clienteOptions } = useCustomerOptions();
+    const { options: estadoOptions, byName: estadoByName } = useVentaEstados();
 
-    const [bancos, setBancos] = useState<Bank[]>([]);
-    const bancoOptions: Option[] = useMemo(
-        () => bancos.map((b) => ({ value: b.id, label: b.name })),
-        [bancos]
-    );
+    const { items: bancos, loading: loadingBancos } = useBancos();
+    const bancoOptions: Option[] = useMemo(() => bancos.map(b => ({ value: b.id, label: b.name })), [bancos]);
 
-    useEffect(() => {
-        let alive = true;
-        (async () => {
-            try {
-                const data = await listBanks(Date.now());
-                if (alive) setBancos(data);
-            } catch {
-                setBancos([]);
-            }
-        })();
-        return () => {
-            alive = false;
-        };
-    }, []);
-
-    const [proveedorSel, setProveedorSel] = useState<SupplierOption | null>(null);
+    // estado UI
+    const [clienteSel, setClienteSel] = useState<CustomerOption | null>(null);
     const [bancoSel, setBancoSel] = useState<Option | null>(null);
     const [estadoSel, setEstadoSel] = useState<string | null>(null);
+    const [saleAt, setSaleAt] = useState<string | undefined>(undefined); // "yyyy-MM-dd'T'HH:mm:ss"
 
     const [queryProd, setQueryProd] = useState("");
     const [selProd, setSelProd] = useState<ProductDTO | null>(null);
@@ -93,24 +76,23 @@ export default function CompraCrearPage() {
     const [modalDefaults, setModalDefaults] = useState<ProductoAgregateDefaults | null>(null);
     const [editIdTmp, setEditIdTmp] = useState<string | null>(null);
 
-    const [items, setItems] = useState<ItemCompra[]>([]);
+    const [items, setItems] = useState<ItemVenta[]>([]);
     const total = useMemo(() => items.reduce((a, it) => a + it.precioUnit * it.cantidad, 0), [items]);
 
     const [page, setPage] = useState(1);
     const pageCount = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
-    useEffect(() => {
-        if (page > pageCount) setPage(pageCount);
-    }, [page, pageCount, items.length]);
+    useEffect(() => { if (page > pageCount) setPage(pageCount); }, [page, pageCount, items.length]);
     const startIndex = (page - 1) * PAGE_SIZE;
     const endIndex = Math.min(page * PAGE_SIZE, items.length);
     const pagedItems = useMemo(() => items.slice(startIndex, endIndex), [items, startIndex, endIndex]);
 
     const hasDirty =
         items.length > 0 ||
-        Boolean(proveedorSel) ||
+        Boolean(clienteSel) ||
         Boolean(bancoSel) ||
         Boolean(estadoSel) ||
-        queryProd.trim().length > 0;
+        queryProd.trim().length > 0 ||
+        Boolean(saleAt);
 
     const textFieldSx = {
         mt: 0.5,
@@ -134,13 +116,7 @@ export default function CompraCrearPage() {
     } as const;
 
     const autoSlotProps = {
-        paper: {
-            sx: {
-                bgcolor: "var(--tg-card-bg)",
-                color: "var(--tg-card-fg)",
-                border: "1px solid var(--tg-border)",
-            },
-        },
+        paper: { sx: { bgcolor: "var(--tg-card-bg)", color: "var(--tg-card-fg)", border: "1px solid var(--tg-border)" } },
         listbox: {
             sx: {
                 "& .MuiAutocomplete-option.Mui-focused, & .MuiAutocomplete-option[aria-selected='true']": {
@@ -157,7 +133,7 @@ export default function CompraCrearPage() {
         setModalDefaults({
             referencia: p.reference,
             descripcion: p.description,
-            precio_unitario: p.purchase_price,
+            precio_unitario: p.sale_price,
             cantidad: 1,
             stock: p.quantity,
             precio_compra: p.purchase_price,
@@ -166,27 +142,21 @@ export default function CompraCrearPage() {
     };
 
     const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
-    function incQty(idTmp: string) {
-        setItems((prev) => prev.map((it) => (it.idTmp === idTmp ? { ...it, cantidad: it.cantidad + 1 } : it)));
-    }
-    function decQty(idTmp: string) {
-        setItems((prev) => prev.map((it) => (it.idTmp === idTmp ? { ...it, cantidad: clamp(it.cantidad - 1, 1, 1e9) } : it)));
-    }
+    function incQty(idTmp: string) { setItems(prev => prev.map(it => (it.idTmp === idTmp ? { ...it, cantidad: it.cantidad + 1 } : it))); }
+    function decQty(idTmp: string) { setItems(prev => prev.map(it => (it.idTmp === idTmp ? { ...it, cantidad: clamp(it.cantidad - 1, 1, 1e9) } : it))); }
     function setQty(idTmp: string, v: number) {
         const q = clamp(Number.isFinite(v) ? Math.trunc(v) : 1, 1, 1e9);
-        setItems((prev) => prev.map((it) => (it.idTmp === idTmp ? { ...it, cantidad: q } : it)));
+        setItems(prev => prev.map(it => (it.idTmp === idTmp ? { ...it, cantidad: q } : it)));
     }
 
     const onConfirmProducto = (data: { precio_unitario: number; cantidad: number }) => {
         if (!selProd || !modalDefaults) return;
 
         if (editIdTmp) {
-            setItems((prev) =>
-                prev.map((x) => (x.idTmp === editIdTmp ? { ...x, precioUnit: data.precio_unitario, cantidad: data.cantidad } : x))
-            );
+            setItems(prev => prev.map(x => (x.idTmp === editIdTmp ? { ...x, precioUnit: data.precio_unitario, cantidad: data.cantidad } : x)));
         } else {
-            setItems((prev) => {
-                const idx = prev.findIndex((r) => r.productoId === selProd.id);
+            setItems(prev => {
+                const idx = prev.findIndex(r => r.productoId === selProd.id);
                 if (idx >= 0) {
                     const next = [...prev];
                     next[idx] = { ...next[idx], cantidad: next[idx].cantidad + data.cantidad, precioUnit: data.precio_unitario };
@@ -197,8 +167,8 @@ export default function CompraCrearPage() {
                     {
                         idTmp: crypto.randomUUID(),
                         productoId: selProd.id,
-                        referencia: selProd.reference,
-                        descripcion: selProd.description,
+                        reference: selProd.reference,
+                        description: selProd.description,
                         precioUnit: data.precio_unitario,
                         cantidad: data.cantidad,
                     },
@@ -217,8 +187,8 @@ export default function CompraCrearPage() {
     const removeItem = (idTmp: string) => {
         const newLen = items.length - 1;
         const wouldBeEmpty = startIndex >= newLen && page > 1;
-        setItems((prev) => prev.filter((i) => i.idTmp !== idTmp));
-        if (wouldBeEmpty) setPage((p) => Math.max(1, p - 1));
+        setItems(prev => prev.filter(i => i.idTmp !== idTmp));
+        if (wouldBeEmpty) setPage(p => Math.max(1, p - 1));
     };
 
     const limpiar = () => {
@@ -227,85 +197,68 @@ export default function CompraCrearPage() {
         setModalDefaults(null);
         setEditIdTmp(null);
         setQueryProd("");
-        setProveedorSel(null);
+        setClienteSel(null);
         setBancoSel(null);
         setEstadoSel(null);
+        setSaleAt(undefined);
         setPage(1);
     };
 
-    const estadoOptionsFiltradas = useMemo(
-        () => estadoOptions.filter((n) => !BLOQUEADA_RE.test(String(n))),
-        [estadoOptions]
-    );
+    const estadoOptionsFiltradas = useMemo(() => estadoOptions.filter(n => !BLOQUEADA_RE.test(String(n))), [estadoOptions]);
+    const puedeFinalizar = useMemo(() => items.length > 0 && !!clienteSel && !!bancoSel && !!estadoSel, [items.length, clienteSel, bancoSel, estadoSel]);
 
-    const puedeFinalizar = useMemo(
-        () => items.length > 0 && !!proveedorSel && !!bancoSel && !!estadoSel,
-        [items.length, proveedorSel, bancoSel, estadoSel]
-    );
-
-    const { create: createCompra, loading: creating } = useCreateCompra({
-        onSuccess: () => {
-            limpiar();
-            router.push("/comercial/compras");
-        },
+    const { create: createVenta, loading: creating } = useCreateVenta({
+        onSuccess: () => { limpiar(); router.push("/comercial/ventas"); },
     });
 
-    async function finalizarCompra() {
+    async function finalizarVenta() {
         if (!puedeFinalizar) return;
         const estado_id = estadoSel ? estadoByName?.[estadoSel] : undefined;
-        if (!estado_id) {
-            error("No se pudo identificar el estado seleccionado");
-            return;
-        }
+        if (!estado_id) { error("No se pudo identificar el estado seleccionado"); return; }
 
-        const itemsInput: PurchaseItemInput[] = items.map(it => ({
+        const itemsInput: SaleItemInput[] = items.map(it => ({
             product_id: it.productoId,
             quantity: it.cantidad,
             unit_price: it.precioUnit,
         }));
 
-        const payload: PurchaseCreate = {
-            supplier_id: Number(proveedorSel!.value),
+        const payload: SaleCreate = {
+            customer_id: Number(clienteSel!.value),
             bank_id: Number(bancoSel!.value),
             status_id: estado_id,
             items: itemsInput,
         };
 
-        await createCompra(payload);
+        await createVenta(payload, saleAt); // opcional
     }
 
     return (
         <div className="app-shell__frame overflow-hidden">
             <div className="bg-[var(--page-bg)] rounded-xl h-full flex flex-col px-4 md:px-5 pb-5 pt-4">
                 <Typography variant="h5" sx={{ mb: 1.25, fontWeight: 600 }}>
-                    Nueva compra
+                    Nueva venta
                 </Typography>
 
                 <Box sx={{ maxWidth: 1800, mb: 1.0 }}>
                     <Stack direction={{ xs: "column", md: "row" }} gap={1.2} flexWrap="wrap" alignItems="flex-end">
                         <Box sx={{ flex: 1, minWidth: 240 }}>
-                            <Typography variant="caption" sx={{ color: "var(--tg-muted)", fontWeight: 600 }}>
-                                Proveedor
-                            </Typography>
+                            <Typography variant="caption" sx={{ color: "var(--tg-muted)", fontWeight: 600 }}>Cliente</Typography>
                             <Autocomplete
-                                options={proveedorOptions}
-                                value={proveedorSel}
-                                onChange={(_, v) => setProveedorSel(v)}
+                                options={clienteOptions}
+                                value={clienteSel}
+                                onChange={(_, v) => setClienteSel(v)}
                                 getOptionLabel={(o) => (o?.label ?? "") as string}
                                 slotProps={autoSlotProps}
-                                renderInput={(params) => (
-                                    <TextField {...params} placeholder="Selecciona o busca un proveedor…" sx={textFieldSx} />
-                                )}
+                                renderInput={(params) => <TextField {...params} placeholder="Selecciona o busca un cliente…" sx={textFieldSx} />}
                             />
                         </Box>
 
                         <Box sx={{ flex: 1, minWidth: 210 }}>
-                            <Typography variant="caption" sx={{ color: "var(--tg-muted)", fontWeight: 600 }}>
-                                Banco
-                            </Typography>
+                            <Typography variant="caption" sx={{ color: "var(--tg-muted)", fontWeight: 600 }}>Banco</Typography>
                             <Autocomplete
                                 options={bancoOptions}
                                 value={bancoSel}
+                                loading={loadingBancos}
                                 onChange={(_, v) => setBancoSel(v)}
                                 getOptionLabel={(o) => (o?.label ?? "") as string}
                                 slotProps={autoSlotProps}
@@ -314,30 +267,33 @@ export default function CompraCrearPage() {
                         </Box>
 
                         <Box sx={{ flex: 1, minWidth: 220 }}>
-                            <Typography variant="caption" sx={{ color: "var(--tg-muted)", fontWeight: 600 }}>
-                                Estado
-                            </Typography>
+                            <Typography variant="caption" sx={{ color: "var(--tg-muted)", fontWeight: 600 }}>Estado</Typography>
                             <Autocomplete
                                 options={estadoOptionsFiltradas}
                                 value={estadoSel}
                                 onChange={(_, v) => {
-                                    if (v && BLOQUEADA_RE.test(String(v))) {
-                                        error("Estado no permitido");
-                                        return;
-                                    }
+                                    if (v && BLOQUEADA_RE.test(String(v))) { error("Estado no permitido"); return; }
                                     setEstadoSel(v);
                                 }}
                                 slotProps={autoSlotProps}
-                                renderInput={(params) => (
-                                    <TextField {...params} placeholder="Compra contado / crédito…" sx={textFieldSx} />
-                                )}
+                                renderInput={(params) => <TextField {...params} placeholder="Venta contado / crédito…" sx={textFieldSx} />}
+                            />
+                        </Box>
+
+                        {/* Fecha con tu DateInput, mismo tema */}
+                        <Box sx={{ flex: 1, minWidth: 220 }}>
+                            <Typography variant="caption" sx={{ color: "var(--tg-muted)", fontWeight: 600 }}>
+                                Fecha de la venta
+                            </Typography>
+                            <DateInput
+                                value={saleAt}          // "yyyy-MM-dd'T'HH:mm:ss" | undefined
+                                onChange={setSaleAt}    // emite mismo formato
+                                placeholder="dd/mm/aaaa"
                             />
                         </Box>
 
                         <Box sx={{ flex: 1.3, minWidth: 310, maxWidth: { md: 510 } }}>
-                            <Typography variant="caption" sx={{ color: "var(--tg-muted)", fontWeight: 600 }}>
-                                Producto
-                            </Typography>
+                            <Typography variant="caption" sx={{ color: "var(--tg-muted)", fontWeight: 600 }}>Producto</Typography>
                             <Autocomplete
                                 value={selProd}
                                 inputValue={queryProd}
@@ -347,24 +303,15 @@ export default function CompraCrearPage() {
                                 getOptionLabel={(o) => `${o.reference} — ${o.description}`}
                                 clearOnBlur
                                 onChange={(_, val, reason) => {
-                                    if (reason === "clear") {
-                                        setSelProd(null);
-                                        setQueryProd("");
-                                        return;
-                                    }
+                                    if (reason === "clear") { setSelProd(null); setQueryProd(""); return; }
                                     if (val) openConfirm(val);
                                 }}
                                 onInputChange={(_, val, reason) => {
-                                    if (reason === "clear") {
-                                        setQueryProd("");
-                                        return;
-                                    }
+                                    if (reason === "clear") { setQueryProd(""); return; }
                                     setQueryProd(val);
                                 }}
                                 slotProps={autoSlotProps}
-                                renderInput={(params) => (
-                                    <TextField {...params} placeholder="Busca por referencia o descripción…" sx={textFieldSx} />
-                                )}
+                                renderInput={(params) => <TextField {...params} placeholder="Busca por referencia o descripción…" sx={textFieldSx} />}
                             />
                         </Box>
                     </Stack>
@@ -374,11 +321,7 @@ export default function CompraCrearPage() {
 
                 <div
                     className="flex-1 overflow-hidden mt-2"
-                    style={{
-                        display: "grid",
-                        gridTemplateRows: `repeat(${PAGE_SIZE}, ${CARD_H}px)`,
-                        rowGap: `${CARD_GAP}px`,
-                    }}
+                    style={{ display: "grid", gridTemplateRows: `repeat(${PAGE_SIZE}, ${CARD_H}px)`, rowGap: `${CARD_GAP}px` }}
                 >
                     {SHOW_EMPTY_HINT && items.length === 0 ? (
                         <div
@@ -393,7 +336,7 @@ export default function CompraCrearPage() {
                                 justifyContent: "center",
                             }}
                         >
-                            <Typography sx={{ color: "var(--tg-muted)" }}>Agrega productos para construir tu compra.</Typography>
+                            <Typography sx={{ color: "var(--tg-muted)" }}>Agrega productos para construir tu venta.</Typography>
                         </div>
                     ) : (
                         <>
@@ -404,11 +347,7 @@ export default function CompraCrearPage() {
                                     <div
                                         key={it.idTmp}
                                         className="rounded-xl border p-3 md:p-4"
-                                        style={{
-                                            height: CARD_H,
-                                            borderColor: "var(--tg-border)",
-                                            background: "var(--tg-card-bg)",
-                                        }}
+                                        style={{ height: CARD_H, borderColor: "var(--tg-border)", background: "var(--tg-card-bg)" }}
                                     >
                                         <div className="grid items-center gap-3" style={{ gridTemplateColumns: "1fr 140px 180px 160px" }}>
                                             <div className="flex items-start gap-3 overflow-hidden">
@@ -420,8 +359,8 @@ export default function CompraCrearPage() {
                                                     {number}
                                                 </div>
                                                 <div className="min-w-0">
-                                                    <div className="font-semibold text-[var(--tg-card-fg)] truncate">{it.descripcion}</div>
-                                                    <div className="text-sm" style={{ color: "var(--tg-muted)" }}>Ref: {it.referencia}</div>
+                                                    <div className="font-semibold text-[var(--tg-card-fg)] truncate">{it.description}</div>
+                                                    <div className="text-sm" style={{ color: "var(--tg-muted)" }}>Ref: {it.reference}</div>
                                                 </div>
                                             </div>
 
@@ -526,12 +465,9 @@ export default function CompraCrearPage() {
                     </Stack>
                 )}
 
-                {items.length > 0 && (
+                {items.length > PAGE_SIZE && (
                     <div className="mt-2 flex justify-end">
-                        <div
-                            className="rounded-lg border px-4 py-3 w-full max-w-sm"
-                            style={{ borderColor: "var(--tg-border)", background: "var(--tg-card-bg)" }}
-                        >
+                        <div className="rounded-lg border px-4 py-3 w-full max-w-sm" style={{ borderColor: "var(--tg-border)", background: "var(--tg-card-bg)" }}>
                             <div className="flex items-center justify-between">
                                 <span className="text-sm" style={{ color: "var(--tg-muted)" }}>Subtotal</span>
                                 <span className="font-medium">{money.format(total)}</span>
@@ -554,7 +490,7 @@ export default function CompraCrearPage() {
                     {puedeFinalizar && (
                         <Button
                             variant="contained"
-                            onClick={finalizarCompra}
+                            onClick={finalizarVenta}
                             disabled={creating}
                             sx={{
                                 textTransform: "none",
@@ -563,7 +499,7 @@ export default function CompraCrearPage() {
                                 "&:hover": { bgcolor: "color-mix(in srgb, var(--tg-primary) 88%, black 12%)" },
                             }}
                         >
-                            {creating ? "Guardando…" : "Finalizar compra"}
+                            {creating ? "Guardando…" : "Finalizar venta"}
                         </Button>
                     )}
                 </Stack>
@@ -572,12 +508,9 @@ export default function CompraCrearPage() {
             {modalDefaults && (
                 <ProductoAgregate
                     open={confirmOpen}
-                    onClose={() => {
-                        setConfirmOpen(false);
-                        setEditIdTmp(null);
-                    }}
+                    onClose={() => { setConfirmOpen(false); setEditIdTmp(null); }}
                     loading={false}
-                    variant="compra"
+                    variant="venta"
                     defaults={modalDefaults}
                     onConfirm={onConfirmProducto}
                 />

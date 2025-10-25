@@ -29,18 +29,28 @@ export async function getSaleById(saleId: number, nocacheToken?: number): Promis
   return data as Sale;
 }
 
-export async function createSale(payload: SaleCreate): Promise<Sale> {
+export async function createSale(
+  payload: SaleCreate & { sale_date?: Date | string }
+): Promise<Sale> {
   const cart: Array<SaleItemInput> = payload.items.map((i) => ({
     product_id: i.product_id,
     quantity: i.quantity,
     unit_price: i.unit_price,
   }));
-  const body = {
+
+  const body: any = {
     customer_id: payload.customer_id,
     bank_id: payload.bank_id,
     status_id: payload.status_id,
     cart,
+    ...(payload.sale_date && {
+      sale_date:
+        payload.sale_date instanceof Date
+          ? payload.sale_date.toISOString()
+          : payload.sale_date,
+    }),
   };
+
   const { data } = await salesApi.post("/sales/create", body, {
     headers: { "Cache-Control": "no-cache" },
   });

@@ -16,25 +16,30 @@ export function useCreatePurchase(opts: Options = {}) {
   const [purchase, setPurchase] = useState<Purchase | null>(null);
   const [error, setError] = useState<unknown>(null);
 
-  const mutate = useCallback(async (payload: PurchaseCreate) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const p = await createPurchase(payload);
-      setPurchase(p);
-      success("Compra creada correctamente");
-      opts.onSuccess?.(p);
-      return p;
-    } catch (e: any) {
-      const msg = e?.response?.data?.detail ?? "No fue posible crear la compra";
-      setError(e);
-      notifyError(msg);
-      opts.onError?.(e);
-      throw e;
-    } finally {
-      setLoading(false);
-    }
-  }, [notifyError, success, opts]);
+  const mutate = useCallback(
+    async (payload: PurchaseCreate, purchaseDate?: Date | string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const p = await createPurchase(
+          purchaseDate ? { ...payload, purchase_date: purchaseDate } : payload
+        );
+        setPurchase(p);
+        success("Compra creada correctamente");
+        opts.onSuccess?.(p);
+        return p;
+      } catch (e: any) {
+        const msg = e?.response?.data?.detail ?? "No fue posible crear la compra";
+        setError(e);
+        notifyError(msg);
+        opts.onError?.(e);
+        throw e;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [notifyError, success, opts]
+  );
 
   const reset = useCallback(() => {
     setPurchase(null);
@@ -45,7 +50,6 @@ export function useCreatePurchase(opts: Options = {}) {
   return { create: mutate, loading, purchase, error, reset };
 }
 
-// compat
 export function useCreateCompra(opts: Options = {}) {
   return useCreatePurchase(opts);
 }

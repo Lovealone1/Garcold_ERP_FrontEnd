@@ -16,11 +16,13 @@ export function useCreateVenta(opts: Options = {}) {
     const [error, setError] = useState<unknown>(null);
 
     const mutate = useCallback(
-        async (payload: SaleCreate) => {
+        async (payload: SaleCreate, saleDate?: Date | string) => {
             setLoading(true);
             setError(null);
             try {
-                const v = await createSale(payload);
+                const v = await createSale(
+                    saleDate ? { ...payload, sale_date: saleDate } : payload
+                );
                 setVenta(v);
                 success("Venta creada correctamente");
                 opts.onSuccess?.(v);

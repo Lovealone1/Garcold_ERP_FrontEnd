@@ -12,6 +12,7 @@ import Pagination from "@mui/material/Pagination";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 
 import ProductoAgregate from "@/features/productos/ProductoForm";
+import DateInput from "@/components/ui/DateRangePicker/DateInput"; // ← TU componente de día único
 
 import { useProductosAll } from "@/hooks/productos/useProductosAll";
 import { useCustomerOptions, type CustomerOption } from "@/hooks/clientes/useClienteOptions";
@@ -23,6 +24,7 @@ import { useBancos } from "@/hooks/bancos/useBancos";
 import type { ProductDTO } from "@/types/product";
 import type { SaleCreate } from "@/types/sale";
 import type { SaleItemInput } from "@/types/sale";
+
 type ItemVenta = {
     idTmp: string;
     productoId: number;
@@ -55,20 +57,19 @@ export default function VentaCrearPage() {
     const router = useRouter();
     const { error } = useNotifications();
 
-    const { items: catalogo, loading: loadingProd } = useProductosAll(); // -> Product[]
+    const { items: catalogo, loading: loadingProd } = useProductosAll();
     const { options: clienteOptions } = useCustomerOptions();
     const { options: estadoOptions, byName: estadoByName } = useVentaEstados();
 
-    // bancos con entidades nuevas
     const { items: bancos, loading: loadingBancos } = useBancos();
-    const bancoOptions: Option[] = useMemo(
-        () => bancos.map(b => ({ value: b.id, label: b.name })), // name (no nombre)
-        [bancos]
-    );
+    const bancoOptions: Option[] = useMemo(() => bancos.map(b => ({ value: b.id, label: b.name })), [bancos]);
 
     const [clienteSel, setClienteSel] = useState<CustomerOption | null>(null);
     const [bancoSel, setBancoSel] = useState<Option | null>(null);
     const [estadoSel, setEstadoSel] = useState<string | null>(null);
+
+    // ← fecha opcional en formato BE "yyyy-MM-dd'T'HH:mm:ss" que emite tu DateInput
+    const [saleAt, setSaleAt] = useState<string | undefined>(undefined);
 
     const [queryProd, setQueryProd] = useState("");
     const [selProd, setSelProd] = useState<ProductDTO | null>(null);
@@ -82,9 +83,7 @@ export default function VentaCrearPage() {
 
     const [page, setPage] = useState(1);
     const pageCount = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
-    useEffect(() => {
-        if (page > pageCount) setPage(pageCount);
-    }, [page, pageCount, items.length]);
+    useEffect(() => { if (page > pageCount) setPage(pageCount); }, [page, pageCount, items.length]);
     const startIndex = (page - 1) * PAGE_SIZE;
     const endIndex = Math.min(page * PAGE_SIZE, items.length);
     const pagedItems = useMemo(() => items.slice(startIndex, endIndex), [items, startIndex, endIndex]);
@@ -94,7 +93,8 @@ export default function VentaCrearPage() {
         Boolean(clienteSel) ||
         Boolean(bancoSel) ||
         Boolean(estadoSel) ||
-        queryProd.trim().length > 0;
+        queryProd.trim().length > 0 ||
+        Boolean(saleAt);
 
     const textFieldSx = {
         mt: 0.5,
@@ -118,13 +118,7 @@ export default function VentaCrearPage() {
     } as const;
 
     const autoSlotProps = {
-        paper: {
-            sx: {
-                bgcolor: "var(--tg-card-bg)",
-                color: "var(--tg-card-fg)",
-                border: "1px solid var(--tg-border)",
-            },
-        },
+        paper: { sx: { bgcolor: "var(--tg-card-bg)", color: "var(--tg-card-fg)", border: "1px solid var(--tg-border)" } },
         listbox: {
             sx: {
                 "& .MuiAutocomplete-option.Mui-focused, & .MuiAutocomplete-option[aria-selected='true']": {
@@ -138,7 +132,6 @@ export default function VentaCrearPage() {
     const openConfirm = (p: ProductDTO) => {
         setSelProd(p);
         setEditIdTmp(null);
-        // El modal aún espera nombres antiguos; mapeamos desde entidades nuevas
         setModalDefaults({
             referencia: p.reference,
             descripcion: p.description,
@@ -150,27 +143,19 @@ export default function VentaCrearPage() {
         setConfirmOpen(true);
     };
 
-    // helpers cantidad
     const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
-    function incQty(idTmp: string) {
-        setItems(prev => prev.map(it => (it.idTmp === idTmp ? { ...it, cantidad: it.cantidad + 1 } : it)));
-    }
-    function decQty(idTmp: string) {
-        setItems(prev => prev.map(it => (it.idTmp === idTmp ? { ...it, cantidad: clamp(it.cantidad - 1, 1, 1e9) } : it)));
-    }
+    function incQty(idTmp: string) { setItems(prev => prev.map(it => (it.idTmp === idTmp ? { ...it, cantidad: it.cantidad + 1 } : it))); }
+    function decQty(idTmp: string) { setItems(prev => prev.map(it => (it.idTmp === idTmp ? { ...it, cantidad: clamp(it.cantidad - 1, 1, 1e9) } : it))); }
     function setQty(idTmp: string, v: number) {
         const q = clamp(Number.isFinite(v) ? Math.trunc(v) : 1, 1, 1e9);
         setItems(prev => prev.map(it => (it.idTmp === idTmp ? { ...it, cantidad: q } : it)));
     }
 
-    // merge si se repite producto
     const onConfirmProducto = (data: { precio_unitario: number; cantidad: number }) => {
         if (!selProd || !modalDefaults) return;
 
         if (editIdTmp) {
-            setItems(prev =>
-                prev.map(x => (x.idTmp === editIdTmp ? { ...x, precioUnit: data.precio_unitario, cantidad: data.cantidad } : x))
-            );
+            setItems(prev => prev.map(x => (x.idTmp === editIdTmp ? { ...x, precioUnit: data.precio_unitario, cantidad: data.cantidad } : x)));
         } else {
             setItems(prev => {
                 const idx = prev.findIndex(r => r.productoId === selProd.id);
@@ -217,35 +202,21 @@ export default function VentaCrearPage() {
         setClienteSel(null);
         setBancoSel(null);
         setEstadoSel(null);
+        setSaleAt(undefined); // ← reset fecha
         setPage(1);
     };
 
-    // bloquear “Venta cancelada”
-    const estadoOptionsFiltradas = useMemo(
-        () => estadoOptions.filter(n => !BLOQUEADA_RE.test(String(n))),
-        [estadoOptions]
-    );
+    const estadoOptionsFiltradas = useMemo(() => estadoOptions.filter(n => !BLOQUEADA_RE.test(String(n))), [estadoOptions]);
+    const puedeFinalizar = useMemo(() => items.length > 0 && !!clienteSel && !!bancoSel && !!estadoSel, [items.length, clienteSel, bancoSel, estadoSel]);
 
-    const puedeFinalizar = useMemo(
-        () => items.length > 0 && !!clienteSel && !!bancoSel && !!estadoSel,
-        [items.length, clienteSel, bancoSel, estadoSel]
-    );
-
-    // crear venta
     const { create: createVenta, loading: creating } = useCreateVenta({
-        onSuccess: () => {
-            limpiar();
-            router.push("/comercial/ventas");
-        },
+        onSuccess: () => { limpiar(); router.push("/comercial/ventas"); },
     });
 
     async function finalizarVenta() {
         if (!puedeFinalizar) return;
         const estado_id = estadoSel ? estadoByName?.[estadoSel] : undefined;
-        if (!estado_id) {
-            error("No se pudo identificar el estado seleccionado");
-            return;
-        }
+        if (!estado_id) { error("No se pudo identificar el estado seleccionado"); return; }
 
         const itemsInput: SaleItemInput[] = items.map(it => ({
             product_id: it.productoId,
@@ -256,11 +227,12 @@ export default function VentaCrearPage() {
         const payload: SaleCreate = {
             customer_id: Number(clienteSel!.value),
             bank_id: Number(bancoSel!.value),
-            status_id: estado_id, // ya resuelto con estadoByName
+            status_id: estado_id,
             items: itemsInput,
         };
 
-        await createVenta(payload);
+        // saleAt ya viene en formato backend desde DateInput; se envía opcional
+        await createVenta(payload, saleAt);
     }
 
     return (
@@ -273,25 +245,19 @@ export default function VentaCrearPage() {
                 <Box sx={{ maxWidth: 1800, mb: 1.0 }}>
                     <Stack direction={{ xs: "column", md: "row" }} gap={1.2} flexWrap="wrap" alignItems="flex-end">
                         <Box sx={{ flex: 1, minWidth: 240 }}>
-                            <Typography variant="caption" sx={{ color: "var(--tg-muted)", fontWeight: 600 }}>
-                                Cliente
-                            </Typography>
+                            <Typography variant="caption" sx={{ color: "var(--tg-muted)", fontWeight: 600 }}>Cliente</Typography>
                             <Autocomplete
                                 options={clienteOptions}
                                 value={clienteSel}
                                 onChange={(_, v) => setClienteSel(v)}
                                 getOptionLabel={(o) => (o?.label ?? "") as string}
                                 slotProps={autoSlotProps}
-                                renderInput={(params) => (
-                                    <TextField {...params} placeholder="Selecciona o busca un cliente…" sx={textFieldSx} />
-                                )}
+                                renderInput={(params) => <TextField {...params} placeholder="Selecciona o busca un cliente…" sx={textFieldSx} />}
                             />
                         </Box>
 
                         <Box sx={{ flex: 1, minWidth: 210 }}>
-                            <Typography variant="caption" sx={{ color: "var(--tg-muted)", fontWeight: 600 }}>
-                                Banco
-                            </Typography>
+                            <Typography variant="caption" sx={{ color: "var(--tg-muted)", fontWeight: 600 }}>Banco</Typography>
                             <Autocomplete
                                 options={bancoOptions}
                                 value={bancoSel}
@@ -299,37 +265,38 @@ export default function VentaCrearPage() {
                                 onChange={(_, v) => setBancoSel(v)}
                                 getOptionLabel={(o) => (o?.label ?? "") as string}
                                 slotProps={autoSlotProps}
-                                renderInput={(params) => (
-                                    <TextField {...params} placeholder="Selecciona banco…" sx={textFieldSx} />
-                                )}
+                                renderInput={(params) => <TextField {...params} placeholder="Selecciona banco…" sx={textFieldSx} />}
                             />
                         </Box>
 
                         <Box sx={{ flex: 1, minWidth: 220 }}>
-                            <Typography variant="caption" sx={{ color: "var(--tg-muted)", fontWeight: 600 }}>
-                                Estado
-                            </Typography>
+                            <Typography variant="caption" sx={{ color: "var(--tg-muted)", fontWeight: 600 }}>Estado</Typography>
                             <Autocomplete
                                 options={estadoOptionsFiltradas}
                                 value={estadoSel}
                                 onChange={(_, v) => {
-                                    if (v && BLOQUEADA_RE.test(String(v))) {
-                                        error("Estado no permitido");
-                                        return;
-                                    }
+                                    if (v && BLOQUEADA_RE.test(String(v))) { error("Estado no permitido"); return; }
                                     setEstadoSel(v);
                                 }}
                                 slotProps={autoSlotProps}
-                                renderInput={(params) => (
-                                    <TextField {...params} placeholder="Venta contado / crédito…" sx={textFieldSx} />
-                                )}
+                                renderInput={(params) => <TextField {...params} placeholder="Venta contado / crédito…" sx={textFieldSx} />}
+                            />
+                        </Box>
+
+                        {/* Fecha con TU componente, tema consistente */}
+                        <Box sx={{ flex: 1, minWidth: 220 }}>
+                            <Typography variant="caption" sx={{ color: "var(--tg-muted)", fontWeight: 600 }}>
+                                Fecha de la venta
+                            </Typography>
+                            <DateInput
+                                value={saleAt}                 // "yyyy-MM-dd'T'HH:mm:ss" | undefined
+                                onChange={setSaleAt}           // emite mismo formato
+                                placeholder="dd/mm/aaaa"
                             />
                         </Box>
 
                         <Box sx={{ flex: 1.3, minWidth: 310, maxWidth: { md: 510 } }}>
-                            <Typography variant="caption" sx={{ color: "var(--tg-muted)", fontWeight: 600 }}>
-                                Producto
-                            </Typography>
+                            <Typography variant="caption" sx={{ color: "var(--tg-muted)", fontWeight: 600 }}>Producto</Typography>
                             <Autocomplete
                                 value={selProd}
                                 inputValue={queryProd}
@@ -347,9 +314,7 @@ export default function VentaCrearPage() {
                                     setQueryProd(val);
                                 }}
                                 slotProps={autoSlotProps}
-                                renderInput={(params) => (
-                                    <TextField {...params} placeholder="Busca por referencia o descripción…" sx={textFieldSx} />
-                                )}
+                                renderInput={(params) => <TextField {...params} placeholder="Busca por referencia o descripción…" sx={textFieldSx} />}
                             />
                         </Box>
                     </Stack>
@@ -359,11 +324,7 @@ export default function VentaCrearPage() {
 
                 <div
                     className="flex-1 overflow-hidden mt-2"
-                    style={{
-                        display: "grid",
-                        gridTemplateRows: `repeat(${PAGE_SIZE}, ${CARD_H}px)`,
-                        rowGap: `${CARD_GAP}px`,
-                    }}
+                    style={{ display: "grid", gridTemplateRows: `repeat(${PAGE_SIZE}, ${CARD_H}px)`, rowGap: `${CARD_GAP}px` }}
                 >
                     {SHOW_EMPTY_HINT && items.length === 0 ? (
                         <div
@@ -378,9 +339,7 @@ export default function VentaCrearPage() {
                                 justifyContent: "center",
                             }}
                         >
-                            <Typography sx={{ color: "var(--tg-muted)" }}>
-                                Agrega productos para construir tu venta.
-                            </Typography>
+                            <Typography sx={{ color: "var(--tg-muted)" }}>Agrega productos para construir tu venta.</Typography>
                         </div>
                     ) : (
                         <>
@@ -391,11 +350,7 @@ export default function VentaCrearPage() {
                                     <div
                                         key={it.idTmp}
                                         className="rounded-xl border p-3 md:p-4"
-                                        style={{
-                                            height: CARD_H,
-                                            borderColor: "var(--tg-border)",
-                                            background: "var(--tg-card-bg)",
-                                        }}
+                                        style={{ height: CARD_H, borderColor: "var(--tg-border)", background: "var(--tg-card-bg)" }}
                                     >
                                         <div className="grid items-center gap-3" style={{ gridTemplateColumns: "1fr 140px 180px 160px" }}>
                                             <div className="flex items-start gap-3 overflow-hidden">
@@ -515,10 +470,7 @@ export default function VentaCrearPage() {
 
                 {items.length > 0 && (
                     <div className="mt-2 flex justify-end">
-                        <div
-                            className="rounded-lg border px-4 py-3 w-full max-w-sm"
-                            style={{ borderColor: "var(--tg-border)", background: "var(--tg-card-bg)" }}
-                        >
+                        <div className="rounded-lg border px-4 py-3 w-full max-w-sm" style={{ borderColor: "var(--tg-border)", background: "var(--tg-card-bg)" }}>
                             <div className="flex items-center justify-between">
                                 <span className="text-sm" style={{ color: "var(--tg-muted)" }}>Subtotal</span>
                                 <span className="font-medium">{money.format(total)}</span>
@@ -559,10 +511,7 @@ export default function VentaCrearPage() {
             {modalDefaults && (
                 <ProductoAgregate
                     open={confirmOpen}
-                    onClose={() => {
-                        setConfirmOpen(false);
-                        setEditIdTmp(null);
-                    }}
+                    onClose={() => { setConfirmOpen(false); setEditIdTmp(null); }}
                     loading={false}
                     variant="venta"
                     defaults={modalDefaults}

@@ -31,8 +31,10 @@ export async function getPurchaseById(
   return data as Purchase;
 }
 
-export async function createPurchase(payload: PurchaseCreate): Promise<Purchase> {
-  const body = {
+export async function createPurchase(
+  payload: PurchaseCreate & { purchase_date?: Date | string }
+): Promise<Purchase> {
+  const body: any = {
     supplier_id: payload.supplier_id,
     bank_id: payload.bank_id,
     status_id: payload.status_id,
@@ -41,7 +43,14 @@ export async function createPurchase(payload: PurchaseCreate): Promise<Purchase>
       quantity: i.quantity,
       unit_price: i.unit_price,
     })),
+    ...(payload.purchase_date && {
+      purchase_date:
+        payload.purchase_date instanceof Date
+          ? payload.purchase_date.toISOString()
+          : payload.purchase_date,
+    }),
   };
+
   const { data } = await salesApi.post("/purchases/create", body, {
     headers: { "Cache-Control": "no-cache" },
   });

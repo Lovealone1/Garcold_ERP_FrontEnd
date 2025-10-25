@@ -23,6 +23,7 @@ export interface PurchaseCreate {
   bank_id: number;
   status_id: number;
   items: PurchaseItemInput[];
+  purchase_date?: Date | string;
 }
 
 export interface PurchasePayment {

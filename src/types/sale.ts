@@ -23,8 +23,8 @@ export interface SaleCreate {
   bank_id: number;
   status_id: number;
   items: SaleItemInput[];
+  sale_date?: Date | string;
 }
-
 export interface SaleItemCreate {
   sale_id: number;
   product_id: number;

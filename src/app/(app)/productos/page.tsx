@@ -238,7 +238,7 @@ export default function ProductosPage() {
                           {r.is_active ? "Activo" : "Inactivo"}
                         </span>
                       </td>
-                      <td className="px-2 py-2">
+                      <td className="px-2 py-1.5">
                         <div className="flex items-center justify-center gap-1">
                           <button
                             className="p-2 rounded-full text-tg-primary hover:bg-[color-mix(in_srgb,var(--tg-primary)_22%,transparent)]"

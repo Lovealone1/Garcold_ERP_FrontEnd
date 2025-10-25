@@ -15,20 +15,22 @@ import ProductoAgregate from "@/features/productos/ProductoForm";
 import DateInput from "@/components/ui/DateRangePicker/DateInput";
 
 import { useProductosAll } from "@/hooks/productos/useProductosAll";
-import { useCustomerOptions, type CustomerOption } from "@/hooks/clientes/useClienteOptions";
-import { useVentaEstados } from "@/hooks/estados/useEstados";
+import { useSupplierOptions, type SupplierOption } from "@/hooks/proveedores/useProveedorOptions";
+import { useCompraEstados } from "@/hooks/estados/useEstados";
+import { listBanks } from "@/services/sales/bank.api";
+import type { ProductDTO } from "@/types/product";
+import type { Bank } from "@/types/bank";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 import { useRouter } from "next/navigation";
-import { useCreateVenta } from "@/hooks/ventas/useCreateVenta";
-import { useBancos } from "@/hooks/bancos/useBancos";
-import type { ProductDTO } from "@/types/product";
-import type { SaleCreate, SaleItemInput } from "@/types/sale";
 
-type ItemVenta = {
+import { useCreateCompra } from "@/hooks/compras/useCreateCompra";
+import type { PurchaseCreate, PurchaseItemInput } from "@/types/purchase";
+
+type ItemCompra = {
     idTmp: string;
     productoId: number;
-    reference: string;
-    description: string;
+    referencia: string;
+    descripcion: string;
     precioUnit: number;
     cantidad: number;
 };
@@ -50,24 +52,38 @@ const CARD_GAP = 10;
 const SHOW_EMPTY_HINT = true;
 
 const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
-const BLOQUEADA_RE = /venta\s*cancelada/i;
+const BLOQUEADA_RE = /compra\s*cancelada/i;
 
-export default function VentaCrearPage() {
+export default function CompraCrearPage() {
     const router = useRouter();
     const { error } = useNotifications();
 
     const { items: catalogo, loading: loadingProd } = useProductosAll();
-    const { options: clienteOptions } = useCustomerOptions();
-    const { options: estadoOptions, byName: estadoByName } = useVentaEstados();
+    const { options: proveedorOptions } = useSupplierOptions();
+    const { options: estadoOptions, byName: estadoByName } = useCompraEstados();
 
-    const { items: bancos, loading: loadingBancos } = useBancos();
+    const [bancos, setBancos] = useState<Bank[]>([]);
     const bancoOptions: Option[] = useMemo(() => bancos.map(b => ({ value: b.id, label: b.name })), [bancos]);
 
-    // estado UI
-    const [clienteSel, setClienteSel] = useState<CustomerOption | null>(null);
+    useEffect(() => {
+        let alive = true;
+        (async () => {
+            try {
+                const data = await listBanks(Date.now());
+                if (alive) setBancos(data);
+            } catch {
+                setBancos([]);
+            }
+        })();
+        return () => { alive = false; };
+    }, []);
+
+    const [proveedorSel, setProveedorSel] = useState<SupplierOption | null>(null);
     const [bancoSel, setBancoSel] = useState<Option | null>(null);
     const [estadoSel, setEstadoSel] = useState<string | null>(null);
-    const [saleAt, setSaleAt] = useState<string | undefined>(undefined); // "yyyy-MM-dd'T'HH:mm:ss"
+
+    // fecha opcional "yyyy-MM-dd'T'HH:mm:ss"
+    const [purchaseAt, setPurchaseAt] = useState<string | undefined>(undefined);
 
     const [queryProd, setQueryProd] = useState("");
     const [selProd, setSelProd] = useState<ProductDTO | null>(null);
@@ -76,7 +92,7 @@ export default function VentaCrearPage() {
     const [modalDefaults, setModalDefaults] = useState<ProductoAgregateDefaults | null>(null);
     const [editIdTmp, setEditIdTmp] = useState<string | null>(null);
 
-    const [items, setItems] = useState<ItemVenta[]>([]);
+    const [items, setItems] = useState<ItemCompra[]>([]);
     const total = useMemo(() => items.reduce((a, it) => a + it.precioUnit * it.cantidad, 0), [items]);
 
     const [page, setPage] = useState(1);
@@ -88,11 +104,11 @@ export default function VentaCrearPage() {
 
     const hasDirty =
         items.length > 0 ||
-        Boolean(clienteSel) ||
+        Boolean(proveedorSel) ||
         Boolean(bancoSel) ||
         Boolean(estadoSel) ||
-        queryProd.trim().length > 0 ||
-        Boolean(saleAt);
+        Boolean(purchaseAt) ||
+        queryProd.trim().length > 0;
 
     const textFieldSx = {
         mt: 0.5,
@@ -133,7 +149,7 @@ export default function VentaCrearPage() {
         setModalDefaults({
             referencia: p.reference,
             descripcion: p.description,
-            precio_unitario: p.sale_price,
+            precio_unitario: p.purchase_price,
             cantidad: 1,
             stock: p.quantity,
             precio_compra: p.purchase_price,
@@ -142,8 +158,12 @@ export default function VentaCrearPage() {
     };
 
     const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
-    function incQty(idTmp: string) { setItems(prev => prev.map(it => (it.idTmp === idTmp ? { ...it, cantidad: it.cantidad + 1 } : it))); }
-    function decQty(idTmp: string) { setItems(prev => prev.map(it => (it.idTmp === idTmp ? { ...it, cantidad: clamp(it.cantidad - 1, 1, 1e9) } : it))); }
+    function incQty(idTmp: string) {
+        setItems(prev => prev.map(it => (it.idTmp === idTmp ? { ...it, cantidad: it.cantidad + 1 } : it)));
+    }
+    function decQty(idTmp: string) {
+        setItems(prev => prev.map(it => (it.idTmp === idTmp ? { ...it, cantidad: clamp(it.cantidad - 1, 1, 1e9) } : it)));
+    }
     function setQty(idTmp: string, v: number) {
         const q = clamp(Number.isFinite(v) ? Math.trunc(v) : 1, 1, 1e9);
         setItems(prev => prev.map(it => (it.idTmp === idTmp ? { ...it, cantidad: q } : it)));
@@ -167,8 +187,8 @@ export default function VentaCrearPage() {
                     {
                         idTmp: crypto.randomUUID(),
                         productoId: selProd.id,
-                        reference: selProd.reference,
-                        description: selProd.description,
+                        referencia: selProd.reference,
+                        descripcion: selProd.description,
                         precioUnit: data.precio_unitario,
                         cantidad: data.cantidad,
                     },
@@ -197,68 +217,84 @@ export default function VentaCrearPage() {
         setModalDefaults(null);
         setEditIdTmp(null);
         setQueryProd("");
-        setClienteSel(null);
+        setProveedorSel(null);
         setBancoSel(null);
         setEstadoSel(null);
-        setSaleAt(undefined);
+        setPurchaseAt(undefined);
         setPage(1);
     };
 
     const estadoOptionsFiltradas = useMemo(() => estadoOptions.filter(n => !BLOQUEADA_RE.test(String(n))), [estadoOptions]);
-    const puedeFinalizar = useMemo(() => items.length > 0 && !!clienteSel && !!bancoSel && !!estadoSel, [items.length, clienteSel, bancoSel, estadoSel]);
 
-    const { create: createVenta, loading: creating } = useCreateVenta({
-        onSuccess: () => { limpiar(); router.push("/comercial/ventas"); },
+    const puedeFinalizar = useMemo(
+        () => items.length > 0 && !!proveedorSel && !!bancoSel && !!estadoSel,
+        [items.length, proveedorSel, bancoSel, estadoSel]
+    );
+
+    const { create: createCompra, loading: creating } = useCreateCompra({
+        onSuccess: () => {
+            limpiar();
+            router.push("/comercial/compras");
+        },
     });
 
-    async function finalizarVenta() {
+    async function finalizarCompra() {
         if (!puedeFinalizar) return;
         const estado_id = estadoSel ? estadoByName?.[estadoSel] : undefined;
-        if (!estado_id) { error("No se pudo identificar el estado seleccionado"); return; }
+        if (!estado_id) {
+            error("No se pudo identificar el estado seleccionado");
+            return;
+        }
 
-        const itemsInput: SaleItemInput[] = items.map(it => ({
+        const itemsInput: PurchaseItemInput[] = items.map(it => ({
             product_id: it.productoId,
             quantity: it.cantidad,
             unit_price: it.precioUnit,
         }));
 
-        const payload: SaleCreate = {
-            customer_id: Number(clienteSel!.value),
+        const payload: PurchaseCreate = {
+            supplier_id: Number(proveedorSel!.value),
             bank_id: Number(bancoSel!.value),
             status_id: estado_id,
             items: itemsInput,
         };
 
-        await createVenta(payload, saleAt); // opcional
+        // Enviar fecha opcional
+        await createCompra(payload, purchaseAt);
     }
 
     return (
         <div className="app-shell__frame overflow-hidden">
             <div className="bg-[var(--page-bg)] rounded-xl h-full flex flex-col px-4 md:px-5 pb-5 pt-4">
                 <Typography variant="h5" sx={{ mb: 1.25, fontWeight: 600 }}>
-                    Nueva venta
+                    Nueva compra
                 </Typography>
 
                 <Box sx={{ maxWidth: 1800, mb: 1.0 }}>
                     <Stack direction={{ xs: "column", md: "row" }} gap={1.2} flexWrap="wrap" alignItems="flex-end">
                         <Box sx={{ flex: 1, minWidth: 240 }}>
-                            <Typography variant="caption" sx={{ color: "var(--tg-muted)", fontWeight: 600 }}>Cliente</Typography>
+                            <Typography variant="caption" sx={{ color: "var(--tg-muted)", fontWeight: 600 }}>
+                                Proveedor
+                            </Typography>
                             <Autocomplete
-                                options={clienteOptions}
-                                value={clienteSel}
-                                onChange={(_, v) => setClienteSel(v)}
+                                options={proveedorOptions}
+                                value={proveedorSel}
+                                onChange={(_, v) => setProveedorSel(v)}
                                 getOptionLabel={(o) => (o?.label ?? "") as string}
                                 slotProps={autoSlotProps}
-                                renderInput={(params) => <TextField {...params} placeholder="Selecciona o busca un cliente…" sx={textFieldSx} />}
+                                renderInput={(params) => (
+                                    <TextField {...params} placeholder="Selecciona o busca un proveedor…" sx={textFieldSx} />
+                                )}
                             />
                         </Box>
 
                         <Box sx={{ flex: 1, minWidth: 210 }}>
-                            <Typography variant="caption" sx={{ color: "var(--tg-muted)", fontWeight: 600 }}>Banco</Typography>
+                            <Typography variant="caption" sx={{ color: "var(--tg-muted)", fontWeight: 600 }}>
+                                Banco
+                            </Typography>
                             <Autocomplete
                                 options={bancoOptions}
                                 value={bancoSel}
-                                loading={loadingBancos}
                                 onChange={(_, v) => setBancoSel(v)}
                                 getOptionLabel={(o) => (o?.label ?? "") as string}
                                 slotProps={autoSlotProps}
@@ -267,33 +303,42 @@ export default function VentaCrearPage() {
                         </Box>
 
                         <Box sx={{ flex: 1, minWidth: 220 }}>
-                            <Typography variant="caption" sx={{ color: "var(--tg-muted)", fontWeight: 600 }}>Estado</Typography>
+                            <Typography variant="caption" sx={{ color: "var(--tg-muted)", fontWeight: 600 }}>
+                                Estado
+                            </Typography>
                             <Autocomplete
                                 options={estadoOptionsFiltradas}
                                 value={estadoSel}
                                 onChange={(_, v) => {
-                                    if (v && BLOQUEADA_RE.test(String(v))) { error("Estado no permitido"); return; }
+                                    if (v && BLOQUEADA_RE.test(String(v))) {
+                                        error("Estado no permitido");
+                                        return;
+                                    }
                                     setEstadoSel(v);
                                 }}
                                 slotProps={autoSlotProps}
-                                renderInput={(params) => <TextField {...params} placeholder="Venta contado / crédito…" sx={textFieldSx} />}
+                                renderInput={(params) => (
+                                    <TextField {...params} placeholder="Compra contado / crédito…" sx={textFieldSx} />
+                                )}
                             />
                         </Box>
 
-                        {/* Fecha con tu DateInput, mismo tema */}
+                        {/* Fecha de la compra con tu DateInput */}
                         <Box sx={{ flex: 1, minWidth: 220 }}>
                             <Typography variant="caption" sx={{ color: "var(--tg-muted)", fontWeight: 600 }}>
-                                Fecha de la venta
+                                Fecha de la compra
                             </Typography>
                             <DateInput
-                                value={saleAt}          // "yyyy-MM-dd'T'HH:mm:ss" | undefined
-                                onChange={setSaleAt}    // emite mismo formato
+                                value={purchaseAt}          // "yyyy-MM-dd'T'HH:mm:ss" | undefined
+                                onChange={setPurchaseAt}
                                 placeholder="dd/mm/aaaa"
                             />
                         </Box>
 
                         <Box sx={{ flex: 1.3, minWidth: 310, maxWidth: { md: 510 } }}>
-                            <Typography variant="caption" sx={{ color: "var(--tg-muted)", fontWeight: 600 }}>Producto</Typography>
+                            <Typography variant="caption" sx={{ color: "var(--tg-muted)", fontWeight: 600 }}>
+                                Producto
+                            </Typography>
                             <Autocomplete
                                 value={selProd}
                                 inputValue={queryProd}
@@ -311,7 +356,9 @@ export default function VentaCrearPage() {
                                     setQueryProd(val);
                                 }}
                                 slotProps={autoSlotProps}
-                                renderInput={(params) => <TextField {...params} placeholder="Busca por referencia o descripción…" sx={textFieldSx} />}
+                                renderInput={(params) => (
+                                    <TextField {...params} placeholder="Busca por referencia o descripción…" sx={textFieldSx} />
+                                )}
                             />
                         </Box>
                     </Stack>
@@ -336,7 +383,7 @@ export default function VentaCrearPage() {
                                 justifyContent: "center",
                             }}
                         >
-                            <Typography sx={{ color: "var(--tg-muted)" }}>Agrega productos para construir tu venta.</Typography>
+                            <Typography sx={{ color: "var(--tg-muted)" }}>Agrega productos para construir tu compra.</Typography>
                         </div>
                     ) : (
                         <>
@@ -359,8 +406,8 @@ export default function VentaCrearPage() {
                                                     {number}
                                                 </div>
                                                 <div className="min-w-0">
-                                                    <div className="font-semibold text-[var(--tg-card-fg)] truncate">{it.description}</div>
-                                                    <div className="text-sm" style={{ color: "var(--tg-muted)" }}>Ref: {it.reference}</div>
+                                                    <div className="font-semibold text-[var(--tg-card-fg)] truncate">{it.descripcion}</div>
+                                                    <div className="text-sm" style={{ color: "var(--tg-muted)" }}>Ref: {it.referencia}</div>
                                                 </div>
                                             </div>
 
@@ -465,7 +512,7 @@ export default function VentaCrearPage() {
                     </Stack>
                 )}
 
-                {items.length > PAGE_SIZE && (
+                {items.length > 0 && (
                     <div className="mt-2 flex justify-end">
                         <div className="rounded-lg border px-4 py-3 w-full max-w-sm" style={{ borderColor: "var(--tg-border)", background: "var(--tg-card-bg)" }}>
                             <div className="flex items-center justify-between">
@@ -490,7 +537,7 @@ export default function VentaCrearPage() {
                     {puedeFinalizar && (
                         <Button
                             variant="contained"
-                            onClick={finalizarVenta}
+                            onClick={finalizarCompra}
                             disabled={creating}
                             sx={{
                                 textTransform: "none",
@@ -499,7 +546,7 @@ export default function VentaCrearPage() {
                                 "&:hover": { bgcolor: "color-mix(in srgb, var(--tg-primary) 88%, black 12%)" },
                             }}
                         >
-                            {creating ? "Guardando…" : "Finalizar venta"}
+                            {creating ? "Guardando…" : "Finalizar compra"}
                         </Button>
                     )}
                 </Stack>
@@ -510,7 +557,7 @@ export default function VentaCrearPage() {
                     open={confirmOpen}
                     onClose={() => { setConfirmOpen(false); setEditIdTmp(null); }}
                     loading={false}
-                    variant="venta"
+                    variant="compra"
                     defaults={modalDefaults}
                     onConfirm={onConfirmProducto}
                 />

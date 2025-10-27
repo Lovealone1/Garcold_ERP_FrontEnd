@@ -53,6 +53,12 @@ const SHOW_EMPTY_HINT = true;
 
 const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 const BLOQUEADA_RE = /compra\s*cancelada/i;
+const COMPRA_CONTADO_RE = /compra\s*contado/i;
+
+function toLocalISOSec(d = new Date()): string {
+    const t = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+    return t.toISOString().slice(0, 19); // yyyy-MM-ddTHH:mm:ss
+}
 
 export default function CompraCrearPage() {
     const router = useRouter();
@@ -84,6 +90,25 @@ export default function CompraCrearPage() {
 
     // fecha opcional "yyyy-MM-dd'T'HH:mm:ss"
     const [purchaseAt, setPurchaseAt] = useState<string | undefined>(undefined);
+
+    // ⬇️ Defaults: banco Efectivo, estado Venta Contado, fecha hoy
+    useEffect(() => {
+        if (!bancoSel && bancos.length) {
+            const eff = bancos.find(b => b.name?.toLowerCase().includes("efectivo"));
+            if (eff) setBancoSel({ value: eff.id, label: eff.name });
+        }
+    }, [bancos, bancoSel]);
+
+    useEffect(() => {
+        if (!estadoSel && estadoOptions.length) {
+            const target = estadoOptions.find(n => COMPRA_CONTADO_RE.test(String(n)) && !BLOQUEADA_RE.test(String(n)));
+            if (target) setEstadoSel(target);
+        }
+    }, [estadoOptions, estadoSel]);
+
+    useEffect(() => {
+        if (!purchaseAt) setPurchaseAt(toLocalISOSec());
+    }, [purchaseAt]);
 
     const [queryProd, setQueryProd] = useState("");
     const [selProd, setSelProd] = useState<ProductDTO | null>(null);
@@ -220,11 +245,14 @@ export default function CompraCrearPage() {
         setProveedorSel(null);
         setBancoSel(null);
         setEstadoSel(null);
-        setPurchaseAt(undefined);
+        setPurchaseAt(toLocalISOSec()); // sigue dejando hoy
         setPage(1);
     };
 
-    const estadoOptionsFiltradas = useMemo(() => estadoOptions.filter(n => !BLOQUEADA_RE.test(String(n))), [estadoOptions]);
+    const estadoOptionsFiltradas = useMemo(
+        () => estadoOptions.filter(n => !BLOQUEADA_RE.test(String(n))),
+        [estadoOptions]
+    );
 
     const puedeFinalizar = useMemo(
         () => items.length > 0 && !!proveedorSel && !!bancoSel && !!estadoSel,
@@ -259,7 +287,6 @@ export default function CompraCrearPage() {
             items: itemsInput,
         };
 
-        // Enviar fecha opcional
         await createCompra(payload, purchaseAt);
     }
 

@@ -12,7 +12,7 @@ import Pagination from "@mui/material/Pagination";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 
 import ProductoAgregate from "@/features/productos/ProductoForm";
-import DateInput from "@/components/ui/DateRangePicker/DateInput"; // ← TU componente de día único
+import DateInput from "@/components/ui/DateRangePicker/DateInput";
 
 import { useProductosAll } from "@/hooks/productos/useProductosAll";
 import { useCustomerOptions, type CustomerOption } from "@/hooks/clientes/useClienteOptions";
@@ -52,6 +52,12 @@ const SHOW_EMPTY_HINT = true;
 
 const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 const BLOQUEADA_RE = /venta\s*cancelada/i;
+const VENTA_CONTADO_RE = /venta\s*contado/i;
+
+function toLocalISOSec(d = new Date()): string {
+    const t = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+    return t.toISOString().slice(0, 19); // yyyy-MM-ddTHH:mm:ss
+}
 
 export default function VentaCrearPage() {
     const router = useRouter();
@@ -68,8 +74,27 @@ export default function VentaCrearPage() {
     const [bancoSel, setBancoSel] = useState<Option | null>(null);
     const [estadoSel, setEstadoSel] = useState<string | null>(null);
 
-    // ← fecha opcional en formato BE "yyyy-MM-dd'T'HH:mm:ss" que emite tu DateInput
+    // fecha opcional "yyyy-MM-dd'T'HH:mm:ss"
     const [saleAt, setSaleAt] = useState<string | undefined>(undefined);
+
+    // defaults: Efectivo, Venta Contado, fecha hoy
+    useEffect(() => {
+        if (!bancoSel && bancos.length) {
+            const eff = bancos.find(b => b.name?.toLowerCase().includes("efectivo"));
+            if (eff) setBancoSel({ value: eff.id, label: eff.name });
+        }
+    }, [bancos, bancoSel]);
+
+    useEffect(() => {
+        if (!estadoSel && estadoOptions.length) {
+            const target = estadoOptions.find(n => VENTA_CONTADO_RE.test(String(n)) && !BLOQUEADA_RE.test(String(n)));
+            if (target) setEstadoSel(target);
+        }
+    }, [estadoOptions, estadoSel]);
+
+    useEffect(() => {
+        if (!saleAt) setSaleAt(toLocalISOSec());
+    }, [saleAt]);
 
     const [queryProd, setQueryProd] = useState("");
     const [selProd, setSelProd] = useState<ProductDTO | null>(null);
@@ -202,12 +227,19 @@ export default function VentaCrearPage() {
         setClienteSel(null);
         setBancoSel(null);
         setEstadoSel(null);
-        setSaleAt(undefined); // ← reset fecha
+        setSaleAt(toLocalISOSec()); // mantiene fecha hoy
         setPage(1);
     };
 
-    const estadoOptionsFiltradas = useMemo(() => estadoOptions.filter(n => !BLOQUEADA_RE.test(String(n))), [estadoOptions]);
-    const puedeFinalizar = useMemo(() => items.length > 0 && !!clienteSel && !!bancoSel && !!estadoSel, [items.length, clienteSel, bancoSel, estadoSel]);
+    const estadoOptionsFiltradas = useMemo(
+        () => estadoOptions.filter(n => !BLOQUEADA_RE.test(String(n))),
+        [estadoOptions]
+    );
+
+    const puedeFinalizar = useMemo(
+        () => items.length > 0 && !!clienteSel && !!bancoSel && !!estadoSel,
+        [items.length, clienteSel, bancoSel, estadoSel]
+    );
 
     const { create: createVenta, loading: creating } = useCreateVenta({
         onSuccess: () => { limpiar(); router.push("/comercial/ventas"); },
@@ -231,7 +263,6 @@ export default function VentaCrearPage() {
             items: itemsInput,
         };
 
-        // saleAt ya viene en formato backend desde DateInput; se envía opcional
         await createVenta(payload, saleAt);
     }
 
@@ -283,14 +314,13 @@ export default function VentaCrearPage() {
                             />
                         </Box>
 
-                        {/* Fecha con TU componente, tema consistente */}
                         <Box sx={{ flex: 1, minWidth: 220 }}>
                             <Typography variant="caption" sx={{ color: "var(--tg-muted)", fontWeight: 600 }}>
                                 Fecha de la venta
                             </Typography>
                             <DateInput
-                                value={saleAt}                 // "yyyy-MM-dd'T'HH:mm:ss" | undefined
-                                onChange={setSaleAt}           // emite mismo formato
+                                value={saleAt}
+                                onChange={setSaleAt}
                                 placeholder="dd/mm/aaaa"
                             />
                         </Box>

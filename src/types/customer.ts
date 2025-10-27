@@ -21,3 +21,9 @@ export type CustomerPage = PageDTO<Customer>;
 
 export type CustomerCreate = Omit<Customer, "id" | "created_at">;
 export type CustomerUpdate = Omit<Customer, "id" | "created_at" | "balance">;
+
+export interface CustomerStandalonePaymentIn {
+  bank_id: number;       
+  amount: number;       
+  description?: string | null; 
+}

@@ -5,11 +5,12 @@ import type {
   CustomerCreate,
   CustomerUpdate,
   CustomerLite,
+  CustomerStandalonePaymentIn
 } from "@/types/customer";
 
 export async function listCustomers(
   page = 1,
-  params?: { q?: string },         
+  params?: { q?: string },
   nocacheToken?: number
 ): Promise<CustomerPage> {
   const { data } = await salesApi.get("/customers/page", {
@@ -69,4 +70,15 @@ export async function listCustomersAll(nocacheToken?: number): Promise<CustomerL
   });
   const full: Customer[] = data as Customer[];
   return full.map((c) => ({ id: c.id, name: c.name }));
+}
+
+export async function createCustomerSimplePayment(
+  customerId: number,
+  payload: CustomerStandalonePaymentIn
+): Promise<boolean> {
+  const res = await salesApi.post(
+    `/customers/by-id/${customerId}/payments/simple`,
+    payload
+  );
+  return res.data as boolean;
 }

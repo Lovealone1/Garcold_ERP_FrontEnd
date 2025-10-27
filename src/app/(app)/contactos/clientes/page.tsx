@@ -1,16 +1,17 @@
+// app/(ventas)/clientes/page.tsx  (ClientesPage completo adaptado)
 "use client";
 
 import { useMemo, useState, CSSProperties } from "react";
 import { MaterialIcon } from "@/components/ui/material-icon";
 import ClienteForm from "@/features/clientes/ClienteForm";
 import ClienteView from "@/features/clientes/ClienteView";
+import PagoClienteModal from "@/features/clientes/PagoClienteSimpleModal";
 import { useCustomers } from "@/hooks/clientes/useClientes";
 import { useCustomer } from "@/hooks/clientes/useCliente";
 import { createCustomer, updateCustomer, deleteCustomer } from "@/services/sales/customer.api";
 import type { Customer, CustomerCreate, CustomerUpdate } from "@/types/customer";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 
-// IO hooks + dialogs
 import { useImport } from "@/hooks/io/useImport";
 import { useExport } from "@/hooks/io/useExport";
 import ImportDialog from "@/features/io/ImportDialog";
@@ -45,6 +46,10 @@ export default function ClientesPage() {
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [openDelete, setOpenDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // Pago simple modal
+  const [openPay, setOpenPay] = useState(false);
+  const [payCustomer, setPayCustomer] = useState<Customer | null>(null);
 
   // IO state
   const [openImport, setOpenImport] = useState(false);
@@ -112,6 +117,13 @@ export default function ClientesPage() {
     setFilters({ q: "", cities: undefined, pendingBalance: undefined });
   }
 
+  async function handlePaymentDone(customerId: number, paid: number) {
+    const row = rows.find(r => r.id === customerId);
+    if (row) upsertOne?.({ ...row, balance: Math.max(0, row.balance - paid) });
+    await reload?.();                 // como en handleCreate/handleEdit
+    success("Saldo actualizado");
+  }
+
   const selectedCities = filters.cities ?? [];
   const allCities = options.cities;
   const allSelected = selectedCities.length > 0 && selectedCities.length === allCities.length;
@@ -176,7 +188,7 @@ export default function ClientesPage() {
                         const checked = selectedCities.includes(ci);
                         return (
                           <li key={ci}>
-                            <label className="flex items-center gap-2 text-sm cursor-pointer px-1 py-1 rounded hover:bg.black/10 dark:hover:bg-white/10">
+                            <label className="flex items-center gap-2 text-sm cursor-pointer px-1 py-1 rounded hover:bg.black/10 dark:hover:bg.white/10">
                               <input type="checkbox" className="accent-current" checked={checked} onChange={() => toggleCity(ci)} />
                               <span>{ci}</span>
                             </label>
@@ -272,6 +284,7 @@ export default function ClientesPage() {
                             className="rounded p-2 hover:bg-black/10 dark:hover:bg-white/10"
                             aria-label="ver"
                             onClick={() => { setViewId(r.id); setOpenView(true); }}
+                            title="Ver"
                           >
                             <MaterialIcon name="visibility" size={18} className="text-tg-primary" />
                           </button>
@@ -279,6 +292,7 @@ export default function ClientesPage() {
                             className="rounded p-2 hover:bg-black/10 dark:hover:bg-white/10"
                             aria-label="editar"
                             onClick={() => { setEditId(r.id); setOpenEdit(true); }}
+                            title="Editar"
                           >
                             <MaterialIcon name="edit" size={18} className="text-tg-primary" />
                           </button>
@@ -286,9 +300,21 @@ export default function ClientesPage() {
                             className="rounded p-2 hover:bg-black/10 dark:hover:bg-white/10"
                             aria-label="eliminar"
                             onClick={() => { setDeleteId(r.id); setOpenDelete(true); }}
+                            title="Eliminar"
                           >
                             <MaterialIcon name="delete" size={18} className="text-tg-primary" />
                           </button>
+                          {/* Pagar simple solo si hay saldo */}
+                          {r.balance > 0 && (
+                            <button
+                              className="rounded p-2 hover:bg-black/10 dark:hover:bg-white/10"
+                              aria-label="abonar"
+                              onClick={() => { setPayCustomer(r); setOpenPay(true); }}
+                              title="Registrar pago"
+                            >
+                              <MaterialIcon name="paid" size={18} className="text-tg-primary" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -394,7 +420,6 @@ export default function ClientesPage() {
         onDownload={async (_entity, fmt, filename) => {
           try {
             await exp.download("customers", fmt, filename);
-            success("Exportación generada");
           } catch (e: any) {
             error(e?.message ?? "Error al exportar");
           }
@@ -472,6 +497,24 @@ export default function ClientesPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal de pago simple */}
+      {openPay && (
+        <PagoClienteModal
+          open={openPay}
+          customerId={payCustomer?.id ?? null}
+          customerName={payCustomer?.name}
+          customerBalance={payCustomer?.balance ?? 0}
+          onClose={() => { setOpenPay(false); setPayCustomer(null); }}
+          onSuccess={async (customerId, paid) => {
+            // feedback inmediato
+            const row = rows.find(r => r.id === customerId);
+            if (row) upsertOne?.({ ...row, balance: Math.max(0, row.balance - paid) });
+            // recarga con filtros vigentes
+            await reload?.();
+          }}
+        />
       )}
     </div>
   );

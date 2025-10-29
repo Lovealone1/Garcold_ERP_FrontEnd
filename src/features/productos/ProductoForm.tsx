@@ -1,10 +1,9 @@
-// features/productos/ProductoForm.tsx
 "use client";
 
 import { useMemo, useState, useEffect, type ChangeEvent, type FormEvent, FocusEvent } from "react";
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
-import Grid from "@mui/material/Grid"; // si usas @mui/material/Grid2; si no, cambia a Grid
+import Grid from "@mui/material/Grid"; 
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
@@ -14,11 +13,10 @@ import Typography from "@mui/material/Typography";
 import DynamicTextField from "@/components/forms/DynamicTextField";
 import type { ProductCreate, ProductUpdate } from "@/types/product";
 
-/** Defaults cuando se usa como modal de agregado (venta/compra) */
 export type ProductoAgregateDefaults = {
   referencia: string;
   descripcion: string;
-  precio_unitario: number; // venta: sale_price inicial; compra: purchase_price inicial
+  precio_unitario: number; 
   cantidad: number;
   stock: number;
   precio_compra: number;
@@ -34,19 +32,15 @@ type Props = {
   intent?: "create" | "edit";
   onSubmit?: (data: ProductCreate | ProductUpdate) => Promise<void> | void;
 
-  // acepta defaults "es" desde la página
   defaults?: Partial<ProductCreate & ProductUpdate> | ProductoAgregateDefaults;
 
-  /** Si se define, actúa como formulario de agregado */
   variant?: "venta" | "compra";
   onConfirm?: (data: { precio_unitario: number; cantidad: number }) => void;
 };
-
-// === STATE EN INGLÉS PARA ALINEAR CON EL BACK ===
 type FormState = {
   reference: string;
   description: string;
-  quantity: number | "";         // stock
+  quantity: number | "";         
   purchase_price: number | "";
   sale_price: number | "";
   is_active: boolean;
@@ -78,7 +72,6 @@ export default function ProductoForm(props: Props) {
     [isAgregate, variant]
   );
 
-  // normaliza defaults de ambas variantes al estado en inglés
   function normalize(d?: Props["defaults"]): Partial<FormState> {
     if (!d) return {};
     if (isAgregateDefaults(d)) {
@@ -118,13 +111,11 @@ export default function ProductoForm(props: Props) {
     setForm((f) => ({ ...f, ...normalize(props.defaults) }));
   }, [props.defaults, open, variant]);
 
-  // STOCK fuente de verdad
   const stock = useMemo(() => {
     if (isAgregate && isAgregateDefaults(props.defaults)) return toNumber(props.defaults.stock, 0);
     return toNumber(form.quantity, 0);
   }, [isAgregate, props.defaults, form.quantity]);
 
-  // clamp cantidad en agregación venta
   useEffect(() => {
     if (isAgregate && variant === "venta") {
       setForm((f) => {
@@ -139,18 +130,17 @@ export default function ProductoForm(props: Props) {
     (k: keyof FormState) =>
       (e: ChangeEvent<HTMLInputElement>) => {
         if (k === "quantity") {
-          const raw = e.target.value;                 // ← string
-          if (raw === "") {                           // permitir borrar
+          const raw = e.target.value;                
+          if (raw === "") {                          
             setForm((f) => ({ ...f, quantity: "" }));
             return;
           }
           const n = Number(raw);
           if (!Number.isFinite(n)) return;
 
-          // sin clamp agresivo aquí; deja escribir libre
           const next =
             isAgregate && variant === "venta"
-              ? Math.max(0, Math.min(n, Math.max(stock, 0))) // permite 0 mientras escribe
+              ? Math.max(0, Math.min(n, Math.max(stock, 0))) 
               : Math.max(0, n);
 
           setForm((f) => ({ ...f, quantity: next }));
@@ -161,7 +151,7 @@ export default function ProductoForm(props: Props) {
       };
 
   const onQtyBlur = (_e: FocusEvent<HTMLInputElement>) => {
-    if (form.quantity === "") return; // si quedó vacío, no forzar de inmediato
+    if (form.quantity === "") return; 
     const n = toNumber(form.quantity, 0);
     if (isAgregate && variant === "venta") {
       const clamped = Math.max(1, Math.min(n, Math.max(0, stock)));

@@ -1,4 +1,3 @@
-// features/finanzas/InvestmentWithdrawModal.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";

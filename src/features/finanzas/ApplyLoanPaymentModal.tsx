@@ -1,4 +1,3 @@
-// features/finanzas/ApplyLoanPaymentModal.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -11,7 +10,7 @@ type ApplyPaymentResult = Loan | { deleted: true; loan_id: number };
 type Props = {
     open: boolean;
     onClose: () => void;
-    loan: Loan;                 // no-null
+    loan: Loan;                
     defaultBankId?: number;
     onDone?: (r: ApplyPaymentResult) => void | Promise<void>;
 };

@@ -1,36 +1,33 @@
 "use client";
 import type { Investment } from "@/types/investment";
 
-const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
-
-export default function InversionCard({
-    inversion,
-    selected = false,
-    onSelect,
-}: {
+type Props = {
     inversion: Investment;
     selected?: boolean;
     onSelect?: (checked: boolean) => void;
-}) {
-    const now = new Date().getTime();
-    const venc = new Date(inversion.maturity_date).getTime();
-    const dot = now < venc ? "bg-emerald-500" : "bg-red-500";
+};
+
+export default function InvestmentCard({ inversion, selected = false, onSelect }: Props) {
+    const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 
     return (
-        <button
-            type="button"
+        <div
+            role="button"
+            tabIndex={0}
             onClick={() => onSelect?.(!selected)}
-            className={`w-full rounded-lg border p-4 bg-tg-card text-left transition ${selected ? "border-emerald-500 ring-2 ring-emerald-500/30" : "border-tg"
-                }`}
+            onKeyDown={(e) => e.key === "Enter" && onSelect?.(!selected)}
+            data-selected={selected}
+            className={`border p-5 rounded-xl relative outline-none transition-colors
+                  border-tg bg-[var(--tg-card-bg)] hover:border-[var(--tg-primary)]
+                  data-[selected=true]:border-[var(--tg-primary)]
+                  data-[selected=true]:ring-2 data-[selected=true]:ring-[var(--tg-primary)]
+                  data-[selected=true]:bg-[color-mix(in_srgb,var(--tg-primary)10%,var(--tg-card-bg))]`}
         >
-            <div className="flex items-center justify-between gap-3">
-                <h3 className="text-base font-semibold">{inversion.name}</h3>
-                <span className={`inline-block h-3 w-3 rounded-full ${dot}`} />
+            <h3 className="text-lg font-semibold" style={{ color: "var(--tg-primary)" }}>{inversion.name}</h3>
+            <div className="mt-2 text-4xl font-extrabold tracking-tight">{money.format(inversion.balance ?? 0)}</div>
+            <div className="mt-2 text-xs text-tg-muted">
+                Vence: <span className="font-light">{new Date(inversion.maturity_date).toLocaleDateString()}</span>
             </div>
-            <div className="mt-2 text-2xl font-bold">{money.format(inversion.balance)}</div>
-            <div className="mt-1 text-xs text-tg-muted">
-                Vence: {new Date(inversion.maturity_date).toLocaleDateString("es-CO")}
-            </div>
-        </button>
+        </div>
     );
 }

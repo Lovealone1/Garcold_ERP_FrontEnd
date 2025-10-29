@@ -24,8 +24,14 @@ export default function BancosPage() {
     const [visibleIds, setVisibleIds] = useState<number[]>([]);
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
+    // ↓ Solo bancos con saldo > 0 en la vista inicial (máx. 6)
     const defaultFirst6 = useMemo(
-        () => items.slice().sort((a, b) => a.id - b.id).slice(0, 6).map((b) => b.id),
+        () =>
+            items
+                .filter(b => (b.balance ?? 0) > 0)
+                .sort((a, b) => a.id - b.id)
+                .slice(0, 6)
+                .map(b => b.id),
         [items]
     );
 
@@ -96,8 +102,14 @@ export default function BancosPage() {
             <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div className="flex items-center gap-4">
                     <h1 className="text-4xl font-extrabold text-tg-fg">Bancos</h1>
-                    <div className="rounded-xl border px-4 py-2 min-w-[200px]" style={{ borderColor: "var(--tg-border)", background: "var(--tg-card-bg)" }} aria-label="total-visible">
-                        <span className="text-2xl md:text-3xl font-extrabold tracking-tight">{money.format(totalVisible)}</span>
+                    <div
+                        className="rounded-xl border px-4 py-2 min-w-[200px]"
+                        style={{ borderColor: "var(--tg-border)", background: "var(--tg-card-bg)" }}
+                        aria-label="total-visible"
+                    >
+                        <span className="text-2xl md:text-3xl font-extrabold tracking-tight">
+                            {money.format(totalVisible)}
+                        </span>
                     </div>
                 </div>
 
@@ -139,7 +151,11 @@ export default function BancosPage() {
                     </Menu>
 
                     {visibleIds.length > 0 && (
-                        <button type="button" onClick={clearSelection} className="h-10 rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-card">
+                        <button
+                            type="button"
+                            onClick={clearSelection}
+                            className="h-10 rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-card"
+                        >
                             Limpiar selecciones
                         </button>
                     )}

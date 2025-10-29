@@ -1,8 +1,9 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useCreateLoan } from "@/hooks/creditos/useCreateCreditos";
 import { useCreateInvestment } from "@/hooks/inversiones/useCreateInversion";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
+import { useBancos } from "@/hooks/bancos/useBancos";
 
 type Kind = "loan" | "investment";
 
@@ -18,29 +19,56 @@ export default function CreateAssetModal({
     const [value, setValue] = useState<string>("");
     const [dateStr, setDateStr] = useState<string>("");
 
+    // solo para inversiones
+    const { items: banks, loading: loadingBanks } = useBancos();
+    const [bankId, setBankId] = useState<number | "">("");
+
     const { create: createLoan, loading: loadingL } = useCreateLoan();
     const { create: createInvestment, loading: loadingI } = useCreateInvestment();
-    const { success, error } = useNotifications();               // ⬅️ usar provider
+    const { success, error } = useNotifications();
     const loading = loadingL || loadingI;
 
-    const labels = useMemo(() => {
-        if (kind === "investment") return { value: "Saldo", date: "Fecha de vencimiento" };
-        return { value: "Monto", date: "Fecha de creación" };
-    }, [kind]);
+    useEffect(() => {
+        if (!open) return;
+        // reset limpio cada vez que se abre
+        setName("");
+        setValue("");
+        setDateStr("");
+        setBankId(""); // no preseleccionar banco
+    }, [open]);
+
+    const labels = useMemo(
+        () => kind === "investment"
+            ? { value: "Saldo", date: "Fecha de vencimiento" }
+            : { value: "Monto", date: "Fecha de creación" },
+        [kind]
+    );
+
+    const canSubmit = useMemo(() => {
+        const n = Number(value);
+        if (!name.trim() || !dateStr || !Number.isFinite(n) || n <= 0) return false;
+        if (kind === "investment" && (bankId === "" || loadingBanks)) return false;
+        return !loading;
+    }, [name, value, dateStr, kind, bankId, loading, loadingBanks]);
 
     async function submit() {
+        if (!canSubmit) return;
         const n = Number(value);
-        if (!name || Number.isNaN(n) || n <= 0 || !dateStr) return;
 
         try {
             if (kind === "loan") {
-                await createLoan({ name, amount: n });                  // fecha la pone el backend
+                await createLoan({ name: name.trim(), amount: n }); // fecha la pone backend
                 success("Crédito creado");
             } else {
-                await createInvestment({ name, balance: n, maturity_date: dateStr });
+                // ✅ enviar bank_id obligatorio
+                await createInvestment({
+                    name: name.trim(),
+                    balance: n,
+                    maturity_date: dateStr,
+                    bank_id: bankId as number,
+                });
                 success("Inversión creada");
             }
-            setName(""); setValue(""); setDateStr("");
             onCreated(kind);
         } catch (e: any) {
             const msg = e?.response?.data?.detail || e?.message || "Error al crear";
@@ -88,6 +116,29 @@ export default function CreateAssetModal({
                             className="h-10 rounded-md border border-tg bg-tg-card px-3 text-sm outline-none"
                         />
                     </div>
+
+                    {kind === "investment" && (
+                        <div className="flex flex-col gap-1">
+                            <label className="text-sm">Banco</label>
+                            <select
+                                value={bankId === "" ? "" : String(bankId)}
+                                onChange={(e) => setBankId(e.target.value ? Number(e.target.value) : "")}
+                                className="h-10 w-full rounded-md border border-tg bg-tg-card px-3 text-sm outline-none"
+                                disabled={loadingBanks}
+                                aria-label="Seleccione un banco"
+                                style={{ colorScheme: "dark" }}
+                            >
+                                <option value="" disabled>
+                                    Selecciona un banco
+                                </option>
+                                {banks.map((b) => (
+                                    <option key={b.id} value={b.id}>
+                                        {b.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
                 </div>
 
                 <div className="mt-5 flex items-center justify-end gap-2">
@@ -97,7 +148,7 @@ export default function CreateAssetModal({
                     <button
                         className="h-9 px-3 rounded bg-tg-primary text-tg-on-primary text-sm disabled:opacity-50"
                         onClick={submit}
-                        disabled={loading || !name || !value || !dateStr}
+                        disabled={!canSubmit}
                     >
                         Crear
                     </button>

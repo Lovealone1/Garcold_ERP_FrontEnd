@@ -13,7 +13,7 @@ type Props = {
     onSubmit: (payload: TransactionCreate) => Promise<void> | void;
 };
 
-const TYPE_MAP = { ingreso: 3, retiro: 4 } as const;
+const TYPE_MAP = { ingreso: 2, retiro: 4 } as const;
 type TypeKey = keyof typeof TYPE_MAP;
 
 export default function NewTransactionModal({ open, onClose, loading = false, onSubmit }: Props) {

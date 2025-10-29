@@ -1,5 +1,12 @@
 import salesApi from "../salesApi";
-import type { Loan, LoansPage, LoanCreate, LoanUpdateAmount } from "@/types/loan";
+import type { 
+  Loan, 
+  LoansPage, 
+  LoanCreate, 
+  LoanUpdateAmount,  
+  LoanApplyPaymentIn,
+  LoanApplyPaymentResult
+ } from "@/types/loan";
 
 export async function listLoans(page = 1, nocacheToken?: number): Promise<LoansPage> {
   const { data } = await salesApi.get("/loans/page", {
@@ -41,4 +48,9 @@ export async function updateLoanAmount(id: number, payload: LoanUpdateAmount): P
 export async function deleteLoan(id: number): Promise<{ message: string }> {
   const { data } = await salesApi.delete(`/loans/by-id/${id}`);
   return data as { message: string };
+}
+
+export async function applyLoanPayment(payload: LoanApplyPaymentIn): Promise<LoanApplyPaymentResult> {
+  const { data } = await salesApi.post("/loans/apply-payment", payload);
+  return data as LoanApplyPaymentResult; // Loan | { deleted: true; loan_id: number }
 }

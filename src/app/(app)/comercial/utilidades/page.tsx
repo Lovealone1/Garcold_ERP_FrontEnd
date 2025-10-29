@@ -66,11 +66,8 @@ export default function UtilidadesPage() {
                 const results = await Promise.allSettled(ids.map(id => getSaleById(id)));
                 results.forEach((res, idx) => {
                     const id = ids[idx];
-                    if (res.status === "fulfilled") {
-                        nextMap[id] = res.value?.customer ?? "";
-                    } else {
-                        nextMap[id] = "";
-                    }
+                    if (res.status === "fulfilled") nextMap[id] = res.value?.customer ?? "";
+                    else nextMap[id] = "";
                 });
                 if (cancelled) return;
                 setClienteByVenta(prev => ({ ...prev, ...nextMap }));
@@ -100,6 +97,12 @@ export default function UtilidadesPage() {
         };
         return all.filter(u => byVentaOrCliente(u) && byDate(u));
     }, [all, q, range, clienteByVenta]);
+
+    // total utilidades según filtros
+    const totalProfitFiltered = useMemo(
+        () => filtered.reduce((acc, u) => acc + (u.profit ?? 0), 0),
+        [filtered]
+    );
 
     useEffect(() => {
         setPage(1);
@@ -143,7 +146,23 @@ export default function UtilidadesPage() {
                 <div className="bg-[var(--page-bg)] rounded-xl h-full flex flex-col px-[var(--content-x)] pt-3 pb-5">
                     {/* Header + filtros */}
                     <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                        <h2 className="text-2xl font-semibold text-tg-fg">Utilidades</h2>
+                        <div className="flex items-center gap-3">
+                            <h2 className="text-2xl font-semibold text-tg-fg">Utilidades</h2>
+
+                            {/* Total utilidades basado en filtros */}
+                            {loading ? (
+                                <span className="h-7 w-40 rounded-full border border-tg bg-black/10 dark:bg-white/10 animate-pulse" />
+                            ) : (
+                                <span
+                                    className="inline-flex items-center gap-2 rounded-full border border-tg px-3 h-7
+                             bg-[color-mix(in_srgb,var(--panel-bg)_92%,transparent)] text-sm"
+                                    title="Total utilidades del listado actual"
+                                >
+                                    <span className="opacity-70">Total utilidades</span>
+                                    <span className="font-semibold text-tg">{money.format(totalProfitFiltered)}</span>
+                                </span>
+                            )}
+                        </div>
 
                         <div className="flex flex-wrap items-center gap-2">
                             {/* Buscar */}

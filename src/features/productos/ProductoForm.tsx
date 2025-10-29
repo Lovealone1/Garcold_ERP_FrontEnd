@@ -46,7 +46,7 @@ type Props = {
 type FormState = {
   reference: string;
   description: string;
-  quantity: number;           // stock
+  quantity: number | "";         // stock
   purchase_price: number | "";
   sale_price: number | "";
   is_active: boolean;
@@ -137,28 +137,39 @@ export default function ProductoForm(props: Props) {
 
   const setField =
     (k: keyof FormState) =>
-    (e: ChangeEvent<HTMLInputElement>) => {
-      if (k === "quantity") {
-        const raw = Number(e.target.value);
-        const n = Number.isFinite(raw) ? raw : 0;
-        const clamped = isAgregate && variant === "venta" ? Math.max(1, Math.min(n, Math.max(stock, 0))) : Math.max(0, n);
-        setForm((f) => ({ ...f, quantity: clamped }));
-        return;
-      }
-      const v = e.target.type === "number" ? Number(e.target.value) : e.target.value;
-      setForm((f) => ({ ...f, [k]: v as any }));
-    };
+      (e: ChangeEvent<HTMLInputElement>) => {
+        if (k === "quantity") {
+          const raw = e.target.value;                 // ← string
+          if (raw === "") {                           // permitir borrar
+            setForm((f) => ({ ...f, quantity: "" }));
+            return;
+          }
+          const n = Number(raw);
+          if (!Number.isFinite(n)) return;
+
+          // sin clamp agresivo aquí; deja escribir libre
+          const next =
+            isAgregate && variant === "venta"
+              ? Math.max(0, Math.min(n, Math.max(stock, 0))) // permite 0 mientras escribe
+              : Math.max(0, n);
+
+          setForm((f) => ({ ...f, quantity: next }));
+          return;
+        }
+        const v = e.target.type === "number" ? Number(e.target.value) : e.target.value;
+        setForm((f) => ({ ...f, [k]: v as any }));
+      };
 
   const onQtyBlur = (_e: FocusEvent<HTMLInputElement>) => {
-    if (!(isAgregate && variant === "venta")) return;
-    setForm((f) => {
-      const n = toNumber(f.quantity, 1);
+    if (form.quantity === "") return; // si quedó vacío, no forzar de inmediato
+    const n = toNumber(form.quantity, 0);
+    if (isAgregate && variant === "venta") {
       const clamped = Math.max(1, Math.min(n, Math.max(0, stock)));
-      return n === clamped ? f : { ...f, quantity: clamped };
-    });
+      setForm((f) => ({ ...f, quantity: clamped }));
+    } else {
+      setForm((f) => ({ ...f, quantity: Math.max(0, n) }));
+    }
   };
-
-  // errores
   const qty = toNumber(form.quantity, 0);
   const qtyExceeds = isAgregate && variant === "venta" && qty > stock;
   const noStock = isAgregate && variant === "venta" && stock <= 0;

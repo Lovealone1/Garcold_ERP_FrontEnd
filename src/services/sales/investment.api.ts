@@ -4,6 +4,10 @@ import type {
   InvestmentsPage,
   InvestmentCreate,
   InvestmentUpdateBalance,
+  InvestmentAddBalanceIn,
+  InvestmentWithdrawIn,
+  InvestmentWithdrawResult
+  
 } from "@/types/investment";
 
 export async function listInvestments(page = 1, nocacheToken?: number): Promise<InvestmentsPage> {
@@ -48,4 +52,14 @@ export async function updateInvestmentBalance(
 export async function deleteInvestment(id: number): Promise<{ message: string }> {
   const { data } = await salesApi.delete(`/investments/by-id/${id}`);
   return data as { message: string };
+}
+
+export async function addInvestmentBalance(payload: InvestmentAddBalanceIn): Promise<Investment> {
+  const { data } = await salesApi.post("/investments/balance/add", payload);
+  return data as Investment;
+}
+
+export async function withdrawInvestment(payload: InvestmentWithdrawIn): Promise<InvestmentWithdrawResult> {
+  const { data } = await salesApi.post("/investments/withdraw", payload);
+  return data as InvestmentWithdrawResult;
 }

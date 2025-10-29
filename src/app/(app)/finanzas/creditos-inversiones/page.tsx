@@ -1,3 +1,4 @@
+// pages/finanzas/LoansInvestmentsPage.tsx
 "use client";
 import { useMemo, useState, useCallback } from "react";
 import type { DateRange } from "react-day-picker";
@@ -10,9 +11,14 @@ import { useNotifications } from "@/components/providers/NotificationsProvider";
 import LoanCard from "@/features/finanzas/CreditoCard";
 import InvestmentCard from "@/features/finanzas/InversionCard";
 import CreateAssetModal from "@/features/finanzas/CreateAssetModal";
+import InvestmentAddBalanceModal from "@/features/finanzas/InvestmentAddBalanceModal";
+import InvestmentWithdrawModal from "@/features/finanzas/InvestmentWithdrawModal";
+import ApplyLoanPaymentModal from "@/features/finanzas/ApplyLoanPaymentModal"; // ← nuevo
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import CloseIcon from "@mui/icons-material/Close";
+import type { Investment } from "@/types/investment";
+import type { Loan } from "@/types/loan";
 
 function inRange(d: string, range?: DateRange) {
     if (!range?.from || !range?.to) return true;
@@ -70,7 +76,7 @@ export default function LoansInvestmentsPage() {
         </button>
     );
 
-    // ====== Confirmación de borrado ======
+    // confirmación borrar
     const [confirmKind, setConfirmKind] = useState<null | "loan" | "investment">(null);
     const openConfirmLoan = () => setConfirmKind("loan");
     const openConfirmInv = () => setConfirmKind("investment");
@@ -83,17 +89,13 @@ export default function LoansInvestmentsPage() {
         try {
             if (confirmKind === "loan") {
                 let ok = 0, fail = 0;
-                for (const id of selLoan) {
-                    try { await deleteLoan(id); ok++; } catch { fail++; }
-                }
+                for (const id of selLoan) { try { await deleteLoan(id); ok++; } catch { fail++; } }
                 closeConfirm();
                 if (ok) success(`Se eliminaron ${ok} crédito(s)`);
                 if (fail) error(`No se pudieron eliminar ${fail} crédito(s)`);
             } else if (confirmKind === "investment") {
                 let ok = 0, fail = 0;
-                for (const id of selInv) {
-                    try { await deleteInvestment(id); ok++; } catch { fail++; }
-                }
+                for (const id of selInv) { try { await deleteInvestment(id); ok++; } catch { fail++; } }
                 closeConfirm();
                 if (ok) success(`Se eliminaron ${ok} inversión(es)`);
                 if (fail) error(`No se pudieron eliminar ${fail} inversión(es)`);
@@ -104,6 +106,26 @@ export default function LoansInvestmentsPage() {
         }
     }
 
+    // modales inversión
+    const [openAddInv, setOpenAddInv] = useState<Investment | null>(null);
+    const [openWithdrawInv, setOpenWithdrawInv] = useState<Investment | null>(null);
+
+    const firstSelectedInv: Investment | null = useMemo(() => {
+        const id = selInv.values().next().value as number | undefined;
+        if (!id) return null;
+        return invItems.find((x) => x.id === id) ?? null;
+    }, [selInv, invItems]);
+
+    // modal de pago crédito abajo
+    const [openPayLoan, setOpenPayLoan] = useState<Loan | null>(null);
+    const [amountLoanPay, setAmountLoanPay] = useState<number>(0);
+
+    const firstSelectedLoan: Loan | null = useMemo(() => {
+        const id = selLoan.values().next().value as number | undefined;
+        if (!id) return null;
+        return loanItems.find((x) => x.id === id) ?? null;
+    }, [selLoan, loanItems]);
+
     return (
         <div className="p-4">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -112,17 +134,7 @@ export default function LoansInvestmentsPage() {
                     <div className="flex items-center justify-between gap-3">
                         <h2 className="text-xl font-semibold">Créditos</h2>
                         <div className="flex items-center gap-3">
-                            {selLoan.size > 0 && (
-                                <button
-                                    className="h-10 px-3 rounded-md border border-red-500 text-red-500 text-sm disabled:opacity-50"
-                                    onClick={openConfirmLoan}
-                                    disabled={delLoanLoading}
-                                >
-                                    Eliminar ({selLoan.size})
-                                </button>
-                            )}
-
-                            {/* DateRange + Clear to the side */}
+                            {/* botón superior de eliminar removido para créditos */}
                             <div className="flex items-center">
                                 <DateRangeInput value={rangeLoan} onChange={setRangeLoan} />
                                 {(rangeLoan?.from || rangeLoan?.to) && <ClearBtn onClick={() => setRangeLoan(undefined)} />}
@@ -176,13 +188,38 @@ export default function LoansInvestmentsPage() {
                         ))}
                     </div>
 
+                    {/* Acciones inferiores para créditos */}
+                    {selLoan.size > 0 && (
+                        <div className="mt-3 flex flex-wrap items-center gap-2 p-2">
+                            {selLoan.size === 1 && (
+                                <button
+                                    type="button"
+                                    className="h-9 rounded-md px-3 text-sm font-medium bg-[var(--tg-primary)] text-[var(--tg-on-primary)] shadow-sm hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--tg-primary)40%,transparent)]"
+                                    onClick={() => { if (firstSelectedLoan) setOpenPayLoan(firstSelectedLoan); }}
+                                >
+                                    Pagar
+                                </button>
+                            )}
+
+                            <button
+                                type="button"
+                                className="h-9 px-3 rounded-md text-sm font-medium
+      text-red-500 bg-red-500/10 hover:bg-red-500/15 active:bg-red-500/20
+      transition-colors focus:outline-none focus:ring-2 focus:ring-red-500/30"
+                                onClick={openConfirmLoan}
+                                disabled={delLoanLoading}
+                            >
+                                Eliminar ({selLoan.size})
+                            </button>
+                        </div>
+                    )}
+
                     {!loadingLoan && loanShown.length === 0 && (
                         <div className="text-sm text-tg-muted border border-tg rounded-md p-4">
                             Sin resultados en el rango seleccionado.
                         </div>
                     )}
 
-                    {/* Footer compacto en móviles */}
                     <div className="flex sm:hidden items-center justify-between pt-2">
                         <span className="text-sm">
                             Total: <span className="font-semibold">{money.format(totalLoans)}</span>
@@ -200,17 +237,6 @@ export default function LoansInvestmentsPage() {
                     <div className="flex items-center justify-between gap-3">
                         <h2 className="text-xl font-semibold">Inversiones</h2>
                         <div className="flex items-center gap-3">
-                            {selInv.size > 0 && (
-                                <button
-                                    className="h-10 px-3 rounded-md border border-red-500 text-red-500 text-sm disabled:opacity-50"
-                                    onClick={openConfirmInv}
-                                    disabled={delInvLoading}
-                                >
-                                    Borrar ({selInv.size})
-                                </button>
-                            )}
-
-                            {/* DateRange + Clear to the side */}
                             <div className="flex items-center">
                                 <DateRangeInput value={rangeInv} onChange={setRangeInv} />
                                 {(rangeInv?.from || rangeInv?.to) && <ClearBtn onClick={() => setRangeInv(undefined)} />}
@@ -264,6 +290,42 @@ export default function LoansInvestmentsPage() {
                         ))}
                     </div>
 
+                    {selInv.size > 0 && (
+                        <div className="mt-3 flex flex-wrap items-center gap-2 p-2">
+                            {selInv.size === 1 && (
+                                <>
+                                    <button
+                                        type="button"
+                                        className="h-9 rounded-md px-3 text-sm font-medium bg-[var(--tg-primary)] text-[var(--tg-on-primary)] shadow-sm hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--tg-primary)40%,transparent)]"
+                                        onClick={() => firstSelectedInv && setOpenAddInv(firstSelectedInv)}
+                                    >
+                                        Agregar saldo
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        className="h-9 rounded-md px-3 text-sm font-medium text-white bg-[color-mix(in_srgb,var(--tg-fg)12%,transparent)] hover:bg-[color-mix(in_srgb,var(--tg-fg)18%,transparent)] focus:outline-none"
+                                        onClick={() => firstSelectedInv && setOpenWithdrawInv(firstSelectedInv)}
+                                    >
+                                        Retirar
+                                    </button>
+                                </>
+                            )}
+
+                            <button
+                                type="button"
+                                className="h-9 px-3 rounded-md text-sm font-medium
+                text-red-500 bg-red-500/10
+                hover:bg-red-500/15 active:bg-red-500/20
+                transition-colors focus:outline-none focus:ring-2 focus:ring-red-500/30"
+                                onClick={openConfirmInv}
+                                disabled={delInvLoading}
+                            >
+                                Eliminar ({selInv.size})
+                            </button>
+                        </div>
+                    )}
+
                     {!loadingInv && invShown.length === 0 && (
                         <div className="text-sm text-tg-muted border border-tg rounded-md p-4">
                             Sin resultados en el rango seleccionado.
@@ -290,7 +352,41 @@ export default function LoansInvestmentsPage() {
                 onCreated={onCreated}
             />
 
-            {/* Modal Confirmación Borrado */}
+            {/* modales inversión */}
+            <InvestmentAddBalanceModal
+                open={!!openAddInv}
+                investment={openAddInv}
+                onClose={() => setOpenAddInv(null)}
+                onDone={() => {
+                    setSelInv(new Set());
+                    refreshInv(true);
+                }}
+            />
+            <InvestmentWithdrawModal
+                open={!!openWithdrawInv}
+                investment={openWithdrawInv}
+                onClose={() => setOpenWithdrawInv(null)}
+                onDone={() => {
+                    setSelInv(new Set());
+                    refreshInv(true);
+                }}
+            />
+
+            {/* modal pago crédito */}
+            {openPayLoan && (
+                <ApplyLoanPaymentModal
+                    open
+                    onClose={() => setOpenPayLoan(null)}
+                    loan={openPayLoan}
+                    onDone={() => {
+                        setSelLoan(new Set());
+                        refreshLoan(true);
+                        success("Pago aplicado");
+                    }}
+                />
+            )}
+
+            {/* confirmación eliminar */}
             {confirmKind && (
                 <div
                     role="dialog"

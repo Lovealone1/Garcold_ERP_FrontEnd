@@ -23,3 +23,12 @@ export type LoanCreate = {
 export type LoanUpdate = Omit<Loan, "id" | "created_at">;
 
 export type LoanUpdateAmount = { amount: number };
+
+export type LoanApplyPaymentIn = {
+  loan_id: number;   
+  amount: number;    
+  bank_id: number;   
+  description?: string | null;
+};
+
+export type LoanApplyPaymentResult = Loan | { deleted: true; loan_id: number };

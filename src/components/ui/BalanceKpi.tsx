@@ -1,7 +1,7 @@
 // components/ui/BalanceKpi.tsx
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
     Wallet as WalletLucide, CreditCard, PiggyBank, Banknote, Coins, DollarSign,
 } from "lucide-react";
@@ -16,22 +16,33 @@ const money = new Intl.NumberFormat("es-CO", {
     maximumFractionDigits: 0,
 });
 
+const LS_KEY = "tg-hide-balance";
+
 export default function BalanceKpi({ banks, total }: Props) {
     const [selected, setSelected] = useState<number | null>(null);
+    const [hidden, setHidden] = useState<boolean>(() => {
+        if (typeof window === "undefined") return false;
+        return window.localStorage.getItem(LS_KEY) === "1";
+    });
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            window.localStorage.setItem(LS_KEY, hidden ? "1" : "0");
+        }
+    }, [hidden]);
 
     const items = useMemo(() => {
-        const arr = [...(banks ?? [])].filter((b) => (b.saldo ?? 0) > 0);
+        const arr = [...(banks ?? [])].filter(b => (b.saldo ?? 0) > 0);
         arr.sort((a, b) => b.saldo - a.saldo);
         return arr;
     }, [banks]);
 
     const icons = [WalletLucide, CreditCard, PiggyBank, Banknote, Coins, DollarSign];
 
-    // escala de verdes con contraste
     const colorAt = (i: number, n: number) => {
         const t = n <= 1 ? 0 : i / (n - 1);
-        const whitePct = Math.round(10 + 60 * (1 - t)); // 70..10
-        const blackPct = Math.round(10 + 60 * t);       // 10..70
+        const whitePct = Math.round(10 + 60 * (1 - t));
+        const blackPct = Math.round(10 + 60 * t);
         return i % 2 === 0
             ? `color-mix(in srgb, #16a34a ${100 - whitePct}%, white ${whitePct}%)`
             : `color-mix(in srgb, #16a34a ${100 - blackPct}%, black ${blackPct}%)`;
@@ -50,11 +61,19 @@ export default function BalanceKpi({ banks, total }: Props) {
             ? withPct
             : [{ ...withPct[selected], pct: 100 }];
 
-    const toggle = (idx: number) => setSelected((s) => (s === idx ? null : idx));
+    const toggle = (idx: number) => setSelected(s => (s === idx ? null : idx));
+    const toggleHidden = () => setHidden(h => !h);
+
+    const fmt = (v: number) => money.format(v || 0);
+    const mask = (v: number) => {
+        const len = fmt(v).replace(/\s/g, "").length;
+        const n = Math.max(6, Math.min(12, len));
+        return "•".repeat(n);
+    };
 
     return (
         <div className="rounded-xl border border-tg bg-[var(--panel-bg)] p-4 sm:p-5 min-h-[120px]">
-            {/* Header igual a KpiCard: icono en círculo + título */}
+            {/* Header: icono + título + ojo a la derecha */}
             <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2">
                     <span
@@ -66,7 +85,7 @@ export default function BalanceKpi({ banks, total }: Props) {
                         aria-hidden
                     >
                         <MaterialIcon
-                            name="account_balance_wallet" // mismo estilo que KpiCard
+                            name="account_balance_wallet"
                             set="rounded"
                             size={18}
                             fill={0}
@@ -80,13 +99,30 @@ export default function BalanceKpi({ banks, total }: Props) {
                     </h3>
                 </div>
 
-                {/* placeholder para futura trend/pill (coherente con KpiCard) */}
-                <div className="h-6 min-w-[90px]" />
+                {/* Botón de visibilidad en el header derecho */}
+                <button
+                    type="button"
+                    onClick={toggleHidden}
+                    className="flex h-7 w-7 items-center justify-center rounded-md hover:bg-[var(--tg-hover)]"
+                    title={hidden ? "Mostrar saldo" : "Ocultar saldo"}
+                    aria-pressed={hidden}
+                    aria-label={hidden ? "Mostrar saldo" : "Ocultar saldo"}
+                >
+                    <MaterialIcon
+                        name={hidden ? "visibility_off" : "visibility"}
+                        set="rounded"
+                        size={20}
+                        fill={0}
+                        weight={500}
+                        grade={0}
+                        className="text-[var(--tg-primary)]"
+                    />
+                </button>
             </div>
 
-            {/* Valor con exactamente la misma tipografía que KpiCard */}
+            {/* Valor principal */}
             <div className="mt-2 text-3xl sm:text-4xl font-extrabold tracking-tight">
-                {money.format(displayTotal || 0)}
+                {hidden ? mask(displayTotal) : fmt(displayTotal)}
             </div>
 
             {/* Barra porcentual */}
@@ -97,22 +133,24 @@ export default function BalanceKpi({ banks, total }: Props) {
                             key={i}
                             className="group relative h-full transition-[width] duration-300"
                             style={{ width: `${b.pct}%`, background: b.color }}
-                            title={`${b.nombre}: ${money.format(b.saldo)}`}
+                            title={hidden ? `${b.nombre}` : `${b.nombre}: ${fmt(b.saldo)}`}
                         >
-                            <div
-                                className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap
-                  rounded border border-tg bg-[var(--panel-bg)] px-2 py-0.5 text-[10px]
-                  opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                                <strong>{money.format(b.saldo)}</strong>{" "}
-                                · {((b.saldo / (total || 1)) * 100).toFixed(1)}%
-                            </div>
+                            {!hidden && (
+                                <div
+                                    className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap
+                             rounded border border-tg bg-[var(--panel-bg)] px-2 py-0.5 text-[10px]
+                             opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                    <strong>{fmt(b.saldo)}</strong>{" "}
+                                    · {((b.saldo / (total || 1)) * 100).toFixed(1)}%
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>
             </div>
 
-            {/* Leyendas (máx 6), con dot y un icono por banco; clic para aislar */}
+            {/* Leyendas */}
             <div className="mt-3 flex flex-wrap items-center gap-4">
                 {withPct.slice(0, 6).map((b, i) => {
                     const Icon = icons[i % icons.length];

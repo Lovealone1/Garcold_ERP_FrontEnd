@@ -38,14 +38,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     document.documentElement.classList.toggle("dark", next);
   };
 
-  // animación de ancho
   useEffect(() => {
     setAnimating(true);
     const id = setTimeout(() => setAnimating(false), TRANS_MS);
     return () => clearTimeout(id);
   }, [expanded]);
 
-  // bloquear overflow-x del viewport durante animación
   useEffect(() => {
     if (!animating) return;
     const htmlPrev = document.documentElement.style.overflowX;
@@ -58,13 +56,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     };
   }, [animating]);
 
-  // Exponer blur al resto del app (solo desktop, cuando terminó la animación)
   useEffect(() => {
     const enable = !isOpen && expanded && !animating;
     document.documentElement.style.setProperty("--app-blur", enable ? "6px" : "0px");
-    return () => {
-      document.documentElement.style.removeProperty("--app-blur"); // ← devuelve void
-    };
+    return () => { document.documentElement.style.removeProperty("--app-blur"); };
   }, [isOpen, expanded, animating]);
 
   return (
@@ -117,9 +112,34 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         </div>
       </aside>
 
+      {/* Normaliza filas e íconos sin tocar NavCollapsed/NavExpanded */}
       <style jsx global>{`
         [data-silent-scroll]{ scrollbar-width:none; -ms-overflow-style:none; }
         [data-silent-scroll]::-webkit-scrollbar{ width:0; height:0; display:none; }
+
+        /* Cada fila de nav como target táctil */
+        [data-role="app-sidebar"] a,
+        [data-role="app-sidebar"] button {
+          min-height: 44px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        /* Primer hijo como contenedor del icono, cuadrado y centrado */
+        [data-role="app-sidebar"] a > :first-child,
+        [data-role="app-sidebar"] button > :first-child {
+          width: 24px;
+          height: 24px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        /* Tamaño visual constante del ícono */
+        [data-role="app-sidebar"] .material-icons { font-size: 22px; line-height: 1; }
+        [data-role="app-sidebar"] svg { width: 22px; height: 22px; display: block; }
       `}</style>
     </>
   );

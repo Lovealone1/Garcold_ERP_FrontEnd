@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
     IconButton, Menu, MenuItem, Checkbox, ListItemIcon, ListItemText,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import AddIcon from "@mui/icons-material/Add";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import type { Bank } from "@/types/bank";
 import { useBancos } from "@/hooks/bancos/useBancos";
 import { useDeleteBanco } from "@/hooks/bancos/useDeleteBanco";
@@ -15,6 +16,7 @@ import SaldoForm from "@/features/bancos/SaldoForm";
 import BankCreateForm from "@/features/bancos/BankCreateForm";
 
 const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
+const LS_KEY = "tg-hide-balance";
 
 export default function BancosPage() {
     const { items, loading, reload } = useBancos();
@@ -23,6 +25,22 @@ export default function BancosPage() {
 
     const [visibleIds, setVisibleIds] = useState<number[]>([]);
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+
+    const [hideMoney, setHideMoney] = useState<boolean>(() => {
+        if (typeof window === "undefined") return false;
+        return window.localStorage.getItem(LS_KEY) === "1";
+    });
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            window.localStorage.setItem(LS_KEY, hideMoney ? "1" : "0");
+        }
+    }, [hideMoney]);
+
+    const mask = (v: number) => {
+        const len = money.format(v || 0).replace(/\s/g, "").length;
+        const n = Math.max(6, Math.min(12, len));
+        return "•".repeat(n); // o "*".repeat(n)
+    };
 
     // ↓ Solo bancos con saldo > 0 en la vista inicial (máx. 6)
     const defaultFirst6 = useMemo(
@@ -94,6 +112,8 @@ export default function BancosPage() {
         });
     }
 
+    const fmtOrMask = (v: number) => hideMoney ? mask(v) : money.format(v ?? 0);
+
     // ---- crear banco (modal) ----
     const [openCreate, setOpenCreate] = useState(false);
 
@@ -102,14 +122,33 @@ export default function BancosPage() {
             <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div className="flex items-center gap-4">
                     <h1 className="text-4xl font-extrabold text-tg-fg">Bancos</h1>
-                    <div
-                        className="rounded-xl border px-4 py-2 min-w-[200px]"
-                        style={{ borderColor: "var(--tg-border)", background: "var(--tg-card-bg)" }}
-                        aria-label="total-visible"
-                    >
-                        <span className="text-2xl md:text-3xl font-extrabold tracking-tight">
-                            {money.format(totalVisible)}
-                        </span>
+
+                    <div className="flex items-center gap-2">
+                        <div
+                            className="rounded-xl border px-4 py-2 min-w-[200px]"
+                            style={{ borderColor: "var(--tg-border)", background: "var(--tg-card-bg)" }}
+                            aria-label="total-visible"
+                        >
+                            <span className="text-2xl md:text-3xl font-extrabold tracking-tight">
+                                {fmtOrMask(totalVisible)}
+                            </span>
+                        </div>
+
+                        <IconButton
+                            size="small"
+                            onClick={() => setHideMoney(v => !v)}
+                            title={hideMoney ? "Mostrar todos los saldos" : "Ocultar todos los saldos"}
+                            aria-pressed={hideMoney}
+                            sx={{
+                                color: "var(--tg-primary)",
+                                border: "1px solid var(--tg-border)",
+                                bgcolor: "var(--tg-card-bg)",
+                                "&:hover": { bgcolor: "color-mix(in srgb, var(--tg-primary) 10%, var(--tg-card-bg))" },
+                                width: 36, height: 36, borderRadius: 8,
+                            }}
+                        >
+                            {hideMoney ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
+                        </IconButton>
                     </div>
                 </div>
 
@@ -200,22 +239,18 @@ export default function BancosPage() {
                                 onClick={() => toggleCardSelect(b.id)}
                                 onKeyDown={(e) => e.key === "Enter" && toggleCardSelect(b.id)}
                                 className={`rounded-xl border p-5 relative outline-none transition-colors ${isSelected
-                                        ? "border-[var(--tg-primary)] ring-2 ring-[var(--tg-primary)] bg-[color-mix(in_srgb,var(--tg-primary)10%,var(--tg-card-bg))]"
-                                        : "border-tg bg-[var(--tg-card-bg)] hover:border-[var(--tg-primary)]"
+                                    ? "border-[var(--tg-primary)] ring-2 ring-[var(--tg-primary)] bg-[color-mix(in_srgb,var(--tg-primary)10%,var(--tg-card-bg))]"
+                                    : "border-tg bg-[var(--tg-card-bg)] hover:border-[var(--tg-primary)]"
                                     }`}
                             >
-                                <div className="absolute right-2 top-2">
-                                    <IconButton size="small" sx={{ color: "var(--tg-muted)" }} onClick={(e) => e.stopPropagation()}>
-                                        <InfoOutlinedIcon fontSize="small" />
-                                    </IconButton>
-                                </div>
+                                {/* Eliminado el icono de info */}
 
                                 <h3 className="text-lg font-semibold" style={{ color: "var(--tg-primary)" }}>
                                     {b.name}
                                 </h3>
 
                                 <div className="mt-2 text-4xl lg:text-5xl font-extrabold tracking-tight">
-                                    {money.format(b.balance ?? 0)}
+                                    {fmtOrMask(b.balance ?? 0)}
                                 </div>
 
                                 <div className="mt-2 text-xs text-tg-muted">

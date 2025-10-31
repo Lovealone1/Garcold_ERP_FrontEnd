@@ -1,4 +1,3 @@
-// src/hooks/facturas/useFactura.ts
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import type { SaleInvoiceDTO } from "@/types/sale-invoice";

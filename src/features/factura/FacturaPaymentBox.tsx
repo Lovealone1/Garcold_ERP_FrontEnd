@@ -34,7 +34,6 @@ export default function FacturaPaymentBox({ data, className }: Props) {
                             <span className="text-[#6b7280]">Nro. de cuenta:&nbsp;</span>
                             <span className="text-[#111827] font-medium">{nroCuenta}</span>
                         </div>
-
                         {data.remaining_balance > 0 && (
                             <div>
                                 <span className="text-[#6b7280]">Saldo restante:&nbsp;</span>
@@ -46,11 +45,21 @@ export default function FacturaPaymentBox({ data, className }: Props) {
                     </div>
                 </div>
 
-                <div className="ml-auto -mr-3 flex-shrink-0">
-                    <div className="inline-flex items-baseline bg-[#718093] px-4 py-1 text-white rounded-sm">
-                        <span className="uppercase text-[14px] font-medium">Total:&nbsp;</span>
-                        <span className="text-[18px] font-bold">{money.format(data.total)}</span>
-                    </div>
+                {/* Badge centrado y compatible con impresión */}
+                <div
+                    className="
+                    inline-flex items-center justify-center gap-2 px-4 py-1 rounded-sm
+                    bg-[#718093] text-white
+                    print:bg-transparent print:text-[#111827]
+                    print:border print:border-[#718093]
+                    pb-5
+                "
+                    style={{ minWidth: 180 }}
+                >
+                    <span className="uppercase text-[14px] font-medium text-center pt-2">Total:</span>
+                    <span className="text-[18px] font-bold text-center">
+                        {money.format(data.total)}
+                    </span>
                 </div>
             </div>
 

@@ -1,120 +1,57 @@
-/* ====== KNOBS (ajusta aquí) ====== */
-:root {
-    /* Márgenes reales del PDF (de @page) */
-    --pg-top: 0mm;
-    --pg-right: 10mm;
-    --pg-bottom: 10mm;
-    --pg-left: 0mm;
-
-    /* Ancho del contenido (factura) */
-    --content-width: 217mm;
-    /* prueba 186–192mm */
-
-    /* Empujes finos dentro del área imprimible */
-    --nudge-x: 0mm;
-    /* + mueve a la derecha, - a la izquierda */
-    --nudge-y: 0mm;
-    /* + baja, - sube */
-}
-
-/* ====== PANTALLA ====== */
-.print-wrap {
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    padding-right: 30px;
-}
-
-.print-sheet {
-    width: var(--content-width);
-    min-height: 297mm;
-    background: #fff;
-}
-
-/* Oculta shell */
-#app-shell,
-nav,
-aside,
-.sidebar {
-    display: none !important;
-}
-
-/* ====== IMPRESIÓN ====== */
-@page {
-    size: A4;
-    margin: var(--pg-top) var(--pg-right) var(--pg-bottom) var(--pg-left);
-}
-
+/* ===== FIX específico para items de factura ===== */
 @media print {
 
-    html,
-    body {
-        height: auto;
+    /* Neutraliza transformaciones y tracking heredados */
+    #invoice-root,
+    #invoice-root * {
+        text-transform: none !important;
+        letter-spacing: 0 !important;
+        word-spacing: normal !important;
+        font-kerning: normal !important;
+        font-variant-ligatures: normal !important;
+        text-rendering: geometricPrecision !important;
+        /* Evita problemas con Inter variable en PDF */
+        font-family: Arial, "Helvetica Neue", Helvetica, system-ui, sans-serif !important;
     }
 
-    body {
-        margin: 0 !important;
-        background: #fff !important;
+    /* Grilla estable en mm para las filas de items */
+    #invoice-root .row {
+        display: grid !important;
+        grid-template-columns: 30mm 1fr 18mm 26mm 26mm !important;
+        column-gap: 3mm !important;
+        align-items: center !important;
     }
 
-    .print-wrap {
-        min-height: auto;
-        background: transparent !important;
+    /* Celdas: truncado correcto sin cortar glifos */
+    #invoice-root .cell {
+        min-width: 0 !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
     }
 
-    /* Centrado + offsets manuales (sin transforms) */
-    .print-sheet {
-        width: var(--content-width) !important;
-        min-height: auto !important;
-        /* centra dentro del área imprimible y permite nudge */
-        margin-top: var(--nudge-y) !important;
-        margin-right: auto !important;
-        margin-bottom: 0 !important;
-        margin-left: calc(((210mm - var(--pg-left) - var(--pg-right) - var(--content-width)) / 2) + var(--nudge-x)) !important;
-
-        padding: 0 !important;
-        box-shadow: none !important;
-        background: #fff !important;
+    /* Montos alineados: símbolo + número */
+    #invoice-root .money {
+        display: inline-grid !important;
+        grid-template-columns: 1ch auto !important;
+        column-gap: 6px !important;
+        font-variant-numeric: tabular-nums !important;
+        justify-self: end !important;
     }
 
-    * {
-        transform: none !important;
-        filter: none !important;
+    #invoice-root .sym {
+        justify-self: end !important;
     }
 
-    img,
-    svg,
-    canvas {
-        max-width: 100%;
+    #invoice-root .num {
+        text-align: right !important;
     }
 
-    table,
-    thead,
-    tbody,
-    tr,
-    td,
-    th {
-        break-inside: avoid;
-        page-break-inside: avoid;
+    /* Asegura color de header si usas divs, no tablas */
+    #invoice-root .head {
+        background: #718093 !important;
+        color: #fff !important;
     }
 
-    .print-sheet> :first-child {
-        break-before: auto !important;
-        page-break-before: auto !important;
-        margin-block-start: 0 !important;
-        /* evita colapso que empuja a página nueva */
-    }
-
-    /* 2) Nunca rompas después del último bloque */
-    .print-sheet> :last-child {
-        break-after: auto !important;
-        page-break-after: auto !important;
-        margin-block-end: 0 !important;
-    }
-
-    /* 3) Mantén juntos los dos últimos (totales + mensaje) */
-    .print-sheet> :nth-last-child(-n + 2) {
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-    }
-}
+    
+}   

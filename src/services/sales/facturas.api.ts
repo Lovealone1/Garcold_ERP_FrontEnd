@@ -8,6 +8,12 @@ const HAS_PREFIX_IN_BASE = BASE.endsWith(API_PREFIX);
 const prefix = HAS_PREFIX_IN_BASE ? "" : API_PREFIX;
 const norm = (path: string) => `${prefix}${path.startsWith("/") ? path : `/${path}`}`;
 
+export type FacturaPreviewOpts = {
+  companyId?: number;
+  nocacheToken?: number;
+  download?: 0 | 1; // ← nuevo
+};
+
 // Util: origen seguro en browser o SSR
 function getOrigin(): string {
     if (typeof window !== "undefined" && window.location?.origin) return window.location.origin;
@@ -81,15 +87,14 @@ export function buildFacturaPdfUrl(
 }
 
 export function buildFacturaPreviewUrl(
-    ventaId: number,
-    opts?: { companyId?: number; nocacheToken?: number }
+  id: number,
+  opts: FacturaPreviewOpts = {}
 ): string {
-    const u = new URL(`/comercial/ventas/facturas/${ventaId}`, getOrigin() || undefined);
-    u.searchParams.set("print", "1");
-    u.searchParams.set("embed", "1");
-    if (opts?.companyId) u.searchParams.set("company_id", String(opts.companyId));
-    u.searchParams.set("_ts", String(opts?.nocacheToken ?? Date.now()));
-    return u.toString();
+  const qs = new URLSearchParams();
+  if (opts.companyId) qs.set("company_id", String(opts.companyId));
+  if (opts.nocacheToken) qs.set("_ts", String(opts.nocacheToken));
+  if (opts.download) qs.set("download", "1"); // ← aplica si se pide
+  return `/comercial/ventas/facturas/${id}?${qs.toString()}`;
 }
 
 export async function facturaDesdeVenta(

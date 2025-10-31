@@ -56,7 +56,7 @@ export default function FacturaPaymentBox({ data, className }: Props) {
                 "
                     style={{ minWidth: 180 }}
                 >
-                    <span className="uppercase text-[14px] font-medium text-center pt-2">Total:</span>
+                    <span className="uppercase text-[14px] font-medium text-center pt-1">Total:</span>
                     <span className="text-[18px] font-bold text-center">
                         {money.format(data.total)}
                     </span>

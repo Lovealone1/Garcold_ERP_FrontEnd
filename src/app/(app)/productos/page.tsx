@@ -1,17 +1,20 @@
 "use client";
 
-import { useMemo, useState, CSSProperties } from "react";
+import { useMemo, useState, useEffect, CSSProperties } from "react";
 import { MaterialIcon } from "@/components/ui/material-icon";
 import ProductoForm from "@/features/productos/ProductoForm";
 import ProductoView from "@/features/productos/ProductoView";
 import ProductImagesModal from "@/features/productos/ProductImagesModal";
 import { useProductos } from "@/hooks/productos/useProductos";
 import { useProducto } from "@/hooks/productos/useProducto";
-import { createProduct, updateProduct, deleteProduct, toggleProductActive } from "@/services/sales/product.api";
+import {
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  toggleProductActive,
+} from "@/services/sales/product.api";
 import type { ProductDTO, ProductCreate, ProductUpdate } from "@/types/product";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
-
-// IO
 import { useImport } from "@/hooks/io/useImport";
 import { useExport } from "@/hooks/io/useExport";
 import ImportDialog from "@/features/io/ImportDialog";
@@ -19,47 +22,199 @@ import ExportDialog from "@/features/io/ExportDialog";
 
 const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 
+/* Grid desktop (header y filas) */
+const GRID_COLS = "30px 156px 1fr 112px 142px 142px 208px";
+const HEADER_COLS = "65px 135px 1fr 110px 152px 132px 192px 18px";
+/* Colores */
+const FRAME_BG = "color-mix(in srgb, var(--tg-bg) 90%, #fff 3%)";
+const OUTER_BG = "color-mix(in srgb, var(--tg-bg) 55%, #000 45%)";
+const INNER_BG = "color-mix(in srgb, var(--tg-bg) 95%, #fff 2%)";
+const PILL_BG = "color-mix(in srgb, var(--tg-card-bg) 60%, #000 40%)";
+const ACTION_BG = "color-mix(in srgb, var(--tg-primary) 28%, transparent)";
+
+/* Tamaños compactos */
+const pill =
+  "min-w-[90px] h-8 px-2.5 rounded-md grid place-items-center text-[13px] text-white/90 border border-[var(--tg-border)]";
+const actionBtn =
+  "h-8 w-8 grid place-items-center rounded-full text-[var(--tg-primary)] hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary";
+
+/* Hooks */
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mql = window.matchMedia("(max-width: 639px)");
+    const handler = (e: MediaQueryListEvent | MediaQueryList) =>
+      setIsMobile("matches" in e ? e.matches : (e as MediaQueryList).matches);
+    handler(mql);
+    mql.addEventListener?.("change", handler as any);
+    return () => mql.removeEventListener?.("change", handler as any);
+  }, []);
+  return isMobile;
+}
+
+/* UI */
+function Dot({ active }: { active: boolean }) {
+  return <span className="inline-block h-3 w-3 rounded-full" style={{ backgroundColor: active ? "var(--tg-primary)" : "#d33" }} />;
+}
+
+/* Header desktop */
+function HeaderRow() {
+  return (
+    <div className="hidden sm:grid items-center gap-3 mb-2 font-extrabold mx-2" style={{ gridTemplateColumns: HEADER_COLS }}>
+      <span />
+      <span className="text-white">Referencia</span>
+      <span className="text-white">Descripción</span>
+      <span className="text-white text-center">Stock</span>
+      <span className="text-white text-center">Precio compra</span>
+      <span className="text-white text-center">Precio venta</span>
+      <span className="text-white text-center">Acciones</span>
+    </div>
+  );
+}
+
+/* Fila */
+function ProductRow({
+  p,
+  onView,
+  onEdit,
+  onImages,
+  onToggle,
+  onDelete,
+}: {
+  p: ProductDTO;
+  onView: (id: number) => void;
+  onEdit: (id: number) => void;
+  onImages: (id: number) => void;
+  onToggle: (id: number, current: boolean) => void;
+  onDelete: (id: number) => void;
+}) {
+  return (
+    <div className="relative rounded-xl border shadow-sm" style={{ background: OUTER_BG, borderColor: "var(--tg-border)" }}>
+      {/* Desktop compacto, más ancho: mx-1.5 y contenedor padre con px-3 */}
+      <div className="hidden sm:block mx-1.5 my-2 rounded-md px-3 py-2.5" style={{ background: INNER_BG }}>
+        <div className="grid items-center gap-3" style={{ gridTemplateColumns: GRID_COLS }}>
+          <div className="grid place-items-center"><Dot active={!!p.is_active} /></div>
+
+          <div className={`${pill} font-extrabold tracking-wide`} style={{ background: PILL_BG }}>{p.reference}</div>
+
+          <div className="text-[13px] text-white/90 truncate">{p.description}</div>
+
+          <div className={pill} style={{ background: PILL_BG }}>{p.quantity ?? 0}</div>
+          <div className={pill} style={{ background: PILL_BG }}>{money.format(p.purchase_price)}</div>
+          <div className={pill} style={{ background: PILL_BG }}>{money.format(p.sale_price)}</div>
+
+          <div className="flex items-center justify-end gap-2">
+            <button className={actionBtn} style={{ background: ACTION_BG }} aria-label="ver" onClick={() => onView(p.id)}>
+              <MaterialIcon name="visibility" size={18} />
+            </button>
+            <button className={actionBtn} style={{ background: ACTION_BG }} aria-label="editar" onClick={() => onEdit(p.id)}>
+              <MaterialIcon name="edit" size={18} />
+            </button>
+            <button className={actionBtn} style={{ background: ACTION_BG }} aria-label="imágenes" onClick={() => onImages(p.id)}>
+              <MaterialIcon name="photo_camera" size={18} />
+            </button>
+            <button className={actionBtn} style={{ background: ACTION_BG }} aria-label={p.is_active ? "desactivar" : "activar"} onClick={() => onToggle(p.id, !!p.is_active)}>
+              <MaterialIcon name={p.is_active ? "toggle_on" : "toggle_off"} size={18} />
+            </button>
+            <button className="h-8 w-8 grid place-items-center rounded-full" style={{ background: "#7a1010" }} aria-label="eliminar" onClick={() => onDelete(p.id)} title="Eliminar">
+              <MaterialIcon name="delete" size={16} className="text-[#ff4d4f]" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile */}
+      {/* MOBILE GAP: my-3 en móvil, sm:my-2 mantiene desktop */}
+      <div className="sm:hidden mx-2.5 my-3 sm:my-2 rounded-md px-3 py-2" style={{ background: INNER_BG }}>
+        
+        <div className="flex items-start gap-2">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-baseline gap-2 min-w-0">
+              <Dot active={!!p.is_active} />
+              <span className="text-sm font-extrabold tracking-wide">{p.reference}</span>
+              <span className="text-[13px] text-white/90 truncate">{p.description}</span>
+            </div>
+          </div>
+          <div className="ml-2 flex items-center gap-2 shrink-0">
+            <button className={actionBtn} style={{ background: ACTION_BG }} aria-label="ver" onClick={() => onView(p.id)}>
+              <MaterialIcon name="visibility" size={18} />
+            </button>
+            <button className={actionBtn} style={{ background: ACTION_BG }} aria-label="editar" onClick={() => onEdit(p.id)}>
+              <MaterialIcon name="edit" size={18} />
+            </button>
+            <button className={actionBtn} style={{ background: ACTION_BG }} aria-label="imágenes" onClick={() => onImages(p.id)}>
+              <MaterialIcon name="photo_camera" size={18} />
+            </button>
+            <button className={actionBtn} style={{ background: ACTION_BG }} aria-label={p.is_active ? "desactivar" : "activar"} onClick={() => onToggle(p.id, !!p.is_active)}>
+              <MaterialIcon name={p.is_active ? "toggle_on" : "toggle_off"} size={18} />
+            </button>
+            <button className="h-8 w-8 grid place-items-center rounded-full" style={{ background: "#7a1010" }} aria-label="eliminar" onClick={() => onDelete(p.id)}>
+              <MaterialIcon name="delete" size={16} className="text-[#ff4d4f]" />
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-2 grid grid-cols-3 gap-2">
+          <div className="rounded-md border px-2 py-1 text-center text-[12px]" style={{ background: PILL_BG, borderColor: "var(--tg-border)" }}>
+            <div className="uppercase opacity-70">Stock</div>
+            <div className="font-semibold">{p.quantity ?? 0}</div>
+          </div>
+          <div className="rounded-md border px-2 py-1 text-center text-[12px]" style={{ background: PILL_BG, borderColor: "var(--tg-border)" }}>
+            <div className="uppercase opacity-70">Compra</div>
+            <div className="font-semibold">{money.format(p.purchase_price)}</div>
+          </div>
+          <div className="rounded-md border px-2 py-1 text-center text-[12px]" style={{ background: PILL_BG, borderColor: "var(--tg-border)" }}>
+            <div className="uppercase opacity-70">Venta</div>
+            <div className="font-semibold">{money.format(p.sale_price)}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ProductosPage() {
+  const isMobile = useIsMobile();
+  const pageSizeWanted = isMobile ? 6 : 8;
+
   const {
     items: rows,
-    page, pageSize, total, totalPages, hasPrev, hasNext,
-    loading, setPage,
-    filters, setFilters,
-    options,
+    page,
+    pageSize,
+    total,
+    totalPages,
+    hasPrev,
+    hasNext,
+    loading,
+    setPage,
+    filters,
+    setFilters,
     reload,
-    upsertOne
-  } = useProductos(10);
+    upsertOne,
+  } = useProductos(pageSizeWanted);
 
   const { success, error: err } = useNotifications();
 
-  // Crear
   const [openCreate, setOpenCreate] = useState(false);
   const [creating, setCreating] = useState(false);
-
-  // Ver
   const [viewId, setViewId] = useState<number | null>(null);
   const [openView, setOpenView] = useState(false);
   const { producto, loading: viewLoading, refetch: refetchView } = useProducto(viewId);
-
-  // Editar
   const [editId, setEditId] = useState<number | null>(null);
   const [openEdit, setOpenEdit] = useState(false);
   const { producto: editProducto, loading: editLoading } = useProducto(editId);
-
-  // Eliminar
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [openDelete, setOpenDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
-
-  // Media
   const [mediaProductId, setMediaProductId] = useState<number | null>(null);
   const [openMedia, setOpenMedia] = useState(false);
-
-  // IO
   const [openImport, setOpenImport] = useState(false);
   const [openExport, setOpenExport] = useState(false);
   const imp = useImport();
   const exp = useExport();
+
+  /* menos gutter lateral global */
+  const frameVars: CSSProperties = { ["--content-x" as any]: "8px" };
 
   const from = useMemo(() => (total === 0 ? 0 : (page - 1) * pageSize + 1), [page, pageSize, total]);
   const to = useMemo(() => Math.min(page * pageSize, total), [page, pageSize, total]);
@@ -71,9 +226,6 @@ export default function ProductosPage() {
     return [s, s + (win - 1)] as const;
   }, [page, totalPages]);
 
-  const frameVars: CSSProperties = { ["--content-x" as any]: "16px" };
-
-  // Crear
   async function handleCreateSubmit(payload: ProductCreate | ProductUpdate) {
     setCreating(true);
     try {
@@ -81,15 +233,13 @@ export default function ProductosPage() {
       setOpenCreate(false);
       setPage(1);
       reload?.();
-      success("Producto creado correctamente");
+      success("Producto creado");
     } catch (e: any) {
       err(e?.response?.data?.detail ?? "Error creando producto");
     } finally {
       setCreating(false);
     }
   }
-
-  // Editar
   async function handleEditSubmit(payload: ProductCreate | ProductUpdate) {
     if (!editId) return;
     try {
@@ -102,8 +252,6 @@ export default function ProductosPage() {
       err(e?.response?.data?.detail ?? "Error actualizando producto");
     }
   }
-
-  // Eliminar
   async function handleConfirmDelete() {
     if (!deleteId) return;
     setDeleting(true);
@@ -119,12 +267,10 @@ export default function ProductosPage() {
       setDeleting(false);
     }
   }
-
-  // Toggle activo
   async function handleToggleActivo(id: number, current: boolean) {
     try {
       const res = await toggleProductActive(id);
-      const isActive = res.is_active ?? !current;
+      const isActive = (res as any).is_active ?? !current;
       upsertOne({ id, is_active: isActive });
       if (viewId === id) refetchView();
       success(isActive ? "Producto activado" : "Producto desactivado");
@@ -133,165 +279,108 @@ export default function ProductosPage() {
     }
   }
 
-  function handleClearFilters() {
-    setFilters({ q: "", estado: undefined });
-  }
-
   return (
     <div className="app-shell__frame overflow-hidden" style={frameVars}>
-      <div className="bg-[var(--page-bg)] rounded-xl h-full flex flex-col px-[var(--content-x)] pt-3 pb-5 relative">
-        <div className="shrink-0">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-2xl font-semibold text-tg-fg">Productos</h2>
+      {/* Toolbar desktop: buscador más corto */}
+      <div className="hidden sm:flex mb-3 items-center justify-between gap-3">
+        <label className="relative flex h-10 w-full max-w-[440px]">
+          <span className="absolute inset-y-0 left-3 flex items-center text-tg-muted pointer-events-none">
+            <MaterialIcon name="search" size={18} />
+          </span>
+          <input
+            type="search"
+            placeholder="Buscar un producto..."
+            className="h-10 w-full rounded-md border border-tg bg-tg-card text-tg-card pl-9 pr-8 focus:outline-none focus:ring-tg-primary"
+            value={filters.q ?? ""}
+            onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
+          />
+          {(filters.q ?? "").length > 0 && (
+            <button
+              type="button"
+              onClick={() => setFilters((f) => ({ ...f, q: "" }))}
+              className="absolute inset-y-0 right-2 grid place-items-center text-white hover:text-tg-primary"
+              aria-label="Limpiar búsqueda"
+            >
+              <MaterialIcon name="close" size={16} />
+            </button>
+          )}
+        </label>
 
-            <div className="flex flex-wrap items-center gap-2">
-              {/* Buscar */}
-              <label className="relative flex items-center flex-none h-10 w-[260px]">
-                <span className="absolute inset-y-0 left-3 flex items-center text-tg-muted pointer-events-none">
-                  <MaterialIcon name="search" size={18} />
-                </span>
-                <input
-                  type="search"
-                  placeholder="Buscar.."
-                  className="h-10 w-full rounded-md border border-tg bg-tg-card text-tg-card pl-9 pr-3 focus:outline-none focus:ring-tg-primary"
-                  value={filters.q ?? ""}
-                  onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
-                />
-              </label>
+        <button
+          onClick={() => setOpenCreate(true)}
+          className="h-10 rounded-md px-4 text-sm font-extrabold shadow-sm inline-flex items-center gap-2"
+          style={{ background: "var(--tg-primary)", color: "#fff" }}
+        >
+          <MaterialIcon name="add_circle" size={18} />
+          Nuevo producto
+        </button>
+      </div>
 
-              {/* Estado */}
-              <select
-                className="h-10 flex-none w-[160px] rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted focus:outline-none"
-                value={filters.estado ?? ""}
-                onChange={(e) =>
-                  setFilters((f) => ({ ...f, estado: (e.target.value || undefined) as "activos" | "inactivos" | undefined }))
-                }
-              >
-                <option value="">Todos</option>
-                <option value="activos">Activos</option>
-                <option value="inactivos">Inactivos</option>
-              </select>
+      {/* Toolbar móvil */}
+      <div className="sm:hidden mb-3 space-y-2">
+        <label className="relative flex h-10 w-full">
+          <span className="absolute inset-y-0 left-3 flex items-center text-tg-muted pointer-events-none">
+            <MaterialIcon name="search" size={18} />
+          </span>
+          <input
+            type="search"
+            placeholder="Buscar un producto..."
+            className="h-10 w-full rounded-md border border-tg bg-tg-card text-tg-card pl-9 pr-8 focus:outline-none focus:ring-tg-primary"
+            value={filters.q ?? ""}
+            onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
+          />
+          {(filters.q ?? "").length > 0 && (
+            <button
+              type="button"
+              onClick={() => setFilters((f) => ({ ...f, q: "" }))}
+              className="absolute inset-y-0 right-2 grid place-items-center text-white hover:text-tg-primary"
+              aria-label="Limpiar búsqueda"
+            >
+              <MaterialIcon name="close" size={16} />
+            </button>
+          )}
+        </label>
 
-              {/* Limpiar */}
-              <span
-                onClick={handleClearFilters}
-                className="cursor-pointer text-sm text-tg-primary hover:underline ml-2 mr-2 select-none"
-                role="button"
-                tabIndex={0}
-              >
-                Limpiar filtros
-              </span>
+        <button
+          onClick={() => setOpenCreate(true)}
+          className="h-10 w-full rounded-md px-4 text-sm font-extrabold shadow-sm inline-flex items-center justify-center gap-2"
+          style={{ background: "var(--tg-primary)", color: "#fff" }}
+        >
+          <MaterialIcon name="add_circle" size={18} />
+          Nuevo producto
+        </button>
+      </div>
 
-              {/* Nuevo */}
-              <button
-                onClick={() => setOpenCreate(true)}
-                className="h-10 rounded-md bg-tg-primary px-4 text-sm font-medium text-tg-on-primary shadow-sm"
-              >
-                Nuevo producto
-              </button>
-            </div>
-          </div>
+      {/* Marco y lista: px-4 → px-3, y MOBILE GAP vertical entre cards */}
+      <div className="rounded-xl border flex-1 min-h-0 flex flex-col overflow-hidden mb-1" style={{ background: FRAME_BG }}>
+        <div className="px-3 pt-3">
+          <HeaderRow />
         </div>
 
-        <div className="h-2 shrink-0" />
+        {/* MOBILE GAP: space-y-4 en móvil, sm:space-y-3.5 en desktop */}
+        <div className="flex-1 min-h-0 overflow-auto px-3 pb-1 space-y-4 sm:space-y-3.5">
+          {loading
+            ? Array.from({ length: pageSizeWanted }).map((_, i) => (
+              <div key={`sk-${i}`} className="h-[60px] rounded-xl border bg-black/10 animate-pulse" />
+            ))
+            : rows.length === 0
+              ? <div className="h-full grid place-items-center text-tg-muted text-sm">Sin registros</div>
+              : rows.map((r) => (
+                <ProductRow
+                  key={r.id}
+                  p={r}
+                  onView={(id) => { setViewId(id); setOpenView(true); }}
+                  onEdit={(id) => { setEditId(id); setOpenEdit(true); }}
+                  onImages={(id) => { setMediaProductId(id); setOpenMedia(true); }}
+                  onToggle={handleToggleActivo}
+                  onDelete={(id) => { setDeleteId(id); setOpenDelete(true); }}
+                />
+              ))}
+        </div>
 
-        {/* Tabla */}
-        <div className="rounded-xl border border-[var(--panel-border)] bg-[var(--panel-bg)] shadow-md flex-1 min-h-0 flex flex-col overflow-hidden">
-          <div className="flex-1 min-h-0 overflow-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-[var(--table-head-bg)] text-[var(--table-head-fg)]">
-                  <th className="px-4 py-3 text-left">Referencia</th>
-                  <th className="px-4 py-3 text-left">Descripción</th>
-                  <th className="px-4 py-3 text-right">Stock</th>
-                  <th className="px-4 py-3 text-right">Precio compra</th>
-                  <th className="px-4 py-3 text-right">Precio venta</th>
-                  <th className="px-4 py-3 text-center">Estado</th>
-                  <th className="px-4 py-3 text-center">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  Array.from({ length: 10 }).map((_, i) => (
-                    <tr key={`sk-${i}`} className="border-t border-tg">
-                      {Array.from({ length: 7 }).map((__, j) => (
-                        <td key={j} className="px-4 py-3">
-                          <div className="h-4 w-full animate-pulse rounded bg-black/10 dark:bg-white/10" />
-                        </td>
-                      ))}
-                    </tr>
-                  ))
-                ) : rows.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-10 text-center text-tg-muted">Sin registros</td>
-                  </tr>
-                ) : (
-                  rows.map((r: ProductDTO) => (
-                    <tr key={r.id} className="border-t border-tg hover:bg-black/5 dark:hover:bg:white/5">
-                      <td className="px-4 py-3">{r.reference}</td>
-                      <td className="px-4 py-3">{r.description}</td>
-                      <td className="px-4 py-3 text-right">{r.quantity ?? 0}</td>
-                      <td className="px-4 py-3 text-right">{money.format(r.purchase_price)}</td>
-                      <td className="px-4 py-3 text-right">{money.format(r.sale_price)}</td>
-                      <td className="px-4 py-3 text-center">
-                        <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${r.is_active ? "bg-green-600/15 text-green-700 dark:text-green-300" : "bg-red-600/15 text-red-700 dark:text-red-300"}`}>
-                          {r.is_active ? "Activo" : "Inactivo"}
-                        </span>
-                      </td>
-                      <td className="px-2 py-1.5">
-                        <div className="flex items-center justify-center gap-1">
-                          <button
-                            className="p-2 rounded-full text-tg-primary hover:bg-[color-mix(in_srgb,var(--tg-primary)_22%,transparent)]"
-                            aria-label="ver"
-                            onClick={() => { setViewId(r.id); setOpenView(true); }}
-                          >
-                            <MaterialIcon name="visibility" size={18} />
-                          </button>
-                          <button
-                            className="p-2 rounded-full text-tg-primary hover:bg-[color-mix(in_srgb,var(--tg-primary)_22%,transparent)]"
-                            aria-label="editar"
-                            onClick={() => { setEditId(r.id); setOpenEdit(true); }}
-                          >
-                            <MaterialIcon name="edit" size={18} />
-                          </button>
-                          <button
-                            className="p-2 rounded-full text-tg-primary hover:bg-[color-mix(in_srgb,var(--tg-primary)_22%,transparent)]"
-                            aria-label="media"
-                            title="Imágenes"
-                            onClick={() => { setMediaProductId(r.id); setOpenMedia(true); }}
-                          >
-                            <MaterialIcon name="photo_camera" size={18} />
-                          </button>
-                          <button
-                            className="p-2 rounded-full hover:bg-[color-mix(in_srgb,var(--tg-primary)_22%,transparent)]"
-                            aria-label={r.is_active ? "desactivar" : "activar"}
-                            onClick={() => handleToggleActivo(r.id, r.is_active)}
-                            title={r.is_active ? "Desactivar" : "Activar"}
-                          >
-                            <MaterialIcon
-                              name={r.is_active ? "toggle_on" : "toggle_off"}
-                              size={22}
-                              className={r.is_active ? "text-tg-primary" : "text-tg-muted"}
-                            />
-                          </button>
-                          <button
-                            className="p-2 rounded-full text-tg-primary hover:bg-[color-mix(in_srgb,var(--tg-primary)_22%,transparent)]"
-                            aria-label="eliminar"
-                            onClick={() => { setDeleteId(r.id); setOpenDelete(true); }}
-                          >
-                            <MaterialIcon name="delete" size={18} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Paginación */}
-          <div className="shrink-0 flex flex-wrap items-center justify-between gap-3 border-t border-tg px-4 py-3">
+        {/* Paginación + IO */}
+        <div className="shrink-0 px-3 pt-1 pb-2 flex flex-wrap gap-3 items-center justify-between">
+          <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <span className="text-sm">Líneas por página</span>
               <select value={pageSize} disabled className="h-9 rounded-md border border-tg bg-[var(--panel-bg)] px-2 text-sm text-tg-muted">
@@ -299,98 +388,65 @@ export default function ProductosPage() {
               </select>
             </div>
 
-            <nav className="flex items-center gap-1">
-              <button disabled={!hasPrev} onClick={() => setPage(1)} className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary" aria-label="Primera página" title="Primera página">
-                <MaterialIcon name="first_page" size={18} />
-              </button>
-              <button disabled={!hasPrev} onClick={() => setPage(page - 1)} className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary" aria-label="Anterior" title="Anterior">
-                <MaterialIcon name="chevron_left" size={18} />
-              </button>
-
-              {Array.from({ length: end - start + 1 }, (_, i) => start + i).map((p) => {
-                const active = p === page;
-                return (
-                  <button
-                    key={p}
-                    onClick={() => setPage(p)}
-                    className={`h-8 min-w-8 rounded px-2 text-sm ${active ? "bg-tg-primary text-tg-on-primary" : "hover:bg-black/10 dark:hover:bg-white/10"} focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary`}
-                    aria-current={active ? "page" : undefined}
-                  >
-                    {p}
-                  </button>
-                );
-              })}
-
-              {end < totalPages && <span className="px-1">...</span>}
-
-              <button disabled={!hasNext} onClick={() => setPage(page + 1)} className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary" aria-label="Próximo" title="Próximo">
-                <MaterialIcon name="chevron_right" size={18} />
-              </button>
-              <button disabled={!hasNext} onClick={() => setPage(totalPages)} className="h-8 w-8 rounded text-sm disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 grid place-items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary" aria-label="Última página" title="Última página">
-                <MaterialIcon name="last_page" size={18} />
-              </button>
-            </nav>
-
-            <div className="text-sm text-tg-muted">Exhibiendo {from}-{to} de {total} registros</div>
+            <button type="button" onClick={() => setOpenImport(true)} className="h-9 rounded-md border border-tg bg-[var(--panel-bg)] px-3 text-sm text-tg-muted inline-flex items-center gap-2">
+              <MaterialIcon name="file_upload" size={16} /> Importar
+            </button>
+            <button type="button" onClick={() => setOpenExport(true)} className="h-9 rounded-md border border-tg bg-[var(--panel-bg)] px-3 text-sm text-tg-muted inline-flex items-center gap-2">
+              <MaterialIcon name="file_download" size={16} /> Exportar
+            </button>
           </div>
-        </div>
 
-        {/* Botonera flotante inferior derecha: Importar / Exportar */}
-        <div className="fixed bottom-6 right-6 z-40 flex gap-2 pointer-events-auto">
-          <button
-            type="button"
-            onClick={() => setOpenImport(true)}
-            className="h-10 rounded-md border border-tg bg-[var(--panel-bg)] px-3 text-sm text-tg-muted inline-flex items-center gap-2"
-            aria-label="Importar datos"
-            title="Importar datos"
-          >
-            <MaterialIcon name="file_upload" size={18} />
-            Importar
-          </button>
-          <button
-            type="button"
-            onClick={() => setOpenExport(true)}
-            className="h-10 rounded-md border border-tg bg-[var(--panel-bg)] px-3 text-sm text-tg-muted inline-flex items-center gap-2"
-            aria-label="Exportar datos"
-            title="Exportar datos"
-          >
-            <MaterialIcon name="file_download" size={18} />
-            Exportar
-          </button>
+          <nav className="flex items-center gap-1">
+            <button disabled={!hasPrev} onClick={() => setPage(1)} className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
+              <MaterialIcon name="first_page" size={16} />
+            </button>
+            <button disabled={!hasPrev} onClick={() => setPage(page - 1)} className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
+              <MaterialIcon name="chevron_left" size={16} />
+            </button>
+
+            {Array.from({ length: end - start + 1 }, (_, i) => start + i).map((p) => {
+              const active = p === page;
+              return (
+                <button
+                  key={p}
+                  onClick={() => setPage(p)}
+                  className={`h-9 min-w-9 px-3 rounded border ${active ? "bg-tg-primary text-white border-transparent" : "bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] text-white/90 border-white/10"} font-semibold`}
+                  aria-current={active ? "page" : undefined}
+                >
+                  {p}
+                </button>
+              );
+            })}
+
+            <button disabled={!hasNext} onClick={() => setPage(page + 1)} className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
+              <MaterialIcon name="chevron_right" size={16} />
+            </button>
+            <button disabled={!hasNext} onClick={() => setPage(totalPages)} className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
+              <MaterialIcon name="last_page" size={16} />
+            </button>
+
+            <div className="h-9 min-w-[120px] grid place-items-center text-sm font-medium">
+              {from} - {to} de {total}
+            </div>
+          </nav>
         </div>
       </div>
 
-      {/* IO dialogs */}
+      {/* Diálogos */}
       <ImportDialog
         open={openImport}
         onClose={() => { imp.reset(); setOpenImport(false); }}
-        onRun={async (opts) => {
-          try {
-            await imp.importFile({ ...opts, entity: "products" });
-            success("Importación completada");
-            reload?.();
-          } catch (e: any) {
-            err(e?.message ?? "Error al importar");
-          }
-        }}
+        onRun={async (opts) => { try { await imp.importFile({ ...opts, entity: "products" }); success("Importación completada"); reload?.(); } catch (e: any) { err(e?.message ?? "Error al importar"); } }}
         loading={imp.loading}
         error={imp.error?.message ?? null}
         report={imp.data}
         fixedEntity="products"
         title="Importar productos"
       />
-
       <ExportDialog
         open={openExport}
         onClose={() => { exp.reset(); setOpenExport(false); }}
-        onDownload={async (_entity, fmt, filename) => {
-          try {
-            await exp.download("products", fmt, filename);
-            success("Exportación generada");
-          } catch (e: any) {
-            err(e?.message ?? "Error al exportar");
-          }
-        }}
+        onDownload={async (_e, fmt, filename) => { try { await exp.download("products", fmt, filename); success("Exportación generada"); } catch (e: any) { err(e?.message ?? "Error al exportar"); } }}
         loading={exp.loading}
         error={exp.error?.message ?? null}
         entities={["customers", "products", "suppliers"]}
@@ -399,28 +455,8 @@ export default function ProductosPage() {
         defaultName="products"
       />
 
-      {/* Crear */}
-      {openCreate && (
-        <ProductoForm
-          intent="create"
-          open={openCreate}
-          onClose={() => setOpenCreate(false)}
-          onSubmit={handleCreateSubmit}
-          loading={creating}
-        />
-      )}
-
-      {/* Ver */}
-      {openView && (
-        <ProductoView
-          open={openView}
-          onClose={() => setOpenView(false)}
-          producto={producto}
-          loading={viewLoading}
-        />
-      )}
-
-      {/* Editar */}
+      {openCreate && <ProductoForm intent="create" open={openCreate} onClose={() => setOpenCreate(false)} onSubmit={handleCreateSubmit} loading={creating} />}
+      {openView && <ProductoView open={openView} onClose={() => setOpenView(false)} producto={producto} loading={viewLoading} />}
       {openEdit && (
         <ProductoForm
           intent="edit"
@@ -430,7 +466,7 @@ export default function ProductosPage() {
           loading={editLoading}
           defaults={editProducto ? {
             reference: editProducto.reference,
-            description: editProducto.description, // corregido
+            description: editProducto.description,
             quantity: editProducto.quantity ?? 0,
             purchase_price: editProducto.purchase_price,
             sale_price: editProducto.sale_price,
@@ -438,17 +474,9 @@ export default function ProductosPage() {
           } : undefined}
         />
       )}
-
-      {/* Media */}
-      {openMedia && mediaProductId !== null && (
-        <ProductImagesModal
-          open={openMedia}
-          productId={mediaProductId}
-          onClose={() => setOpenMedia(false)}
-        />
+      {openMedia && (
+        <ProductImagesModal open={openMedia} productId={mediaProductId!} onClose={() => setOpenMedia(false)} />
       )}
-
-      {/* Eliminar */}
       {openDelete && (
         <div
           role="dialog"
@@ -457,17 +485,15 @@ export default function ProductosPage() {
           onKeyDown={(e) => { if (e.key === "Escape") setOpenDelete(false); }}
           onClick={(e) => { if (e.target === e.currentTarget && !deleting) setOpenDelete(false); }}
         >
-          <div className="w-[420px] rounded-lg border border-tg bg-[var(--panel-bg)] shadow-xl">
-            <div className="px-4 py-3 border-b border-tg flex items-center gap-2">
+          <div className="w-[420px] rounded-lg border bg-[var(--panel-bg)] shadow-xl" style={{ borderColor: "var(--tg-border)" }}>
+            <div className="px-4 py-3 border-b flex items-center gap-2" style={{ borderColor: "var(--tg-border)" }}>
               <MaterialIcon name="warning" size={18} />
               <h3 className="text-base font-semibold">Confirmar eliminación</h3>
             </div>
             <div className="px-4 py-4 text-sm">¿Seguro que deseas eliminar este producto? Esta acción no se puede deshacer.</div>
-            <div className="px-4 py-3 border-t border-tg flex justify-end gap-2">
-              <button onClick={() => setOpenDelete(false)} className="h-9 rounded-md px-3 text-sm hover:bg-black/10 dark:hover:bg-white/10" disabled={deleting}>
-                Cancelar
-              </button>
-              <button onClick={handleConfirmDelete} className="h-9 rounded-md bg-red-600 px-3 text-sm font-medium text-white disabled:opacity-60" disabled={deleting}>
+            <div className="px-4 py-3 border-t flex justify-end gap-2" style={{ borderColor: "var(--tg-border)" }}>
+              <button onClick={() => setOpenDelete(false)} className="h-9 rounded-md px-3 text-sm hover:bg-black/10" disabled={deleting}>Cancelar</button>
+              <button onClick={handleConfirmDelete} className="h-9 rounded-md px-3 text-sm font-medium text-white disabled:opacity-60" style={{ background: "#7a1010" }} disabled={deleting}>
                 {deleting ? "Eliminando..." : "Eliminar"}
               </button>
             </div>

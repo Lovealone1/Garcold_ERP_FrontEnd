@@ -44,11 +44,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         >
           {/* Topbar */}
           <header
-            className="sticky top-0 z-30 border-b border-tg py-1.5 mb-3"
+            className="sticky top-0 z-30 border-b border-tg py-1 sm:py-1.5 mb-1 sm:mb-2 md:mb-1"
             style={{ background: "var(--tg-bg)" }}
           >
-            {/* En desktop empujamos a la derecha para no chocar con la esquina de la sidebar */}
-            <div className="h-11 px-3 lg:pl-20 flex items-center gap-2 min-w-0">
+            <div className="h-11 px-2 sm:px-3 lg:pl-20 flex items-center gap-2 min-w-0">
               {/* Hamburguesa móvil */}
               <button
                 onClick={() => setIsSidebarOpen(true)}
@@ -72,14 +71,17 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 {mobileTitle}
               </h1>
 
-              {/* Breadcrumbs desktop: ocupan el ancho disponible y truncan */}
+              {/* Breadcrumbs desktop */}
               <div className="hidden md:flex items-center flex-1 min-w-0">
                 <Breadcrumbs className="flex-1 min-w-0 truncate" />
               </div>
             </div>
           </header>
 
-          <main className="app-shell__content">{children}</main>
+          {/* Contenido: mismo safe-inset que el header en lg */}
+          <main className="app-shell__content px-2 sm:px-4 lg:px-6 lg:pl-20 py-2 sm:py-3">
+            {children}
+          </main>
         </div>
       </div>
     </NotificationsProvider>

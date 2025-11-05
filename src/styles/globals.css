@@ -421,3 +421,9 @@ html:not(.dark) .tg-country-item:hover {
 
 input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }
 input[type="search"]::-ms-clear { display: none; width: 0; height: 0; }
+
+@supports (-webkit-touch-callout: none) {
+  @media (max-width: 640px) {
+    input, select, textarea { font-size: 16px !important; }
+  }
+}

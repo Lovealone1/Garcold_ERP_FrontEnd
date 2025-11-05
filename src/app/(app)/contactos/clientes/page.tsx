@@ -1,7 +1,7 @@
 // app/(ventas)/clientes/page.tsx
 "use client";
 
-import { useMemo, useState, useEffect, useLayoutEffect, CSSProperties } from "react";
+import { useMemo, useState, useEffect, CSSProperties } from "react";
 import { MaterialIcon } from "@/components/ui/material-icon";
 import ClienteForm from "@/features/clientes/ClienteForm";
 import ClienteView from "@/features/clientes/ClienteView";
@@ -15,7 +15,7 @@ import { useImport } from "@/hooks/io/useImport";
 import { useExport } from "@/hooks/io/useExport";
 import ImportDialog from "@/features/io/ImportDialog";
 import ExportDialog from "@/features/io/ExportDialog";
-import {useMediaQuery} from "@/hooks/ui/useMediaQuery";
+import { useMediaQuery } from "@/hooks/ui/useMediaQuery";
 
 /* Tokens visuales */
 const FRAME_BG = "color-mix(in srgb, var(--tg-bg) 90%, #fff 3%)";
@@ -212,7 +212,7 @@ function CustomerRow({
 
 /* Página */
 export default function ClientesPage() {
-  // perPage fijo por montaje. No depende del hook.
+  // perPage fijo por montaje. En móvil queda en 5.
   const [perPage] = useState<number>(getInitialPerPage);
   // uso del hook para UI secundaria: cerrar dropdown al cambiar ancho
   const isNarrow = useMediaQuery("(max-width: 639px)");
@@ -354,7 +354,7 @@ export default function ClientesPage() {
           <input
             type="search"
             placeholder="Buscar cliente..."
-            className="h-10 w-full rounded-md border border-tg bg-tg-card text-tg-card pl-9 pr-8 focus:outline-none focus:ring-tg-primary"
+            className="h-10 w-full rounded-md border border-tg bg-tg-card text-tg-card pl-9 pr-8 focus:outline-none focus:ring-tg-primary text-[16px] sm:text-sm"
             value={filters.q ?? ""}
             onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
           />
@@ -376,7 +376,7 @@ export default function ClientesPage() {
             <button
               type="button"
               onClick={() => setCitiesOpen((o) => !o)}
-              className="h-10 w-full rounded-md border border-tg bg-tg-card px-3 text-left text-sm text-tg-muted inline-flex items-center justify-between"
+              className="h-10 w-full rounded-md border border-tg bg-tg-card px-3 text-left text-[16px] sm:text-sm text-tg-muted inline-flex items-center justify-between"
             >
               <span>{citiesLabel}</span>
               <MaterialIcon name="expand_less" size={18} />
@@ -408,7 +408,7 @@ export default function ClientesPage() {
 
           {/* Saldo */}
           <select
-            className="h-10 w-[160px] rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted focus:outline-none"
+            className="h-10 w-[160px] rounded-md border border-tg bg-tg-card px-3 text-[16px] sm:text-sm text-tg-muted focus:outline-none"
             value={filters.pendingBalance ?? ""}
             onChange={(e) =>
               setFilters((f) => ({
@@ -442,7 +442,7 @@ export default function ClientesPage() {
           <input
             type="search"
             placeholder="Buscar cliente..."
-            className="h-10 w-full rounded-md border border-tg bg-tg-card text-tg-card pl-9 pr-8 focus:outline-none focus:ring-tg-primary"
+            className="h-10 w-full rounded-md border border-tg bg-tg-card text-tg-card pl-9 pr-8 focus:outline-none focus:ring-tg-primary text-[16px] sm:text-sm"
             value={filters.q ?? ""}
             onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
           />
@@ -473,7 +473,7 @@ export default function ClientesPage() {
             <button
               type="button"
               onClick={() => setCitiesOpen((o) => !o)}
-              className="h-10 w-full rounded-md border border-tg bg-tg-card px-3 text-left text-sm text-tg-muted inline-flex items-center justify-between"
+              className="h-10 w-full rounded-md border border-tg bg-tg-card px-3 text-left text-[16px] sm:text-sm text-tg-muted inline-flex items-center justify-between"
             >
               <span>{citiesLabel}</span>
               <MaterialIcon name="expand_less" size={18} />
@@ -504,7 +504,7 @@ export default function ClientesPage() {
           </div>
 
           <select
-            className="h-10 w-full rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted focus:outline-none"
+            className="h-10 w-full rounded-md border border-tg bg-tg-card px-3 text-[16px] sm:text-sm text-tg-muted focus:outline-none"
             value={filters.pendingBalance ?? ""}
             onChange={(e) =>
               setFilters((f) => ({

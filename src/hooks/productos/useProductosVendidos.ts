@@ -38,7 +38,6 @@ export default function useProductosVendidos({
 
   useEffect(() => () => { mountedRef.current = false; abortRef.current?.abort(); }, []);
 
-  // clave estable para deps
   const idsKey = useMemo(
     () => (product_ids && product_ids.length ? [...product_ids].sort((a,b)=>a-b).join(",") : ""),
     [product_ids]

@@ -587,9 +587,6 @@ export default function VentasPage() {
                     open={openPreview}
                     onClose={() => setOpenPreview(false)}
                     ventaId={previewVentaId}
-                // Si necesitas rutas distintas, descomenta y ajusta:
-                // facturaHref={`${FACTURA_PAGE_BASE}/${previewVentaId}?embed=1`}
-                // pdfHref={`${FACTURA_PDF_BASE}/${previewVentaId}/pdf?download=1`}
                 />
             )}
 

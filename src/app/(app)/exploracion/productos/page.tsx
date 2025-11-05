@@ -12,7 +12,8 @@ import Chip from "@mui/material/Chip";
 import type { DateRange } from "react-day-picker";
 
 import DateRangePicker from "@/components/ui/DateRangePicker/DateRangePicker";
-import useProductos from "@/hooks/productos/useProductos";
+// REEMPLAZO: antes venía de "@/hooks/productos/useProductos"
+import { useProductosAll } from "@/hooks/productos/useProductosAll";
 import useProductosVendidos from "@/hooks/productos/useProductosVendidos";
 import type { ProductDTO, SaleProductsDTO } from "@/types/product";
 
@@ -21,7 +22,8 @@ const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP
 const toISO = (d: Date) => d.toISOString().slice(0, 10);
 
 export default function ProductosExploracionPage() {
-    const { items: catalog, loading: loadingProd } = useProductos();
+    // Hook nuevo para cargar TODO el catálogo
+    const { items: catalog, loading: loadingProd } = useProductosAll();
 
     const [selProds, setSelProds] = useState<ProductDTO[]>([]);
     const [queryProd, setQueryProd] = useState("");
@@ -103,7 +105,7 @@ export default function ProductosExploracionPage() {
                             inputValue={queryProd}
                             onInputChange={(_, val, reason) => setQueryProd(reason === "clear" ? "" : val)}
                             isOptionEqualToValue={(o, v) => o.id === v.id}
-                            getOptionLabel={(o) => `${o.reference} — ${o.description}`}
+                            getOptionLabel={(o) => (o.description ? `${o.reference} — ${o.description}` : o.reference)}
                             filterSelectedOptions
                             limitTags={3}
                             onChange={(_, vals, reason) => {
@@ -141,7 +143,7 @@ export default function ProductosExploracionPage() {
                                             sx={{ mr: 1, color: "var(--tg-muted)", "&.Mui-checked": { color: "var(--tg-primary)" } }}
                                         />
                                         <ListItemText
-                                            primary={`${option.reference} — ${option.description}`}
+                                            primary={option.description ? `${option.reference} — ${option.description}` : option.reference}
                                             slotProps={{ primary: { sx: { color: "var(--tg-card-fg)" } } }}
                                         />
                                     </li>
@@ -223,10 +225,7 @@ export default function ProductosExploracionPage() {
 function ProductoCard({ item }: { item: SaleProductsDTO }) {
     const totalSold = item.sale_price * item.sold_quanity;
     return (
-        <div
-            className="rounded-xl border p-4"
-            style={{ borderColor: "var(--tg-border)", background: "var(--tg-card-bg)" }}
-        >
+        <div className="rounded-xl border p-4" style={{ borderColor: "var(--tg-border)", background: "var(--tg-card-bg)" }}>
             <div className="grid gap-3 items-center md:grid-cols-[1fr_140px_140px_150px_160px]">
                 {/* info izquierda */}
                 <div className="min-w-0">

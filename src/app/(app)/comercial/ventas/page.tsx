@@ -1,4 +1,3 @@
-// app/(ventas)/ventas/page.tsx
 "use client";
 
 import { useMemo, useState, useEffect, useCallback, CSSProperties } from "react";
@@ -21,7 +20,7 @@ import type { Sale } from "@/types/sale";
 import type { DateRange } from "react-day-picker";
 import DateRangePicker from "@/components/ui/DateRangePicker/DateRangePicker";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
-
+import FacturaPreviewModal from "@/features/factura/FacturaPreviewModal";
 /* -------- Tokens visuales -------- */
 const FRAME_BG = "color-mix(in srgb, var(--tg-bg) 90%, #fff 3%)";
 const OUTER_BG = "color-mix(in srgb, var(--tg-bg) 55%, #000 45%)";
@@ -314,6 +313,9 @@ export default function VentasPage() {
     const [openDelete, setOpenDelete] = useState(false);
     const [ventaDel, setVentaDel] = useState<Sale | null>(null);
 
+    const [openPreview, setOpenPreview] = useState(false);
+    const [previewVentaId, setPreviewVentaId] = useState<number | null>(null);
+
     async function handlePaid(ventaId: number) {
         const currentPage = page;
         const fresh = await getSaleById(ventaId);
@@ -511,7 +513,10 @@ export default function VentasPage() {
                                     v={r}
                                     onView={(row) => { setVentaSel(row); setOpenView(true); }}
                                     onPay={(row) => { setVentaPay(row); setOpenPay(true); }}
-                                    onPreview={(id) => window.open(`/api/v1/invoices/${id}/preview?nocache=${Date.now()}`, "_blank", "noopener")}
+                                    onPreview={(id) => {
+                                        setPreviewVentaId(id);
+                                        setOpenPreview(true);
+                                    }}
                                     onDelete={(row) => { setVentaDel(row); setOpenDelete(true); }}
                                 />
                             ))}
@@ -574,6 +579,17 @@ export default function VentasPage() {
                     onPaid={async () => {
                         if (ventaPay?.id) await handlePaid(ventaPay.id);
                     }}
+                />
+            )}
+
+            {openPreview && (
+                <FacturaPreviewModal
+                    open={openPreview}
+                    onClose={() => setOpenPreview(false)}
+                    ventaId={previewVentaId}
+                // Si necesitas rutas distintas, descomenta y ajusta:
+                // facturaHref={`${FACTURA_PAGE_BASE}/${previewVentaId}?embed=1`}
+                // pdfHref={`${FACTURA_PDF_BASE}/${previewVentaId}/pdf?download=1`}
                 />
             )}
 

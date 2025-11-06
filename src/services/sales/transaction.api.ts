@@ -6,28 +6,43 @@ import type {
     TransactionCreated,
 } from "@/types/transaction";
 
+type ListOpts = {
+    signal?: AbortSignal;
+};
+
 export async function listTransactions(
     page = 1,
-    nocacheToken?: number
+    opts: ListOpts = {}
 ): Promise<TransactionPageDTO> {
+    const { signal } = opts;
     const { data } = await salesApi.get("/transactions", {
-        params: { page, _ts: nocacheToken ?? Date.now() },
-        headers: { "Cache-Control": "no-cache" },
+        params: { page },
+        signal,
+        withCredentials: false,
     });
     return data as TransactionPageDTO;
 }
 
 export async function fetchAllTransactions(
-    nocacheToken?: number
+    opts: ListOpts & { maxPages?: number } = {}
 ): Promise<TransactionView[]> {
-    let page = 1;
+    const { signal, maxPages = 1000 } = opts;
     const acc: TransactionView[] = [];
-    const first = await listTransactions(page, nocacheToken);
-    acc.push(...first.items);
-    while (page < first.total_pages) {
+    let page = 1;
+
+    for (let guard = 0; guard < maxPages; guard++) {
+        const res = await listTransactions(page, { signal });
+        acc.push(...res.items);
+
+        const hasNext =
+            typeof res.has_next === "boolean"
+                ? res.has_next
+                : typeof res.total_pages === "number"
+                    ? page < res.total_pages
+                    : false;
+
+        if (!hasNext) break;
         page += 1;
-        const p = await listTransactions(page, nocacheToken);
-        acc.push(...p.items);
     }
     return acc;
 }
@@ -36,7 +51,7 @@ export async function createTransaction(
     payload: TransactionCreate
 ): Promise<TransactionCreated> {
     const { data } = await salesApi.post("/transactions/create", payload, {
-        headers: { "Cache-Control": "no-cache" },
+        timeout: 20000,
     });
     return data as TransactionCreated;
 }
@@ -44,6 +59,31 @@ export async function createTransaction(
 export async function deleteTransaction(
     transactionId: number
 ): Promise<{ message: string }> {
-    const { data } = await salesApi.delete(`/transactions/delete/${transactionId}`);
+    const { data } = await salesApi.delete(`/transactions/delete/${transactionId}`, {
+        timeout: 20000,
+    });
     return data as { message: string };
+}
+
+export async function* iterateTransactions(
+    startPage = 1,
+    opts: ListOpts = {}
+): AsyncGenerator<TransactionView[], void, unknown> {
+    const { signal } = opts;
+    let page = startPage;
+
+    for (let guard = 0; guard < 1000; guard++) {
+        const res = await listTransactions(page, { signal });
+        yield res.items;
+
+        const hasNext =
+            typeof res.has_next === "boolean"
+                ? res.has_next
+                : typeof res.total_pages === "number"
+                    ? page < res.total_pages
+                    : false;
+
+        if (!hasNext) return;
+        page += 1;
+    }
 }

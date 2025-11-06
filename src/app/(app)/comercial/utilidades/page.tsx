@@ -147,17 +147,25 @@ export default function TransaccionesPage() {
 
     useEffect(() => {
         let alive = true;
+        const ac = new AbortController();
+
         (async () => {
             setLoading(true);
             try {
-                const data = await fetchAllTransactions(Date.now()); // cambia si tu API difiere
+                const data = await fetchAllTransactions({ signal: ac.signal /*, maxPages: 200 */ });
                 if (alive) setAll(data);
+            } catch (e) {
+                if (alive && (e as any).name !== "CanceledError") {
+                    // opcional: setError(...)
+                }
             } finally {
                 if (alive) setLoading(false);
             }
         })();
+
         return () => {
             alive = false;
+            ac.abort();
         };
     }, []);
 

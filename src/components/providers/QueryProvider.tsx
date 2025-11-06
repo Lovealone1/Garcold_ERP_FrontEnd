@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useState, PropsWithChildren } from "react";
-import { QueryClient } from "@tanstack/react-query";
-import { PersistQueryClientProvider, type Persister } from "@tanstack/react-query-persist-client";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+    PersistQueryClientProvider,
+    type Persister,
+} from "@tanstack/react-query-persist-client";
 import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
 
-const VERSION = "transactions-cache-v1";
-const MAX_AGE = 1000 * 60 * 60 * 24 * 3; 
+const VERSION = "transactions-cache-v2";
+const MAX_AGE = 1000 * 60 * 60 * 24 * 3;
 
 export default function QueryProvider({ children }: PropsWithChildren) {
     const [client] = useState(
@@ -18,37 +21,36 @@ export default function QueryProvider({ children }: PropsWithChildren) {
                         gcTime: MAX_AGE,
                         refetchOnWindowFocus: false,
                         refetchOnReconnect: false,
-                        refetchOnMount: false,
+                        refetchOnMount: false, 
                     },
                 },
             })
     );
 
-    const [hydrated, setHydrated] = useState(false);
-    useEffect(() => setHydrated(true), []);
+    const [persister, setPersister] = useState<Persister | null>(null);
 
-    const persister: Persister | undefined = hydrated
-        ? createAsyncStoragePersister({
+    useEffect(() => {
+        const p = createAsyncStoragePersister({
             key: VERSION,
             throttleTime: 1000,
             storage: {
                 getItem: async (k: string) => window.localStorage.getItem(k),
-                setItem: async (k: string, v: string) => {
-                    window.localStorage.setItem(k, v);
-                },
-                removeItem: async (k: string) => {
-                    window.localStorage.removeItem(k);
-                },
+                setItem: async (k: string, v: string) => window.localStorage.setItem(k, v),
+                removeItem: async (k: string) => window.localStorage.removeItem(k),
             },
-        })
-        : undefined;
+        });
+        setPersister(p);
+    }, []);
 
-    if (!hydrated) {
-        return <>{children}</>;
+    if (!persister) {
+        return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
     }
 
     return (
-        <PersistQueryClientProvider client={client} persistOptions={{ persister: persister!, maxAge: MAX_AGE }}>
+        <PersistQueryClientProvider
+            client={client}
+            persistOptions={{ persister, maxAge: MAX_AGE }}
+        >
             {children}
         </PersistQueryClientProvider>
     );

@@ -42,7 +42,8 @@ const DPR_DESKTOP =
 
 /* utilidades */
 const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
-const clip = (s?: string | null, n = 28) => (s ?? "—").length > n ? (s as string).slice(0, n).trimEnd() + "…" : (s ?? "—");
+const clip = (s?: string | null, n = 28) =>
+    (s ?? "—").length > n ? (s as string).slice(0, n).trimEnd() + "…" : (s ?? "—");
 const SKELETON_COUNT = 8;
 
 /* Indicador */
@@ -56,7 +57,10 @@ const GRID_COLS = "30px 200px 160px 150px 1fr 160px 40px";
 const HEADER_COLS = "30px 200px 160px 150px 1fr 160px 50px";
 function HeaderRow() {
     return (
-        <div className="hidden sm:grid items-center gap-4 mb-2 font-extrabold mx-2" style={{ gridTemplateColumns: HEADER_COLS }}>
+        <div
+            className="hidden sm:grid items-center gap-4 mb-2 font-extrabold mx-2"
+            style={{ gridTemplateColumns: HEADER_COLS }}
+        >
             <span />
             <span className="text-white">Banco</span>
             <span className="text-white text-center">Tipo</span>
@@ -106,7 +110,10 @@ function TxRow({ r, onDelete }: { r: TransactionView; onDelete: (id: number) => 
                     <div className="flex items-center justify-end">
                         <button
                             className={`${actionBtn} ${isAuto ? "hover:opacity-100 focus-visible:ring-0" : ""}`}
-                            style={{ background: isAuto ? ACTION_BG_DISABLED : ACTION_BG, color: isAuto ? "rgba(255,255,255,0.45)" : "var(--tg-primary)" }}
+                            style={{
+                                background: isAuto ? ACTION_BG_DISABLED : ACTION_BG,
+                                color: isAuto ? "rgba(255,255,255,0.45)" : "var(--tg-primary)",
+                            }}
                             aria-label="eliminar"
                             title={isAuto ? "Automática: no se puede eliminar" : "Eliminar"}
                             disabled={isAuto}
@@ -152,7 +159,10 @@ function TxRow({ r, onDelete }: { r: TransactionView; onDelete: (id: number) => 
                     <div className="ml-2 flex items-center gap-2 shrink-0">
                         <button
                             className={`${actionBtn} ${isAuto ? "hover:opacity-100 focus-visible:ring-0" : ""}`}
-                            style={{ background: isAuto ? ACTION_BG_DISABLED : ACTION_BG, color: isAuto ? "rgba(255,255,255,0.45)" : "var(--tg-primary)" }}
+                            style={{
+                                background: isAuto ? ACTION_BG_DISABLED : ACTION_BG,
+                                color: isAuto ? "rgba(255,255,255,0.45)" : "var(--tg-primary)",
+                            }}
                             aria-label="eliminar"
                             title={isAuto ? "Automática: no se puede eliminar" : "Eliminar"}
                             disabled={isAuto}
@@ -172,9 +182,14 @@ export default function TransactionsPage() {
     const {
         items, page, setPage, loading, refresh,
         total_pages, page_size, total, filters, setFilters, options,
-        loadMore, // <- lo usamos para precargar
+        loadMore, hasMoreServer, isFetchingMore, // <- asegúrate que el hook exponga esto
     } = useTransactions(1, 8);
-
+    useEffect(() => {
+        const t = setTimeout(() => {
+            loadMore();
+        }, 1000);
+        return () => clearTimeout(t);
+    }, []);
     const { remove } = useDeleteTransaction();
     const { create, loading: creating } = useCreateTransaction();
     const { success, error } = useNotifications();
@@ -187,22 +202,13 @@ export default function TransactionsPage() {
 
     const frameVars: CSSProperties = { ["--content-x" as any]: "8px" };
 
-    // Precarga progresiva: mientras haya más en backend, sigue pidiendo páginas.
-    // Se trottlea para no spamear el servidor.
-    const preloadTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     useEffect(() => {
-        if (preloadTimer.current) clearTimeout(preloadTimer.current);
-        const needMore = typeof total === "number" && items.length < total;
-        if (needMore && !loading) {
-            preloadTimer.current = setTimeout(() => {
-                loadMore();
-            }, 120); // trottle suave
+        if (page === total_pages && hasMoreServer && !isFetchingMore) {
+            loadMore();
         }
-        return () => {
-            if (preloadTimer.current) clearTimeout(preloadTimer.current);
-        };
-    }, [items.length, total, loading, loadMore]);
+    }, [page, total_pages, hasMoreServer, isFetchingMore, loadMore]);
 
+    // Filtro por rango de fechas en cliente
     const filtered = useMemo(() => {
         if (!range?.from || !range?.to) return items;
         const from = new Date(range.from.getFullYear(), range.from.getMonth(), range.from.getDate(), 0, 0, 0, 0).getTime();
@@ -227,7 +233,6 @@ export default function TransactionsPage() {
         try {
             await remove(id);
             success("Transacción eliminada");
-            // invalidamos y reiniciamos la precarga
             setPage(1);
             refresh();
         } catch (e: any) {
@@ -240,6 +245,31 @@ export default function TransactionsPage() {
         setRange(undefined);
         setPage(1);
     }
+
+    // Navegación
+    const onPrev = () => {
+        if (page > 1) setPage(page - 1);
+    };
+
+    const onNext = async () => {
+        if (page < total_pages) return setPage(page + 1);
+        if (hasMoreServer && !isFetchingMore) {
+            await loadMore();
+            setPage(page + 1);
+        }
+    };
+    useEffect(() => {
+        if (page === total_pages && hasMoreServer && !isFetchingMore) {
+            loadMore();
+        }
+    }, [page, total_pages, hasMoreServer, isFetchingMore, loadMore]);
+    const goToPage = async (p: number) => {
+        // si p está fuera del rango local, intenta traer más hasta alcanzarlo
+        while (p > total_pages && hasMoreServer && !isFetchingMore) {
+            await loadMore();
+        }
+        setPage(Math.min(p, total_pages));
+    };
 
     return (
         <div className="app-shell__frame overflow-hidden" style={frameVars}>
@@ -374,19 +404,25 @@ export default function TransactionsPage() {
             </div>
 
             {/* Contenedor: cards + paginación */}
-            <div className="rounded-xl border flex-1 min-h-0 flex flex-col overflow-hidden mb-1" style={{ background: FRAME_BG, borderColor: BORDER }}>
+            <div
+                className="rounded-xl border flex-1 min-h-0 flex flex-col overflow-hidden mb-1"
+                style={{ background: FRAME_BG, borderColor: BORDER }}
+            >
                 <div className="px-3 pt-3">
                     <HeaderRow />
                 </div>
 
                 <div className="flex-1 min-h-0 overflow-auto px-3 pb-1 space-y-4 sm:space-y-3.5">
-                    {loading && items.length === 0
-                        ? Array.from({ length: SKELETON_COUNT }).map((_, i) => (
+                    {loading && items.length === 0 ? (
+                        Array.from({ length: SKELETON_COUNT }).map((_, i) => (
                             <div key={`sk-${i}`} className="h-[60px] rounded-xl border bg-black/10 animate-pulse" />
                         ))
-                        : (filtered.length === 0
-                            ? <div className="h-full grid place-items-center text-tg-muted text-sm">Sin registros</div>
-                            : filtered.map((r) => <TxRow key={r.id} r={r} onDelete={handleDelete} />))}
+                    ) : filtered.length === 0 ? (
+                        <div className="h-full grid place-items-center text-tg-muted text-sm">Sin registros</div>
+                    ) : (
+                        filtered.map((r) => <TxRow key={r.id} r={r} onDelete={handleDelete} />)
+                    )}
+
                 </div>
 
                 {/* Paginación */}
@@ -399,10 +435,18 @@ export default function TransactionsPage() {
                     </div>
 
                     <nav className="flex items-center gap-1">
-                        <button disabled={page <= 1} onClick={() => setPage(1)} className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
+                        <button
+                            disabled={page <= 1}
+                            onClick={() => setPage(1)}
+                            className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40"
+                        >
                             <MaterialIcon name="first_page" size={16} />
                         </button>
-                        <button disabled={page <= 1} onClick={() => setPage(page - 1)} className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
+                        <button
+                            disabled={page <= 1}
+                            onClick={onPrev}
+                            className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40"
+                        >
                             <MaterialIcon name="chevron_left" size={16} />
                         </button>
 
@@ -411,8 +455,11 @@ export default function TransactionsPage() {
                             return (
                                 <button
                                     key={p}
-                                    onClick={() => setPage(p)}
-                                    className={`h-9 min-w-9 px-3 rounded border ${active ? "bg-tg-primary text-white border-transparent" : "bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] text-white/90 border-white/10"} font-semibold`}
+                                    onClick={() => goToPage(p)}
+                                    className={`h-9 min-w-9 px-3 rounded border ${active
+                                        ? "bg-tg-primary text-white border-transparent"
+                                        : "bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] text-white/90 border-white/10"
+                                        } font-semibold`}
                                     aria-current={active ? "page" : undefined}
                                 >
                                     {p}
@@ -420,10 +467,18 @@ export default function TransactionsPage() {
                             );
                         })}
 
-                        <button disabled={!!total_pages && page >= total_pages} onClick={() => setPage(page + 1)} className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
+                        <button
+                            disabled={!hasMoreServer && page >= total_pages}
+                            onClick={onNext}
+                            className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40"
+                        >
                             <MaterialIcon name="chevron_right" size={16} />
                         </button>
-                        <button disabled={!!total_pages && page >= total_pages} onClick={() => setPage(total_pages || page)} className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
+                        <button
+                            disabled={!hasMoreServer && page >= total_pages}
+                            onClick={onNext} // último actúa como avanzar hasta que no haya más
+                            className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40"
+                        >
                             <MaterialIcon name="last_page" size={16} />
                         </button>
 

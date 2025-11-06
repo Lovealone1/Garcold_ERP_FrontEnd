@@ -8,7 +8,7 @@ import {
 } from "@tanstack/react-query-persist-client";
 import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
 
-const VERSION = "transactions-cache-v2";
+const VERSION = "transactions-cache-v24";
 const MAX_AGE = 1000 * 60 * 60 * 24 * 3;
 
 export default function QueryProvider({ children }: PropsWithChildren) {

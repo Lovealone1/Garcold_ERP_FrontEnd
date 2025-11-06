@@ -1,37 +1,40 @@
 "use client";
-
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { listAllProducts } from "@/services/sales/product.api";
 import type { ProductDTO } from "@/types/product";
 
 type Option = { value: number; label: string };
 
-export function useProductosAll(nocacheToken?: number) {
-  const [items, setItems] = useState<ProductDTO[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export function useProductosAll(initialForce?: number) {
+  const qc = useQueryClient();
 
-  const reload = useCallback(
-    async (token = nocacheToken) => {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await listAllProducts({ nocacheToken: token ?? Date.now() });
-        setItems(Array.isArray(data) ? data : []);
-      } catch (e: any) {
-        setError(e?.response?.data?.detail ?? e?.message ?? "Error cargando productos");
-        setItems([]);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [nocacheToken]
+  // tick para forzar bypass de HTTP cache cuando quieras
+  const [forceTs, setForceTs] = useState<number | undefined>(initialForce);
+
+  const key = useMemo(
+    () => ["products", "all", { force: forceTs ?? 0 }] as const,
+    [forceTs]
   );
 
-  useEffect(() => {
-    reload();
-  }, [reload]);
+  const query = useQuery<ProductDTO[]>({
+    queryKey: key,
+    queryFn: async ({ signal, queryKey }) => {
+      const [, , meta] = queryKey;
+      const nocacheToken =
+        typeof (meta as any)?.force === "number" && (meta as any).force > 0
+          ? Date.now()
+          : undefined;
+      return listAllProducts({ signal, nocacheToken });
+    },
+    // cache “largo” y sin refetches molestos
+    staleTime: 1000 * 60 * 60,          // 1h “fresh”
+    gcTime: 1000 * 60 * 60 * 24 * 3,  // 3 días en caché
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
 
+  const items = query.data ?? [];
   const options: Option[] = useMemo(
     () =>
       items.map((p) => ({
@@ -41,5 +44,24 @@ export function useProductosAll(nocacheToken?: number) {
     [items]
   );
 
-  return { items, options, loading, error, reload };
+  // invalida sin romper la key
+  const invalidate = () => qc.invalidateQueries({ queryKey: ["products", "all"] });
+
+  // fuerza bypass de HTTP cache (cambia la key con token)
+  const reload = () => setForceTs(Date.now());
+
+  // opcional: priming desde paginadas (si ya las tienes en memoria)
+  const primeFromPages = (allProducts: ProductDTO[]) => {
+    qc.setQueryData<ProductDTO[]>(["products", "all", { force: 0 }], allProducts);
+  };
+
+  return {
+    items,
+    options,
+    loading: query.isLoading || query.isFetching,
+    error: query.isError ? (query.error as Error).message : null,
+    reload,        // fuerza ir a red con nocacheToken
+    invalidate,    // marca stale y refetchea con política normal
+    primeFromPages // si quieres sembrar desde el hook paginado
+  };
 }

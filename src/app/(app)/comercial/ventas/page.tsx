@@ -32,32 +32,22 @@ const pill = "min-w-[90px] h-8 px-2.5 rounded-md grid place-items-center text-[1
 const actionBtn =
     "h-8 w-8 grid place-items-center rounded-full text-[var(--tg-primary)] hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary";
 
-/* Desktop DRP compacto si lo necesitas en otro momento */
-// const DPR_COMPACT = "...";
-
-/* MÓVIL: forzar que el botón del calendario quede pegado al input */
 const DPR_MOBILE =
-    // contenedor del input
     "[&_input]:h-10 [&_input]:w-full [&_input]:rounded-l-md [&_input]:border [&_input]:border-tg " +
     "[&_input]:bg-tg-card [&_input]:px-3 [&_input]:text-[14px] [&_input]:text-tg-card " +
-    // botón de calendario
     "[&_button]:h-10 [&_button]:w-10 [&_button]:rounded-r-md [&_button]:p-0 " +
     "[&_button]:border [&_button]:border-l-0 [&_button]:border-tg [&_button]:bg-tg-card " +
-    // quita márgenes raros del svg
     "[&_button_svg]:!m-0 " +
-    // elimina gaps internos del wrapper si tu componente renderiza un wrapper
     "inline-flex w-full";
 
 const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 const clip = (s?: string | null, n = 24) => (s ?? "—").length > n ? (s as string).slice(0, n).trimEnd() + "…" : (s ?? "—");
 const SKELETON_COUNT = 8;
 
-/* Indicador */
 function Dot({ color }: { color: string }) {
     return <span className="inline-block h-3 w-3 rounded-full" style={{ backgroundColor: color }} />;
 }
 
-/* Header desktop */
 const GRID_COLS = "30px 220px 1fr 150px 170px 170px 208px";
 const HEADER_COLS = "160px 220px 1fr 160px 170px 240px 40px";
 function HeaderRow() {
@@ -73,7 +63,6 @@ function HeaderRow() {
     );
 }
 
-/* Card/Fila */
 function SaleRow({
     v,
     onView,
@@ -191,7 +180,6 @@ function SaleRow({
     );
 }
 
-/* ----------------- Página ----------------- */
 export default function VentasPage() {
     const router = useRouter();
     const { success, error } = useNotifications();
@@ -412,7 +400,7 @@ export default function VentasPage() {
                 </div>
             </div>
 
-            {/* Toolbar MÓVIL (AJUSTADA) */}
+            {/* Toolbar MÓVIL*/}
             <div className="sm:hidden mb-3 space-y-2">
                 <label className="relative flex h-10 w-full">
                     <span className="absolute inset-y-0 left-3 flex items-center text-tg-muted pointer-events-none">
@@ -464,9 +452,7 @@ export default function VentasPage() {
                     </select>
                 </div>
 
-                {/* DateRange + Limpiar */}
                 <div className="grid grid-cols-[1fr_auto] gap-2">
-                    {/* Icono pegado al input gracias a DPR_MOBILE */}
                     <DateRangePicker
                         className={DPR_MOBILE}
                         value={range}
@@ -494,7 +480,6 @@ export default function VentasPage() {
                 </button>
             </div>
 
-            {/* Marco + lista */}
             <div className="rounded-xl border flex-1 min-h-0 flex flex-col overflow-hidden mb-1" style={{ background: FRAME_BG, borderColor: BORDER }}>
                 <div className="px-3 pt-3">
                     <HeaderRow />
@@ -522,7 +507,6 @@ export default function VentasPage() {
                             ))}
                 </div>
 
-                {/* Paginación */}
                 <div className="shrink-0 px-3 pt-1 pb-2 flex flex-wrap gap-3 items-center justify-between">
                     <div className="flex items-center gap-2">
                         <span className="text-sm">Líneas por página</span>
@@ -567,10 +551,8 @@ export default function VentasPage() {
                 </div>
             </div>
 
-            {/* Ver */}
             {openView && <VentaView open={openView} onClose={() => setOpenView(false)} venta={ventaSel} />}
 
-            {/* Pagar */}
             {openPay && (
                 <PagoVentaModal
                     open={openPay}
@@ -593,7 +575,6 @@ export default function VentasPage() {
                 />
             )}
 
-            {/* Eliminar */}
             {openDelete && (
                 <div
                     role="dialog"

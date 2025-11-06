@@ -2,7 +2,7 @@
 import { redirect } from "next/navigation";
 import AppShell from "@/components/layout/appshell";
 import { supabaseServer } from "@/lib/supabase/server";
-import AuthBootstrap from "@/components/providers/AuthBoostrap"; // ← typo fixed
+import AuthBootstrap from "@/components/providers/AuthBoostrap"; 
 import { RouteMemory } from "@/components/providers/RouteMemory";
 import QueryProvider from "@/components/providers/QueryProvider";
 export default async function AppLayout({ children }: { children: React.ReactNode }) {

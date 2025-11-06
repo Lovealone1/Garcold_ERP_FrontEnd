@@ -24,7 +24,7 @@ export async function listTransactions(
 
     const params: Record<string, string | number | undefined> = {
         page,
-        page_size, // <- clave para no quedarte en page=1
+        page_size, 
         ...(q ? { q } : {}),
         ...(bank ? { bank } : {}),
         ...(type ? { type } : {}),
@@ -81,25 +81,3 @@ export async function deleteTransaction(
     return data as { message: string };
 }
 
-export async function* iterateTransactions(
-    startPage = 1,
-    opts: ListOpts = {},
-): AsyncGenerator<TransactionView[], void, unknown> {
-    const { signal, ...filters } = opts;
-    let page = startPage;
-
-    for (let guard = 0; guard < 1000; guard++) {
-        const res = await listTransactions(page, { signal, ...filters });
-        yield res.items;
-
-        const hasNext =
-            typeof res.has_next === "boolean"
-                ? res.has_next
-                : typeof res.total_pages === "number"
-                    ? page < res.total_pages
-                    : false;
-
-        if (!hasNext) return;
-        page += 1;
-    }
-}

@@ -1,7 +1,6 @@
-// app/(comercial)/transacciones/page.tsx
 "use client";
 
-import { useMemo, useState, CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, CSSProperties } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import type { DateRange } from "react-day-picker";
@@ -28,25 +27,18 @@ const pill =
 const actionBtn =
     "h-8 w-8 grid place-items-center rounded-full text-[var(--tg-primary)] hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary";
 
+/* DateRangePicker styles */
+const DPR_MOBILE =
+    "inline-flex items-center h-10 rounded-md border border-tg bg-tg-card overflow-hidden " +
+    "[&_input]:h-full [&_input]:w-[220px] [&_input]:bg-transparent [&_input]:border-0 [&_input]:px-2 [&_input]:text-[14px] [&_input]:text-tg-card " +
+    "[&_button]:h-10 [&_button]:w-10 [&_button]:p-0 [&_button]:border-0 [&_button]:bg-transparent " +
+    "[&_button_svg]:!ml-7";
+
 const DPR_DESKTOP =
     "inline-flex items-center h-10 rounded-md border border-tg bg-tg-card overflow-hidden " +
-    // input “plano” dentro del wrapper
-    "[&_input]:h-full [&_input]:w-[220px] [&_input]:bg-transparent [&_input]:border-0 [&_input]:px-2 [&_input]:text-[14px] [&_input]:text-tg-card " +
-    // botón “plano” pegado a la derecha
+    "[&_input]:h-full [&_input]:w-[220px] [&_input]:bg-transparent [&_input]:border-0 [&_input]:px-3 [&_input]:text-[14px] [&_input]:text-tg-card " +
     "[&_button]:h-10 [&_button]:w-10 [&_button]:p-0 [&_button]:border-0 [&_button]:bg-transparent " +
-    // sin márgenes en el ícono
-    "[&_button_svg]:ml-5";
-/* MISMO estilo del DateRangePicker usado en Ventas */
-const DPR_UNIFIED =
-    // wrapper: un solo contenedor con borde
-    "flex overflow-hidden rounded-md border border-tg bg-tg-card " +
-    // input sin borde propio
-    "[&_input]:h-10 [&_input]:w-full [&_input]:px-3 [&_input]:bg-transparent " +
-    "[&_input]:border-0 [&_input]:outline-none [&_input]:text-[14px] [&_input]:text-tg-card " +
-    // botón calendario sin borde propio
-    "[&_button]:h-10 [&_button]:w-10 [&_button]:p-0 [&_button]:bg-transparent [&_button]:border-0 " +
-    // icono sin márgenes raros
-    "[&_button_svg]:!m-0";
+    "[&_button_svg]:!ml-5";
 
 /* utilidades */
 const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
@@ -180,6 +172,7 @@ export default function TransactionsPage() {
     const {
         items, page, setPage, loading, refresh,
         total_pages, page_size, total, filters, setFilters, options,
+        loadMore, // <- lo usamos para precargar
     } = useTransactions(1, 8);
 
     const { remove } = useDeleteTransaction();
@@ -193,6 +186,22 @@ export default function TransactionsPage() {
     const tipos = options.types;
 
     const frameVars: CSSProperties = { ["--content-x" as any]: "8px" };
+
+    // Precarga progresiva: mientras haya más en backend, sigue pidiendo páginas.
+    // Se trottlea para no spamear el servidor.
+    const preloadTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    useEffect(() => {
+        if (preloadTimer.current) clearTimeout(preloadTimer.current);
+        const needMore = typeof total === "number" && items.length < total;
+        if (needMore && !loading) {
+            preloadTimer.current = setTimeout(() => {
+                loadMore();
+            }, 120); // trottle suave
+        }
+        return () => {
+            if (preloadTimer.current) clearTimeout(preloadTimer.current);
+        };
+    }, [items.length, total, loading, loadMore]);
 
     const filtered = useMemo(() => {
         if (!range?.from || !range?.to) return items;
@@ -218,6 +227,8 @@ export default function TransactionsPage() {
         try {
             await remove(id);
             success("Transacción eliminada");
+            // invalidamos y reiniciamos la precarga
+            setPage(1);
             refresh();
         } catch (e: any) {
             error(e?.response?.data?.detail ?? "Error eliminando transacción");
@@ -279,9 +290,8 @@ export default function TransactionsPage() {
                         <option value="auto">Automática</option>
                     </select>
 
-                    {/* MISMO estilo que Ventas */}
                     <DateRangePicker
-                        className={DPR_DESKTOP}
+                        className={DPR_DESKTOP + " whitespace-nowrap"}
                         value={range}
                         onChange={(r) => { setRange(r); setPage(1); }}
                     />
@@ -342,11 +352,7 @@ export default function TransactionsPage() {
                 </div>
 
                 <div className="grid grid-cols-[1fr_auto] gap-2">
-                    <DateRangePicker
-                        className={DPR_UNIFIED}
-                        value={range}
-                        onChange={(r) => { setRange(r); setPage(1); }}
-                    />
+                    <DateRangePicker className={DPR_MOBILE} value={range} onChange={(r) => { setRange(r); setPage(1); }} />
                     <button
                         type="button"
                         onClick={clearFilters}
@@ -374,13 +380,13 @@ export default function TransactionsPage() {
                 </div>
 
                 <div className="flex-1 min-h-0 overflow-auto px-3 pb-1 space-y-4 sm:space-y-3.5">
-                    {loading
+                    {loading && items.length === 0
                         ? Array.from({ length: SKELETON_COUNT }).map((_, i) => (
                             <div key={`sk-${i}`} className="h-[60px] rounded-xl border bg-black/10 animate-pulse" />
                         ))
-                        : filtered.length === 0
+                        : (filtered.length === 0
                             ? <div className="h-full grid place-items-center text-tg-muted text-sm">Sin registros</div>
-                            : filtered.map((r) => <TxRow key={r.id} r={r} onDelete={handleDelete} />)}
+                            : filtered.map((r) => <TxRow key={r.id} r={r} onDelete={handleDelete} />))}
                 </div>
 
                 {/* Paginación */}

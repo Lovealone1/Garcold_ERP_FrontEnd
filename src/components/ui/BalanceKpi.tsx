@@ -2,37 +2,38 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import {
-    Wallet as WalletLucide, CreditCard, PiggyBank, Banknote, Coins, DollarSign,
-} from "lucide-react";
+import { Wallet as WalletLucide, CreditCard, PiggyBank, Banknote, Coins, DollarSign } from "lucide-react";
 import { MaterialIcon } from "@/components/ui/material-icon";
 
 type Bank = { nombre: string; saldo: number };
 type Props = { banks: Bank[]; total: number };
 
-const money = new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-    maximumFractionDigits: 0,
-});
-
+const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 const LS_KEY = "tg-hide-balance";
 
 export default function BalanceKpi({ banks, total }: Props) {
+    const [mounted, setMounted] = useState(false);
     const [selected, setSelected] = useState<number | null>(null);
-    const [hidden, setHidden] = useState<boolean>(() => {
-        if (typeof window === "undefined") return false;
-        return window.localStorage.getItem(LS_KEY) === "1";
-    });
+    // No leas localStorage en el render inicial. Evita mismatch.
+    const [hidden, setHidden] = useState<boolean>(false);
 
     useEffect(() => {
-        if (typeof window !== "undefined") {
-            window.localStorage.setItem(LS_KEY, hidden ? "1" : "0");
-        }
-    }, [hidden]);
+        setMounted(true);
+        try {
+            const raw = localStorage.getItem(LS_KEY);
+            if (raw === "1") setHidden(true);
+        } catch { }
+    }, []);
+
+    useEffect(() => {
+        if (!mounted) return;
+        try {
+            localStorage.setItem(LS_KEY, hidden ? "1" : "0");
+        } catch { }
+    }, [hidden, mounted]);
 
     const items = useMemo(() => {
-        const arr = [...(banks ?? [])].filter(b => (b.saldo ?? 0) > 0);
+        const arr = [...(banks ?? [])].filter((b) => (b.saldo ?? 0) > 0);
         arr.sort((a, b) => b.saldo - a.saldo);
         return arr;
     }, [banks]);
@@ -54,15 +55,12 @@ export default function BalanceKpi({ banks, total }: Props) {
         color: colorAt(i, Math.max(1, items.length)),
     }));
 
-    const displayTotal = selected == null ? total : (withPct[selected]?.saldo ?? 0);
+    const displayTotal = selected == null ? total : withPct[selected]?.saldo ?? 0;
 
-    const barSegments =
-        selected == null
-            ? withPct
-            : [{ ...withPct[selected], pct: 100 }];
+    const barSegments = selected == null ? withPct : [{ ...withPct[selected], pct: 100 }];
 
-    const toggle = (idx: number) => setSelected(s => (s === idx ? null : idx));
-    const toggleHidden = () => setHidden(h => !h);
+    const toggle = (idx: number) => setSelected((s) => (s === idx ? null : idx));
+    const toggleHidden = () => setHidden((h) => !h);
 
     const fmt = (v: number) => money.format(v || 0);
     const mask = (v: number) => {
@@ -73,7 +71,7 @@ export default function BalanceKpi({ banks, total }: Props) {
 
     return (
         <div className="rounded-xl border border-tg bg-[var(--panel-bg)] p-4 sm:p-5 min-h-[120px]">
-            {/* Header: icono + título + ojo a la derecha */}
+            {/* Header */}
             <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2">
                     <span
@@ -84,29 +82,20 @@ export default function BalanceKpi({ banks, total }: Props) {
                         ].join(" ")}
                         aria-hidden
                     >
-                        <MaterialIcon
-                            name="account_balance_wallet"
-                            set="rounded"
-                            size={18}
-                            fill={0}
-                            weight={600}
-                            grade={0}
-                        />
+                        <MaterialIcon name="account_balance_wallet" set="rounded" size={18} fill={0} weight={600} grade={0} />
                     </span>
 
-                    <h3 className="text-sm md:text-base font-semibold text-tg-primary tracking-wide">
-                        Balance
-                    </h3>
+                    <h3 className="text-sm md:text-base font-semibold text-tg-primary tracking-wide">Balance</h3>
                 </div>
 
-                {/* Botón de visibilidad en el header derecho */}
+                {/* Botón visibilidad: no hidratar atributos variables antes de montar */}
                 <button
                     type="button"
                     onClick={toggleHidden}
                     className="flex h-7 w-7 items-center justify-center rounded-md hover:bg-[var(--tg-hover)]"
-                    title={hidden ? "Mostrar saldo" : "Ocultar saldo"}
-                    aria-pressed={hidden}
-                    aria-label={hidden ? "Mostrar saldo" : "Ocultar saldo"}
+                    title={mounted ? (hidden ? "Mostrar saldo" : "Ocultar saldo") : undefined}
+                    aria-pressed={mounted ? hidden : undefined}
+                    aria-label={mounted ? (hidden ? "Mostrar saldo" : "Ocultar saldo") : "Saldo"}
                 >
                     <MaterialIcon
                         name={hidden ? "visibility_off" : "visibility"}
@@ -120,9 +109,9 @@ export default function BalanceKpi({ banks, total }: Props) {
                 </button>
             </div>
 
-            {/* Valor principal */}
-            <div className="mt-2 text-3xl sm:text-4xl font-extrabold tracking-tight">
-                {hidden ? mask(displayTotal) : fmt(displayTotal)}
+            {/* Valor principal: evita mismatch con placeholder hasta montar */}
+            <div className="mt-2 text-3xl sm:text-4xl font-extrabold tracking-tight" suppressHydrationWarning>
+                {mounted ? (hidden ? mask(displayTotal) : fmt(displayTotal)) : "—"}
             </div>
 
             {/* Barra porcentual */}
@@ -133,16 +122,15 @@ export default function BalanceKpi({ banks, total }: Props) {
                             key={i}
                             className="group relative h-full transition-[width] duration-300"
                             style={{ width: `${b.pct}%`, background: b.color }}
-                            title={hidden ? `${b.nombre}` : `${b.nombre}: ${fmt(b.saldo)}`}
+                            title={mounted ? (hidden ? `${b.nombre}` : `${b.nombre}: ${fmt(b.saldo)}`) : undefined}
                         >
-                            {!hidden && (
+                            {mounted && !hidden && (
                                 <div
                                     className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap
                              rounded border border-tg bg-[var(--panel-bg)] px-2 py-0.5 text-[10px]
                              opacity-0 group-hover:opacity-100 transition-opacity"
                                 >
-                                    <strong>{fmt(b.saldo)}</strong>{" "}
-                                    · {((b.saldo / (total || 1)) * 100).toFixed(1)}%
+                                    <strong>{fmt(b.saldo)}</strong> · {((b.saldo / (total || 1)) * 100).toFixed(1)}%
                                 </div>
                             )}
                         </div>
@@ -160,25 +148,11 @@ export default function BalanceKpi({ banks, total }: Props) {
                             key={i}
                             type="button"
                             onClick={() => toggle(i)}
-                            className={[
-                                "flex items-center gap-2 group",
-                                "transition transform",
-                                active ? "scale-110" : "opacity-80 hover:opacity-100",
-                            ].join(" ")}
-                            title={
-                                active
-                                    ? `Mostrando solo: ${b.nombre}. Click para volver al total`
-                                    : `${b.nombre}`
-                            }
+                            className={["flex items-center gap-2 group", "transition transform", active ? "scale-110" : "opacity-80 hover:opacity-100"].join(" ")}
+                            title={mounted ? (active ? `Mostrando solo: ${b.nombre}. Click para volver al total` : `${b.nombre}`) : undefined}
                         >
                             <span className="relative inline-flex">
-                                <span
-                                    className={[
-                                        "h-3 w-3 rounded-full transition",
-                                        active ? "ring-2 ring-emerald-400" : "",
-                                    ].join(" ")}
-                                    style={{ background: b.color }}
-                                />
+                                <span className={["h-3 w-3 rounded-full transition", active ? "ring-2 ring-emerald-400" : ""].join(" ")} style={{ background: b.color }} />
                                 <span className="absolute inset-[3px] rounded-full bg-[color-mix(in_srgb,white_60%,transparent)]" />
                             </span>
                             <Icon className="h-4 w-4 transition" style={{ color: b.color }} />

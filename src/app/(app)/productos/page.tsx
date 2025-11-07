@@ -481,7 +481,7 @@ export default function ProductosPage() {
           intent="create"
           open={openCreate}
           onClose={() => setOpenCreate(false)}
-          onSubmit={(data) => handleCreateSubmit(data as ProductCreate)}  
+          onSubmit={(data) => handleCreateSubmit(data as ProductCreate)}
           loading={creating}
         />
       )}
@@ -493,14 +493,20 @@ export default function ProductosPage() {
           onClose={() => setOpenEdit(false)}
           onSubmit={handleEditSubmit}
           loading={editLoading}
-          defaults={editProducto ? {
-            reference: editProducto.reference,
-            description: editProducto.description,
-            quantity: editProducto.quantity ?? 0,
-            purchase_price: editProducto.purchase_price,
-            sale_price: editProducto.sale_price,
-            is_active: editProducto.is_active,
-          } : undefined}
+          defaults={
+            editProducto
+              ? {
+                reference: editProducto.reference,
+                description: editProducto.description,
+                quantity: editProducto.quantity ?? 0,
+                purchase_price: editProducto.purchase_price,
+                sale_price: editProducto.sale_price,
+                is_active: editProducto.is_active,
+                barcode: editProducto.barcode ?? "",
+                barcode_type: editProducto.barcode_type ?? "",
+              }
+              : undefined
+          }
         />
       )}
       {openMedia && (

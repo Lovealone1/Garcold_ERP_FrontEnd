@@ -51,19 +51,36 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               {/* Hamburguesa móvil */}
               <button
                 onClick={() => setIsSidebarOpen(true)}
-                className="lg:hidden inline-flex h-9 w-9 items-center justify-center rounded-md border border-tg hover:bg-[var(--tg-hover)]"
+                className="lg:hidden inline-flex h-9 w-9 items-center justify-center rounded-md
+             bg-[rgba(255,255,255,0.04)]
+             border border-[rgba(255,255,255,0.18)]
+             hover:bg-[rgba(255,255,255,0.08)]
+             focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tg-primary)]"
                 aria-label="Abrir menú lateral"
               >
-                <MaterialIcon name="menu" size={22} className="text-muted" fill={0} weight={600} />
+                <MaterialIcon
+                  name="menu"
+                  size={22}
+                  className="text-[rgba(255,255,255,0.9)]"
+                  fill={0}
+                  weight={600}
+                />
               </button>
 
               {/* Back móvil */}
               <button
                 onClick={() => (history.length > 1 ? history.back() : null)}
-                className="lg:hidden inline-flex h-9 w-9 items-center justify-center rounded-md hover:bg-[var(--tg-hover)]"
+                className="lg:hidden inline-flex h-9 w-9 items-center justify-center rounded-md
+             bg-transparent
+             hover:bg-[rgba(255,255,255,0.06)]
+             focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tg-primary)]"
                 aria-label="Volver"
               >
-                <MaterialIcon name="arrow_back" size={22} className="text-muted" />
+                <MaterialIcon
+                  name="arrow_back"
+                  size={22}
+                  className="text-[rgba(255,255,255,0.85)]"
+                />
               </button>
 
               {/* Título móvil */}

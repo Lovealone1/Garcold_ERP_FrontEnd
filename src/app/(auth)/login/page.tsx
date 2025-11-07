@@ -31,7 +31,22 @@ const inputSx = {
         "&:hover fieldset": { borderColor: "var(--tg-border)" },
         "&.Mui-focused fieldset": { borderColor: "var(--tg-primary)" },
     },
-    "& .MuiInputBase-input::placeholder": { color: "var(--tg-muted)", opacity: 1 },
+    "& .MuiOutlinedInput-input": {
+        padding: "0 14px",
+        color: "var(--tg-card-fg)",
+        "::placeholder": {
+            color: "var(--tg-muted)",
+            opacity: 1,
+        },
+    },
+
+    "& input:-webkit-autofill, & input:-webkit-autofill:hover, & input:-webkit-autofill:focus": {
+        WebkitBoxShadow: "0 0 0 1000px var(--tg-card-bg) inset",
+        WebkitTextFillColor: "var(--tg-card-fg)",
+        caretColor: "var(--tg-card-fg)",
+        borderRadius: 12,
+        transition: "background-color 9999s ease-out 0s",
+    },
 } as const;
 
 const checkboxSx = {

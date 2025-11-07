@@ -169,3 +169,25 @@ export async function soldProductsInRange(
     });
     return data as SaleProductsDTO[];
 }
+
+export async function getProductByBarcode(
+  barcode: string,
+  opts?: Opts
+): Promise<ProductDTO | null> {
+  try {
+    const { data } = await salesApi.get(
+      `/products/by-barcode/${encodeURIComponent(barcode)}`,
+      {
+        params: { _ts: opts?.nocacheToken ?? ts() },
+        headers: nocache,
+        signal: opts?.signal,
+      }
+    );
+    return data as ProductDTO;
+  } catch (error: any) {
+    if (error?.response?.status === 404) {
+      return null;
+    }
+    throw error;
+  }
+}

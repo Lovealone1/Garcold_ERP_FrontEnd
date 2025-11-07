@@ -114,33 +114,32 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
       {/* Normaliza filas e íconos sin tocar NavCollapsed/NavExpanded */}
       <style jsx global>{`
-        [data-silent-scroll]{ scrollbar-width:none; -ms-overflow-style:none; }
-        [data-silent-scroll]::-webkit-scrollbar{ width:0; height:0; display:none; }
+  [data-silent-scroll]{ scrollbar-width:none; -ms-overflow-style:none; }
+  [data-silent-scroll]::-webkit-scrollbar{ width:0; height:0; display:none; }
 
-        /* Cada fila de nav como target táctil */
-        [data-role="app-sidebar"] a,
-        [data-role="app-sidebar"] button {
-          min-height: 44px;
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
+  /* Fila de navegación: solo links/botones de nav, NO el toggle */
+  [data-role="app-sidebar"] a,
+  [data-role="app-sidebar"] button:not([data-theme-switch]) {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
 
-        /* Primer hijo como contenedor del icono, cuadrado y centrado */
-        [data-role="app-sidebar"] a > :first-child,
-        [data-role="app-sidebar"] button > :first-child {
-          width: 24px;
-          height: 24px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-        }
+  /* Icono principal de ítems de nav */
+  [data-role="app-sidebar"] a > :first-child,
+  [data-role="app-sidebar"] button:not([data-theme-switch]) > :first-child {
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
 
-        /* Tamaño visual constante del ícono */
-        [data-role="app-sidebar"] .material-icons { font-size: 22px; line-height: 1; }
-        [data-role="app-sidebar"] svg { width: 22px; height: 22px; display: block; }
-      `}</style>
+  [data-role="app-sidebar"] .material-icons { font-size: 22px; line-height: 1; }
+  [data-role="app-sidebar"] svg { width: 22px; height: 22px; display: block; }
+`}</style>
     </>
   );
 }

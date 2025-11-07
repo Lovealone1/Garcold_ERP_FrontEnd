@@ -15,6 +15,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import * as React from "react";
 import type { ProductDTO } from "@/types/product";
+import { ProductBarcode } from "@/components/barcode/ProductBarcode";
 
 type Props = {
   open: boolean;
@@ -50,7 +51,9 @@ export default function ProductoView({ open, onClose, producto, loading }: Props
         },
       }}
     >
-      <DialogTitle sx={{ fontWeight: 600, pb: 1.5 }}>Detalle de producto</DialogTitle>
+      <DialogTitle sx={{ fontWeight: 600, pb: 1.5 }}>
+        Detalle de producto
+      </DialogTitle>
 
       <DialogContent dividers sx={{ borderColor: "var(--panel-border)" }}>
         {loading ? (
@@ -60,10 +63,12 @@ export default function ProductoView({ open, onClose, producto, loading }: Props
             <Skeleton variant="rounded" height={64} />
           </Stack>
         ) : !producto ? (
-          <Typography variant="body2" color="text.secondary">Sin datos</Typography>
+          <Typography variant="body2" color="text.secondary">
+            Sin datos
+          </Typography>
         ) : (
           <Stack gap={2}>
-            {/* Encabezado compacto */}
+            {/* Encabezado compacto con SKU + barcode opcional */}
             <Box
               sx={{
                 p: 2,
@@ -72,37 +77,71 @@ export default function ProductoView({ open, onClose, producto, loading }: Props
                 bgcolor: "color-mix(in srgb, var(--tg-card-bg) 92%, black 8%)",
               }}
             >
-              <Stack direction="row" alignItems="center" justifyContent="space-between" gap={2}>
-                <Stack>
-                  <Typography variant="h6" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
-                    {producto.reference}
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: "var(--tg-muted)" }}>
-                    ID interno: {producto.id}
-                  </Typography>
+              <Stack
+                direction="row"
+                alignItems="center"
+                justifyContent="space-between"
+                gap={2}
+              >
+                {/* Izquierda: referencia + ID + barcode compacto */}
+                <Stack direction="row" alignItems="center" gap={1.5}>
+                  <Stack>
+                    <Typography
+                      variant="h6"
+                      sx={{ fontWeight: 600, lineHeight: 1.2 }}
+                    >
+                      {producto.reference}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      sx={{ color: "var(--tg-muted)" }}
+                    >
+                      ID interno: {producto.id}
+                    </Typography>
+                  </Stack>
+
+                  {producto.barcode && (
+                    <ProductBarcode
+                      value={producto.barcode}
+                      barcodeType={producto.barcode_type}
+                      compact
+                    />
+                  )}
                 </Stack>
 
-                <Stack direction="row" gap={1} alignItems="center" flexWrap="wrap">
-                  {/* Stock (reemplaza el bloque de saldo de Cliente) */}
+                {/* Derecha: stock + estado */}
+                <Stack
+                  direction="row"
+                  gap={1}
+                  alignItems="center"
+                  flexWrap="wrap"
+                >
                   <Chip
                     size="small"
                     label={inStock ? `Stock: ${stock}` : "Sin stock"}
                     sx={{
                       fontWeight: 600,
                       bgcolor: inStock ? "success.main" : "error.main",
-                      color: inStock ? "success.contrastText" : "error.contrastText",
+                      color: inStock
+                        ? "success.contrastText"
+                        : "error.contrastText",
                       border: "none",
                     }}
                   />
-                  {/* Estado activo */}
                   <Chip
                     size="small"
                     label={producto.is_active ? "Activo" : "Inactivo"}
                     sx={{
                       fontWeight: 600,
-                      bgcolor: producto.is_active ? "primary.main" : "transparent",
-                      color: producto.is_active ? "primary.contrastText" : "var(--tg-muted)",
-                      border: producto.is_active ? "none" : "1px solid var(--tg-border)",
+                      bgcolor: producto.is_active
+                        ? "primary.main"
+                        : "transparent",
+                      color: producto.is_active
+                        ? "primary.contrastText"
+                        : "var(--tg-muted)",
+                      border: producto.is_active
+                        ? "none"
+                        : "1px solid var(--tg-border)",
                     }}
                   />
                 </Stack>
@@ -112,23 +151,41 @@ export default function ProductoView({ open, onClose, producto, loading }: Props
             {/* Datos: Label: Valor */}
             <Grid container spacing={2}>
               <Grid size={{ xs: 12 }}>
-                <InfoInline label="Descripción" value={producto.description} />
+                <InfoInline
+                  label="Descripción"
+                  value={producto.description}
+                />
               </Grid>
 
               <Grid size={{ xs: 12, sm: 6 }}>
-                <InfoInline label="Precio compra" value={money.format(producto.purchase_price)} />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <InfoInline label="Precio venta" value={money.format(producto.sale_price)} />
+                <InfoInline
+                  label="Precio compra"
+                  value={money.format(producto.purchase_price)}
+                />
               </Grid>
 
               <Grid size={{ xs: 12, sm: 6 }}>
-                <InfoInline label="Stock" value={String(producto.quantity)} />
+                <InfoInline
+                  label="Precio venta"
+                  value={money.format(producto.sale_price)}
+                />
               </Grid>
+
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <InfoInline
+                  label="Stock"
+                  value={String(producto.quantity)}
+                />
+              </Grid>
+
               <Grid size={{ xs: 12, sm: 6 }}>
                 <InfoInline
                   label="Fecha de creación"
-                  value={format(new Date(producto.created_at), "dd MMM yyyy, HH:mm", { locale: es })}
+                  value={format(
+                    new Date(producto.created_at),
+                    "dd MMM yyyy, HH:mm",
+                    { locale: es }
+                  )}
                 />
               </Grid>
             </Grid>
@@ -137,7 +194,10 @@ export default function ProductoView({ open, onClose, producto, loading }: Props
       </DialogContent>
 
       <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button onClick={onClose} sx={{ textTransform: "none", color: "var(--tg-muted)" }}>
+        <Button
+          onClick={onClose}
+          sx={{ textTransform: "none", color: "var(--tg-muted)" }}
+        >
           Cerrar
         </Button>
       </DialogActions>
@@ -145,21 +205,41 @@ export default function ProductoView({ open, onClose, producto, loading }: Props
   );
 }
 
-function InfoInline({ label, value }: { label: string; value: React.ReactNode }) {
+function InfoInline({
+  label,
+  value,
+}: {
+  label: string;
+  value: React.ReactNode;
+}) {
   return (
     <Box
       sx={{
         px: 1,
         py: 0.75,
         borderRadius: 1,
-        bgcolor: "color-mix(in srgb, var(--tg-card-bg) 96%, black 4%)",
+        bgcolor:
+          "color-mix(in srgb, var(--tg-card-bg) 96%, black 4%)",
       }}
     >
-      <Typography variant="body2" sx={{ display: "inline-flex", alignItems: "baseline", gap: 0.75 }}>
-        <Box component="span" sx={{ fontWeight: 600, color: "var(--tg-muted)" }}>
+      <Typography
+        variant="body2"
+        sx={{
+          display: "inline-flex",
+          alignItems: "baseline",
+          gap: 0.75,
+        }}
+      >
+        <Box
+          component="span"
+          sx={{ fontWeight: 600, color: "var(--tg-muted)" }}
+        >
           {label}:
         </Box>
-        <Box component="span" sx={{ wordBreak: "break-word" }}>
+        <Box
+          component="span"
+          sx={{ wordBreak: "break-word" }}
+        >
           {value}
         </Box>
       </Typography>

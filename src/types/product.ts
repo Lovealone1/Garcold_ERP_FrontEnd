@@ -9,6 +9,8 @@ export interface ProductDTO {
   sale_price: number;
   is_active: boolean;
   created_at: string; 
+  barcode: string | null;
+  barcode_type: string | null;
 }
 
 export type ProductPageDTO = PageDTO<ProductDTO>;

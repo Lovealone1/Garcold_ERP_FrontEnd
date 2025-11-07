@@ -14,7 +14,7 @@ export default function UserModule({
     onToggle,
     configHref = "/settings/perfil",
     supportHref = "/soporte",
-    accentPct = 14, // ← controla la intensidad del hover
+    accentPct = 14, 
 }: {
     expanded: boolean;
     isDark: boolean;
@@ -23,7 +23,6 @@ export default function UserModule({
     supportHref?: string;
     accentPct?: number;
 }) {
-    // Mini helper para aplicar bg en hover sin tocar el estado base
     function HoverLink({
         href,
         children,

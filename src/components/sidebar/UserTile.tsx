@@ -11,7 +11,6 @@ type Props = { collapsed?: boolean; className?: string; tintPercent?: number };
 const ACCENT = (pct = 14) =>
     `color-mix(in srgb, var(--tg-primary) ${pct}%, transparent)`;
 
-/* ---------- Popover ---------- */
 function MenuPopover({
     open,
     anchorEl,
@@ -115,7 +114,6 @@ function MenuPopover({
     );
 }
 
-/* ------------------------------- UserTile ------------------------------- */
 export default function UserTile({
     collapsed,
     className = "",

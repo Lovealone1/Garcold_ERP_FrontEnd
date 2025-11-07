@@ -1,4 +1,3 @@
-// app/(compras)/compras/crear/page.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -25,7 +24,7 @@ import { useBancos } from "@/hooks/bancos/useBancos";
 
 import type { ProductDTO } from "@/types/product";
 import type { PurchaseCreate, PurchaseItemInput } from "@/types/purchase";
-
+import { useQueryClient } from "@tanstack/react-query";
 type ItemCompra = {
     idTmp: string;
     productoId: number;
@@ -232,8 +231,17 @@ export default function CompraCrearPage() {
         [items.length, proveedorSel, bancoSel, estadoSel]
     );
 
+    const qc = useQueryClient();
+    
     const { create: createCompra, loading: creating } = useCreateCompra({
-        onSuccess: () => { limpiar(); router.push("/comercial/compras"); },
+        onSuccess: async () => {
+            await Promise.all([
+                qc.invalidateQueries({ queryKey: ["products"] }),       
+                qc.invalidateQueries({ queryKey: ["products", "all"] }),
+            ]);
+            limpiar();
+            router.push("/comercial/compras");
+        },
     });
 
     async function finalizarCompra() {

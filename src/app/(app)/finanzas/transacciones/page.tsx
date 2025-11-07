@@ -14,7 +14,6 @@ import NewTransactionModal from "@/features/transacciones/NuevaTransaccionModal"
 import DateRangePicker from "@/components/ui/DateRangePicker/DateRangePicker";
 import type { TransactionCreate, TransactionView } from "@/types/transaction";
 
-/* -------- Tokens visuales -------- */
 const FRAME_BG = "color-mix(in srgb, var(--tg-bg) 90%, #fff 3%)";
 const OUTER_BG = "color-mix(in srgb, var(--tg-bg) 55%, #000 45%)";
 const INNER_BG = "color-mix(in srgb, var(--tg-bg) 95%, #fff 2%)";
@@ -27,7 +26,6 @@ const pill =
 const actionBtn =
     "h-8 w-8 grid place-items-center rounded-full text-[var(--tg-primary)] hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary";
 
-/* DateRangePicker styles */
 const DPR_MOBILE =
     "inline-flex items-center h-10 rounded-md border border-tg bg-tg-card overflow-hidden " +
     "[&_input]:h-full [&_input]:w-[220px] [&_input]:bg-transparent [&_input]:border-0 [&_input]:px-2 [&_input]:text-[14px] [&_input]:text-tg-card " +
@@ -40,27 +38,20 @@ const DPR_DESKTOP =
     "[&_button]:h-10 [&_button]:w-10 [&_button]:p-0 [&_button]:border-0 [&_button]:bg-transparent " +
     "[&_button_svg]:!ml-5";
 
-/* utilidades */
 const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
-const clip = (s?: string | null, n = 28) =>
-    (s ?? "—").length > n ? (s as string).slice(0, n).trimEnd() + "…" : (s ?? "—");
+const clip = (s?: string | null, n = 28) => (s ?? "—").length > n ? (s as string).slice(0, n).trimEnd() + "…" : (s ?? "—");
 const SKELETON_COUNT = 8;
 
-/* Indicador */
 function Dot({ auto }: { auto: boolean }) {
     const color = auto ? "#ef4444" : "var(--tg-primary)";
     return <span className="inline-block h-3 w-3 rounded-full" style={{ backgroundColor: color }} />;
 }
 
-/* Header sin label de Acciones */
 const GRID_COLS = "30px 200px 160px 150px 1fr 160px 40px";
 const HEADER_COLS = "30px 200px 160px 150px 1fr 160px 50px";
 function HeaderRow() {
     return (
-        <div
-            className="hidden sm:grid items-center gap-4 mb-2 font-extrabold mx-2"
-            style={{ gridTemplateColumns: HEADER_COLS }}
-        >
+        <div className="hidden sm:grid items-center gap-4 mb-2 font-extrabold mx-2" style={{ gridTemplateColumns: HEADER_COLS }}>
             <span />
             <span className="text-white">Banco</span>
             <span className="text-white text-center">Tipo</span>
@@ -72,48 +63,28 @@ function HeaderRow() {
     );
 }
 
-/* Fila */
 function TxRow({ r, onDelete }: { r: TransactionView; onDelete: (id: number) => void }) {
     const isAuto = !!r.is_auto;
-
     return (
         <div className="relative rounded-xl border shadow-sm" style={{ background: OUTER_BG, borderColor: BORDER }}>
-            {/* Desktop */}
             <div className="hidden sm:block mx-1.5 my-2 rounded-md px-3 py-2.5" style={{ background: INNER_BG }}>
                 <div className="grid items-center gap-4" style={{ gridTemplateColumns: GRID_COLS }}>
-                    <div className="grid place-items-center">
-                        <Dot auto={isAuto} />
-                    </div>
-
+                    <div className="grid place-items-center"><Dot auto={isAuto} /></div>
                     <div className="text-[13px] text-white/90 truncate">{clip(r.bank, 36)}</div>
-
-                    <div className={pill} style={{ background: PILL_BG, borderColor: BORDER }}>
-                        {clip(r.type_str, 18)}
-                    </div>
-
+                    <div className={pill} style={{ background: PILL_BG, borderColor: BORDER }}>{clip(r.type_str, 18)}</div>
                     <div className={`${pill} font-semibold text-right`} style={{ background: PILL_BG, borderColor: BORDER }}>
                         {money.format(r.amount)}
                     </div>
-
-                    <div
-                        className="min-w-0 rounded-md border px-3 h-8 grid place-items-center text-[13px] text-white/90"
-                        style={{ background: PILL_BG, borderColor: BORDER }}
-                        title={r.description || "—"}
-                    >
+                    <div className="min-w-0 rounded-md border px-3 h-8 grid place-items-center text-[13px] text-white/90" style={{ background: PILL_BG, borderColor: BORDER }} title={r.description || "—"}>
                         <span className="w-full truncate text-center">{clip(r.description, 64)}</span>
                     </div>
-
                     <div className={`${pill} text-center`} style={{ background: PILL_BG, borderColor: BORDER }}>
                         {format(new Date(r.created_at), "dd MMM yyyy", { locale: es })}
                     </div>
-
                     <div className="flex items-center justify-end">
                         <button
                             className={`${actionBtn} ${isAuto ? "hover:opacity-100 focus-visible:ring-0" : ""}`}
-                            style={{
-                                background: isAuto ? ACTION_BG_DISABLED : ACTION_BG,
-                                color: isAuto ? "rgba(255,255,255,0.45)" : "var(--tg-primary)",
-                            }}
+                            style={{ background: isAuto ? ACTION_BG_DISABLED : ACTION_BG, color: isAuto ? "rgba(255,255,255,0.45)" : "var(--tg-primary)" }}
                             aria-label="eliminar"
                             title={isAuto ? "Automática: no se puede eliminar" : "Eliminar"}
                             disabled={isAuto}
@@ -125,19 +96,14 @@ function TxRow({ r, onDelete }: { r: TransactionView; onDelete: (id: number) => 
                 </div>
             </div>
 
-            {/* Móvil */}
             <div className="sm:hidden mx-2.5 my-3 rounded-md px-3 py-2 min-h-[84px]" style={{ background: INNER_BG }}>
                 <div className="flex items-start gap-3">
                     <Dot auto={isAuto} />
-
                     <div className="min-w-0 flex-1">
                         <div className="flex items-baseline gap-2 min-w-0">
-                            <span className={`${pill} !h-6 !min-w-[64px] !text-[12px]`} style={{ background: PILL_BG, borderColor: BORDER }}>
-                                {clip(r.type_str, 18)}
-                            </span>
+                            <span className={`${pill} !h-6 !min-w-[64px] !text-[12px]`} style={{ background: PILL_BG, borderColor: BORDER }}>{clip(r.type_str, 18)}</span>
                             <span className="text-sm font-extrabold tracking-wide truncate">{r.bank}</span>
                         </div>
-
                         <div className="mt-1 grid grid-cols-3 gap-2">
                             <div className="rounded-md border px-2 py-1 text-center text-[12px]" style={{ background: PILL_BG, borderColor: BORDER }}>
                                 <div className="uppercase opacity-70">Monto</div>
@@ -150,19 +116,14 @@ function TxRow({ r, onDelete }: { r: TransactionView; onDelete: (id: number) => 
                                 </div>
                             </div>
                         </div>
-
                         <div className="mt-1 text-[12px] opacity-80">
                             {format(new Date(r.created_at), "dd MMM yyyy", { locale: es })}
                         </div>
                     </div>
-
                     <div className="ml-2 flex items-center gap-2 shrink-0">
                         <button
                             className={`${actionBtn} ${isAuto ? "hover:opacity-100 focus-visible:ring-0" : ""}`}
-                            style={{
-                                background: isAuto ? ACTION_BG_DISABLED : ACTION_BG,
-                                color: isAuto ? "rgba(255,255,255,0.45)" : "var(--tg-primary)",
-                            }}
+                            style={{ background: isAuto ? ACTION_BG_DISABLED : ACTION_BG, color: isAuto ? "rgba(255,255,255,0.45)" : "var(--tg-primary)" }}
                             aria-label="eliminar"
                             title={isAuto ? "Automática: no se puede eliminar" : "Eliminar"}
                             disabled={isAuto}
@@ -177,19 +138,13 @@ function TxRow({ r, onDelete }: { r: TransactionView; onDelete: (id: number) => 
     );
 }
 
-/* ----------------- Página ----------------- */
 export default function TransactionsPage() {
     const {
         items, page, setPage, loading, refresh,
         total_pages, page_size, total, filters, setFilters, options,
-        loadMore, hasMoreServer, isFetchingMore, // <- asegúrate que el hook exponga esto
+        loadMore, hasMoreServer, isFetchingMore,
     } = useTransactions(1, 8);
-    useEffect(() => {
-        const t = setTimeout(() => {
-            loadMore();
-        }, 1000);
-        return () => clearTimeout(t);
-    }, []);
+
     const { remove } = useDeleteTransaction();
     const { create, loading: creating } = useCreateTransaction();
     const { success, error } = useNotifications();
@@ -197,18 +152,11 @@ export default function TransactionsPage() {
     const [openCreate, setOpenCreate] = useState(false);
     const [range, setRange] = useState<DateRange | undefined>(undefined);
 
-    const bancos = options.banks;
-    const tipos = options.types;
-
     const frameVars: CSSProperties = { ["--content-x" as any]: "8px" };
 
-    useEffect(() => {
-        if (page === total_pages && hasMoreServer && !isFetchingMore) {
-            loadMore();
-        }
-    }, [page, total_pages, hasMoreServer, isFetchingMore, loadMore]);
+    useEffect(() => { const t = setTimeout(() => { loadMore(); }, 300); return () => clearTimeout(t); }, [loadMore]);
+    useEffect(() => { if (page === total_pages && hasMoreServer && !isFetchingMore) loadMore(); }, [page, total_pages, hasMoreServer, isFetchingMore, loadMore]);
 
-    // Filtro por rango de fechas en cliente
     const filtered = useMemo(() => {
         if (!range?.from || !range?.to) return items;
         const from = new Date(range.from.getFullYear(), range.from.getMonth(), range.from.getDate(), 0, 0, 0, 0).getTime();
@@ -246,11 +194,7 @@ export default function TransactionsPage() {
         setPage(1);
     }
 
-    // Navegación
-    const onPrev = () => {
-        if (page > 1) setPage(page - 1);
-    };
-
+    const onPrev = () => { if (page > 1) setPage(page - 1); };
     const onNext = async () => {
         if (page < total_pages) return setPage(page + 1);
         if (hasMoreServer && !isFetchingMore) {
@@ -258,22 +202,16 @@ export default function TransactionsPage() {
             setPage(page + 1);
         }
     };
-    useEffect(() => {
-        if (page === total_pages && hasMoreServer && !isFetchingMore) {
-            loadMore();
-        }
-    }, [page, total_pages, hasMoreServer, isFetchingMore, loadMore]);
     const goToPage = async (p: number) => {
-        // si p está fuera del rango local, intenta traer más hasta alcanzarlo
-        while (p > total_pages && hasMoreServer && !isFetchingMore) {
-            await loadMore();
-        }
+        while (p > total_pages && hasMoreServer && !isFetchingMore) await loadMore();
         setPage(Math.min(p, total_pages));
     };
 
+    const bancos = options.banks;
+    const tipos = options.types;
+
     return (
         <div className="app-shell__frame overflow-hidden" style={frameVars}>
-            {/* Toolbar DESKTOP */}
             <div className="hidden sm:flex mb-3 items-center justify-between gap-3">
                 <label className="relative flex h-10 w-full max-w-[440px]">
                     <span className="absolute inset-y-0 left-3 flex items-center text-tg-muted pointer-events-none">
@@ -284,10 +222,7 @@ export default function TransactionsPage() {
                         placeholder="Buscar por banco, tipo o descripción…"
                         className="h-10 w-full rounded-md border border-tg bg-tg-card text-tg-card pl-9 pr-3 focus:outline-none"
                         value={filters.q ?? ""}
-                        onChange={(e) => {
-                            setFilters((f) => ({ ...f, q: e.target.value }));
-                            setPage(1);
-                        }}
+                        onChange={(e) => { setFilters((f) => ({ ...f, q: e.target.value })); setPage(1); }}
                     />
                 </label>
 
@@ -320,11 +255,7 @@ export default function TransactionsPage() {
                         <option value="auto">Automática</option>
                     </select>
 
-                    <DateRangePicker
-                        className={DPR_DESKTOP + " whitespace-nowrap"}
-                        value={range}
-                        onChange={(r) => { setRange(r); setPage(1); }}
-                    />
+                    <DateRangePicker className={DPR_DESKTOP + " whitespace-nowrap"} value={range} onChange={(r) => { setRange(r); setPage(1); }} />
 
                     <button
                         type="button"
@@ -346,7 +277,6 @@ export default function TransactionsPage() {
                 </div>
             </div>
 
-            {/* Toolbar MÓVIL */}
             <div className="sm:hidden mb-3 space-y-2">
                 <label className="relative flex h-10 w-full">
                     <span className="absolute inset-y-0 left-3 flex items-center text-tg-muted pointer-events-none">
@@ -403,29 +333,17 @@ export default function TransactionsPage() {
                 </button>
             </div>
 
-            {/* Contenedor: cards + paginación */}
-            <div
-                className="rounded-xl border flex-1 min-h-0 flex flex-col overflow-hidden mb-1"
-                style={{ background: FRAME_BG, borderColor: BORDER }}
-            >
-                <div className="px-3 pt-3">
-                    <HeaderRow />
-                </div>
+            <div className="rounded-xl border flex-1 min-h-0 flex flex-col overflow-hidden mb-1" style={{ background: FRAME_BG, borderColor: BORDER }}>
+                <div className="px-3 pt-3"><HeaderRow /></div>
 
                 <div className="flex-1 min-h-0 overflow-auto px-3 pb-1 space-y-4 sm:space-y-3.5">
-                    {loading && items.length === 0 ? (
-                        Array.from({ length: SKELETON_COUNT }).map((_, i) => (
-                            <div key={`sk-${i}`} className="h-[60px] rounded-xl border bg-black/10 animate-pulse" />
-                        ))
-                    ) : filtered.length === 0 ? (
-                        <div className="h-full grid place-items-center text-tg-muted text-sm">Sin registros</div>
-                    ) : (
-                        filtered.map((r) => <TxRow key={r.id} r={r} onDelete={handleDelete} />)
-                    )}
-
+                    {loading && items.length === 0
+                        ? Array.from({ length: SKELETON_COUNT }).map((_, i) => (<div key={`sk-${i}`} className="h-[60px] rounded-xl border bg-black/10 animate-pulse" />))
+                        : (filtered.length === 0
+                            ? <div className="h-full grid place-items-center text-tg-muted text-sm">Sin registros</div>
+                            : filtered.map((r) => <TxRow key={r.id} r={r} onDelete={handleDelete} />))}
                 </div>
 
-                {/* Paginación */}
                 <div className="shrink-0 px-3 pt-1 pb-2 flex flex-wrap gap-3 items-center justify-between">
                     <div className="flex items-center gap-2">
                         <span className="text-sm">Líneas por página</span>
@@ -442,9 +360,10 @@ export default function TransactionsPage() {
                         >
                             <MaterialIcon name="first_page" size={16} />
                         </button>
+
                         <button
                             disabled={page <= 1}
-                            onClick={onPrev}
+                            onClick={() => setPage(page - 1)}
                             className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40"
                         >
                             <MaterialIcon name="chevron_left" size={16} />
@@ -457,8 +376,8 @@ export default function TransactionsPage() {
                                     key={p}
                                     onClick={() => goToPage(p)}
                                     className={`h-9 min-w-9 px-3 rounded border ${active
-                                        ? "bg-tg-primary text-white border-transparent"
-                                        : "bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] text-white/90 border-white/10"
+                                            ? "bg-tg-primary text-white border-transparent"
+                                            : "bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] text-white/90 border-white/10"
                                         } font-semibold`}
                                     aria-current={active ? "page" : undefined}
                                 >
@@ -474,9 +393,10 @@ export default function TransactionsPage() {
                         >
                             <MaterialIcon name="chevron_right" size={16} />
                         </button>
+
                         <button
-                            disabled={!hasMoreServer && page >= total_pages}
-                            onClick={onNext} // último actúa como avanzar hasta que no haya más
+                            disabled={page >= total_pages}
+                            onClick={() => goToPage(total_pages)}
                             className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40"
                         >
                             <MaterialIcon name="last_page" size={16} />
@@ -489,7 +409,6 @@ export default function TransactionsPage() {
                 </div>
             </div>
 
-            {/* Modal Crear */}
             <NewTransactionModal
                 open={openCreate}
                 onClose={() => setOpenCreate(false)}

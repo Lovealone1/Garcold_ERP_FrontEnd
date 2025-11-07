@@ -12,7 +12,6 @@ import Chip from "@mui/material/Chip";
 import type { DateRange } from "react-day-picker";
 
 import DateRangePicker from "@/components/ui/DateRangePicker/DateRangePicker";
-// REEMPLAZO: antes venía de "@/hooks/productos/useProductos"
 import { useProductosAll } from "@/hooks/productos/useProductosAll";
 import useProductosVendidos from "@/hooks/productos/useProductosVendidos";
 import type { ProductDTO, SaleProductsDTO } from "@/types/product";
@@ -22,7 +21,6 @@ const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP
 const toISO = (d: Date) => d.toISOString().slice(0, 10);
 
 export default function ProductosExploracionPage() {
-    // Hook nuevo para cargar TODO el catálogo
     const { items: catalog, loading: loadingProd } = useProductosAll();
 
     const [selProds, setSelProds] = useState<ProductDTO[]>([]);
@@ -38,10 +36,9 @@ export default function ProductosExploracionPage() {
         date_from,
         date_to,
         product_ids,
-        enabled: false, // solo con botón
+        enabled: false, 
     });
 
-    // top 6 por cantidad vendida
     const results = useMemo<SaleProductsDTO[]>(
         () => (data ?? []).slice().sort((a, b) => b.sold_quanity - a.sold_quanity).slice(0, 6),
         [data]

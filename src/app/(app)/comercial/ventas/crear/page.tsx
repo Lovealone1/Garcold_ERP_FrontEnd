@@ -25,6 +25,7 @@ import { useBancos } from "@/hooks/bancos/useBancos";
 import type { ProductDTO } from "@/types/product";
 import type { SaleCreate } from "@/types/sale";
 import type { SaleItemInput } from "@/types/sale";
+import { useQueryClient } from "@tanstack/react-query";
 
 type ItemVenta = {
     idTmp: string;
@@ -44,9 +45,9 @@ type ProductoAgregateDefaults = {
     precio_compra: number;
 };
 
-const PAGE_SIZE = 5;           // desktop y móvil
-const CARD_H = 76;             // desktop
-const CARD_GAP = 10;           // desktop
+const PAGE_SIZE = 5;
+const CARD_H = 76;
+const CARD_GAP = 10;
 
 const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 const BLOQUEADA_RE = /venta\s*cancelada/i;
@@ -99,7 +100,6 @@ export default function VentaCrearPage() {
     const [items, setItems] = useState<ItemVenta[]>([]);
     const total = useMemo(() => items.reduce((a, it) => a + it.precioUnit * it.cantidad, 0), [items]);
 
-    // Paginación para desktop y móvil
     const [page, setPage] = useState(1);
     const pageCount = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
     useEffect(() => { if (page > pageCount) setPage(pageCount); }, [page, pageCount, items.length]);
@@ -229,9 +229,14 @@ export default function VentaCrearPage() {
         () => items.length > 0 && !!clienteSel && !!bancoSel && !!estadoSel,
         [items.length, clienteSel, bancoSel, estadoSel]
     );
-
+    const qc = useQueryClient();
     const { create: createVenta, loading: creating } = useCreateVenta({
-        onSuccess: () => { limpiar(); router.push("/comercial/ventas"); },
+        onSuccess: async () => {
+            await Promise.all([
+                qc.invalidateQueries({ queryKey: ["products"] }),
+                qc.invalidateQueries({ queryKey: ["products", "all"] }),
+            ]); limpiar(); router.push("/comercial/ventas");
+        },
     });
 
     async function finalizarVenta() {
@@ -257,13 +262,11 @@ export default function VentaCrearPage() {
 
     return (
         <div className="app-shell__frame overflow-hidden">
-            {/* padding/gap móvil mejorado */}
             <div className="bg-[var(--page-bg)] rounded-xl h-full flex flex-col px-3 sm:px-4 md:px-5 pb-5 pt-3 sm:pt-4 gap-2">
                 <Typography variant="h5" sx={{ mb: { xs: 0.5, sm: 1.25 }, fontWeight: 600 }}>
                     Nueva venta
                 </Typography>
 
-                {/* FORM */}
                 <Box
                     sx={{
                         mb: 1.0,
@@ -356,10 +359,7 @@ export default function VentaCrearPage() {
                 </Box>
 
                 <div className="h-px w-full" style={{ background: "var(--tg-border)" }} />
-
-                {/* LISTA / CARRITO */}
                 <div className="mt-2">
-                    {/* Desktop grid */}
                     <div
                         className="hidden md:grid flex-1 overflow-hidden"
                         style={{ gridTemplateRows: `repeat(${PAGE_SIZE}, ${CARD_H}px)`, rowGap: `${CARD_GAP}px` }}
@@ -434,8 +434,6 @@ export default function VentaCrearPage() {
                             </>
                         )}
                     </div>
-
-                    {/* Mobile list con paginación */}
                     <div className="md:hidden flex flex-col gap-2">
                         {items.length === 0 ? (
                             <div className="rounded-xl border px-3 py-6 text-center" style={{ borderColor: "var(--tg-border)", background: "var(--tg-card-bg)", color: "var(--tg-muted)" }}>
@@ -444,10 +442,9 @@ export default function VentaCrearPage() {
                         ) : (
                             pagedItems.map((it, i) => {
                                 const subtotal = it.precioUnit * it.cantidad;
-                                const number = startIndex + i + 1; // numeración real
+                                const number = startIndex + i + 1;
                                 return (
                                     <div key={it.idTmp} className="rounded-xl border px-3 py-3" style={{ borderColor: "var(--tg-border)", background: "var(--tg-card-bg)" }}>
-                                        {/* fila 1: nombre/ref + qty a la derecha */}
                                         <div className="grid grid-cols-[1fr_auto] items-start gap-2">
                                             <div className="min-w-0 pr-2">
                                                 <div className="flex items-start gap-2">
@@ -468,8 +465,6 @@ export default function VentaCrearPage() {
                                                 <button type="button" className="h-8 w-8 rounded border" style={{ borderColor: "var(--tg-border)" }} onClick={() => incQty(it.idTmp)}>+</button>
                                             </div>
                                         </div>
-
-                                        {/* fila 2: subtotal + eliminar, alineado derecha */}
                                         <div className="mt-2 flex items-center justify-end gap-3">
                                             <div className="text-right">
                                                 <div className="text-xs" style={{ color: "var(--tg-muted)" }}>Subtotal</div>
@@ -484,8 +479,6 @@ export default function VentaCrearPage() {
                             })
                         )}
                     </div>
-
-                    {/* Paginación móvil */}
                     {items.length > PAGE_SIZE && (
                         <Stack
                             direction="row"
@@ -513,8 +506,6 @@ export default function VentaCrearPage() {
                         </Stack>
                     )}
                 </div>
-
-                {/* Paginación solo desktop */}
                 {items.length > PAGE_SIZE && (
                     <Stack direction="row" alignItems="center" justifyContent="flex-end" gap={1.25} sx={{ mt: 1, display: { xs: "none", md: "flex" } }}>
                         <Pagination
@@ -540,8 +531,6 @@ export default function VentaCrearPage() {
                         </Typography>
                     </Stack>
                 )}
-
-                {/* RESUMEN */}
                 {items.length > 0 && (
                     <div className="mt-1 sm:mt-2 flex justify-end">
                         <div className="rounded-lg border px-3 py-3 w-full max-w-full sm:max-w-sm" style={{ borderColor: "var(--tg-border)", background: "var(--tg-card-bg)" }}>
@@ -556,8 +545,6 @@ export default function VentaCrearPage() {
                         </div>
                     </div>
                 )}
-
-                {/* ACCIONES */}
                 <Stack direction={{ xs: "column", sm: "row" }} justifyContent="flex-end" alignItems={{ xs: "stretch", sm: "center" }} gap={1.25} sx={{ mt: 2 }}>
                     {hasDirty && (
                         <>

@@ -1,3 +1,5 @@
+
+
 "use client";
 
 import { useMemo, useState, useEffect, CSSProperties } from "react";
@@ -19,26 +21,21 @@ import { useImport } from "@/hooks/io/useImport";
 import { useExport } from "@/hooks/io/useExport";
 import ImportDialog from "@/features/io/ImportDialog";
 import ExportDialog from "@/features/io/ExportDialog";
-
+import { useProductsCache } from "@/hooks/productos/useProductsCache";
 const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 
-/* Grid desktop (header y filas) */
 const GRID_COLS = "30px 156px 1fr 112px 142px 142px 208px";
 const HEADER_COLS = "65px 135px 1fr 110px 152px 132px 192px 18px";
-/* Colores */
 const FRAME_BG = "color-mix(in srgb, var(--tg-bg) 90%, #fff 3%)";
 const OUTER_BG = "color-mix(in srgb, var(--tg-bg) 55%, #000 45%)";
 const INNER_BG = "color-mix(in srgb, var(--tg-bg) 95%, #fff 2%)";
 const PILL_BG = "color-mix(in srgb, var(--tg-card-bg) 60%, #000 40%)";
 const ACTION_BG = "color-mix(in srgb, var(--tg-primary) 28%, transparent)";
-
-/* Tamaños compactos */
 const pill =
   "min-w-[90px] h-8 px-2.5 rounded-md grid place-items-center text-[13px] text-white/90 border border-[var(--tg-border)]";
 const actionBtn =
   "h-8 w-8 grid place-items-center rounded-full text-[var(--tg-primary)] hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary";
 
-/* Hooks */
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
@@ -52,12 +49,10 @@ function useIsMobile() {
   return isMobile;
 }
 
-/* UI */
 function Dot({ active }: { active: boolean }) {
   return <span className="inline-block h-3 w-3 rounded-full" style={{ backgroundColor: active ? "var(--tg-primary)" : "#d33" }} />;
 }
 
-/* Header desktop */
 function HeaderRow() {
   return (
     <div className="hidden sm:grid items-center gap-3 mb-2 font-extrabold mx-2" style={{ gridTemplateColumns: HEADER_COLS }}>
@@ -72,7 +67,6 @@ function HeaderRow() {
   );
 }
 
-/* Fila */
 function ProductRow({
   p,
   onView,
@@ -90,19 +84,14 @@ function ProductRow({
 }) {
   return (
     <div className="relative rounded-xl border shadow-sm" style={{ background: OUTER_BG, borderColor: "var(--tg-border)" }}>
-      {/* Desktop compacto, más ancho: mx-1.5 y contenedor padre con px-3 */}
       <div className="hidden sm:block mx-1.5 my-2 rounded-md px-3 py-2.5" style={{ background: INNER_BG }}>
         <div className="grid items-center gap-3" style={{ gridTemplateColumns: GRID_COLS }}>
           <div className="grid place-items-center"><Dot active={!!p.is_active} /></div>
-
           <div className={`${pill} font-extrabold tracking-wide`} style={{ background: PILL_BG }}>{p.reference}</div>
-
           <div className="text-[13px] text-white/90 truncate">{p.description}</div>
-
           <div className={pill} style={{ background: PILL_BG }}>{p.quantity ?? 0}</div>
           <div className={pill} style={{ background: PILL_BG }}>{money.format(p.purchase_price)}</div>
           <div className={pill} style={{ background: PILL_BG }}>{money.format(p.sale_price)}</div>
-
           <div className="flex items-center justify-end gap-2">
             <button className={actionBtn} style={{ background: ACTION_BG }} aria-label="ver" onClick={() => onView(p.id)}>
               <MaterialIcon name="visibility" size={18} />
@@ -123,10 +112,7 @@ function ProductRow({
         </div>
       </div>
 
-      {/* Mobile */}
-      {/* MOBILE GAP: my-3 en móvil, sm:my-2 mantiene desktop */}
       <div className="sm:hidden mx-2.5 my-3 sm:my-2 rounded-md px-3 py-2" style={{ background: INNER_BG }}>
-        
         <div className="flex items-start gap-2">
           <div className="min-w-0 flex-1">
             <div className="flex items-baseline gap-2 min-w-0">
@@ -180,21 +166,23 @@ export default function ProductosPage() {
   const {
     items: rows,
     page,
-    pageSize,
-    total,
-    totalPages,
-    hasPrev,
-    hasNext,
-    loading,
     setPage,
+    total_pages,
+    page_size,
+    total,
+    loading,
     filters,
     setFilters,
-    reload,
+    loadMore,
+    hasMoreServer,
+    isFetchingMore,
+    refresh,
     upsertOne,
-  } = useProductos(pageSizeWanted);
+  } = useProductos(1, pageSizeWanted);
 
   const { success, error: err } = useNotifications();
-
+  const [openImport, setOpenImport] = useState(false);
+  const [openExport, setOpenExport] = useState(false);
   const [openCreate, setOpenCreate] = useState(false);
   const [creating, setCreating] = useState(false);
   const [viewId, setViewId] = useState<number | null>(null);
@@ -208,65 +196,104 @@ export default function ProductosPage() {
   const [deleting, setDeleting] = useState(false);
   const [mediaProductId, setMediaProductId] = useState<number | null>(null);
   const [openMedia, setOpenMedia] = useState(false);
-  const [openImport, setOpenImport] = useState(false);
-  const [openExport, setOpenExport] = useState(false);
   const imp = useImport();
   const exp = useExport();
 
-  /* menos gutter lateral global */
   const frameVars: CSSProperties = { ["--content-x" as any]: "8px" };
 
-  const from = useMemo(() => (total === 0 ? 0 : (page - 1) * pageSize + 1), [page, pageSize, total]);
-  const to = useMemo(() => Math.min(page * pageSize, total), [page, pageSize, total]);
-
+  const from = useMemo(() => (total === 0 ? 0 : (page - 1) * (page_size || pageSizeWanted) + 1), [page, page_size, pageSizeWanted, total]);
+  const to = useMemo(() => Math.min(page * (page_size || pageSizeWanted), total || 0), [page, page_size, pageSizeWanted, total]);
+  const { insertOptimistic, removeOptimistic, patchOptimistic, invalidateAll } = useProductsCache();
   const [start, end] = useMemo(() => {
     const win = 5;
-    if (totalPages <= win) return [1, totalPages] as const;
-    const s = Math.max(1, Math.min(page - 2, totalPages - (win - 1)));
+    if (!total_pages || total_pages <= win) return [1, total_pages || 1] as const;
+    const s = Math.max(1, Math.min(page - 2, (total_pages || 1) - (win - 1)));
     return [s, s + (win - 1)] as const;
-  }, [page, totalPages]);
+  }, [page, total_pages]);
 
-  async function handleCreateSubmit(payload: ProductCreate | ProductUpdate) {
+  useEffect(() => {
+    const t = setTimeout(() => { loadMore(); }, 600);
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    if (page === total_pages && hasMoreServer && !isFetchingMore) {
+      loadMore();
+    }
+  }, [page, total_pages, hasMoreServer, isFetchingMore, loadMore]);
+
+  const goToPage = async (p: number) => {
+    while (p > (total_pages || 1) && hasMoreServer && !isFetchingMore) {
+      await loadMore();
+    }
+    setPage(Math.min(p, total_pages || 1));
+  };
+
+  const onPrev = () => { if (page > 1) setPage(page - 1); };
+  const onNext = async () => {
+    if (page < (total_pages || 1)) return setPage(page + 1);
+    if (hasMoreServer && !isFetchingMore) {
+      await loadMore();
+      setPage(page + 1);
+    }
+  };
+  const onLast = async () => {
+    if (!total_pages) return;
+    if (page >= total_pages && !hasMoreServer) return;
+    while (hasMoreServer && !isFetchingMore) {
+      await loadMore();
+    }
+    setPage(total_pages);
+  };
+
+  async function handleCreateSubmit(payload: ProductCreate) {
     setCreating(true);
     try {
-      await createProduct(payload as ProductCreate);
+      const created = await createProduct(payload);
+      insertOptimistic(created);   // UI instantánea
+      await invalidateAll();       // coherencia con el servidor
+      success("Producto creado");
       setOpenCreate(false);
       setPage(1);
-      reload?.();
-      success("Producto creado");
     } catch (e: any) {
       err(e?.response?.data?.detail ?? "Error creando producto");
     } finally {
       setCreating(false);
     }
   }
-  async function handleEditSubmit(payload: ProductCreate | ProductUpdate) {
+
+  async function handleEditSubmit(payload: ProductUpdate) {
     if (!editId) return;
     try {
-      await updateProduct(editId, payload as ProductUpdate);
-      setOpenEdit(false);
-      upsertOne({ id: editId, ...(payload as ProductUpdate) });
-      reload?.();
+      const updated = await updateProduct(editId, payload);
+      const { id: _ignore, ...rest } = updated;        // <- descarta id del server
+      patchOptimistic({ id: editId, ...rest });        // <- id estable
+      await invalidateAll();
       success("Producto actualizado");
+      setOpenEdit(false);
     } catch (e: any) {
       err(e?.response?.data?.detail ?? "Error actualizando producto");
     }
   }
+
   async function handleConfirmDelete() {
     if (!deleteId) return;
     setDeleting(true);
     try {
       await deleteProduct(deleteId);
+      removeOptimistic(deleteId);
+      await invalidateAll();
+      success("Producto eliminado");
       setOpenDelete(false);
       setDeleteId(null);
-      reload?.();
-      success("Producto eliminado");
+      setPage(1);
     } catch (e: any) {
       err(e?.response?.data?.detail ?? "Error eliminando producto");
     } finally {
       setDeleting(false);
     }
   }
+
   async function handleToggleActivo(id: number, current: boolean) {
     try {
       const res = await toggleProductActive(id);
@@ -281,7 +308,6 @@ export default function ProductosPage() {
 
   return (
     <div className="app-shell__frame overflow-hidden" style={frameVars}>
-      {/* Toolbar desktop: buscador más corto */}
       <div className="hidden sm:flex mb-3 items-center justify-between gap-3">
         <label className="relative flex h-10 w-full max-w-[440px]">
           <span className="absolute inset-y-0 left-3 flex items-center text-tg-muted pointer-events-none">
@@ -316,7 +342,6 @@ export default function ProductosPage() {
         </button>
       </div>
 
-      {/* Toolbar móvil */}
       <div className="sm:hidden mb-3 space-y-2">
         <label className="relative flex h-10 w-full">
           <span className="absolute inset-y-0 left-3 flex items-center text-tg-muted pointer-events-none">
@@ -351,16 +376,14 @@ export default function ProductosPage() {
         </button>
       </div>
 
-      {/* Marco y lista: px-4 → px-3, y MOBILE GAP vertical entre cards */}
       <div className="rounded-xl border flex-1 min-h-0 flex flex-col overflow-hidden mb-1" style={{ background: FRAME_BG }}>
         <div className="px-3 pt-3">
           <HeaderRow />
         </div>
 
-        {/* MOBILE GAP: space-y-4 en móvil, sm:space-y-3.5 en desktop */}
         <div className="flex-1 min-h-0 overflow-auto px-3 pb-1 space-y-4 sm:space-y-3.5">
           {loading
-            ? Array.from({ length: pageSizeWanted }).map((_, i) => (
+            ? Array.from({ length: page_size || pageSizeWanted }).map((_, i) => (
               <div key={`sk-${i}`} className="h-[60px] rounded-xl border bg-black/10 animate-pulse" />
             ))
             : rows.length === 0
@@ -378,13 +401,12 @@ export default function ProductosPage() {
               ))}
         </div>
 
-        {/* Paginación + IO */}
         <div className="shrink-0 px-3 pt-1 pb-2 flex flex-wrap gap-3 items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <span className="text-sm">Líneas por página</span>
-              <select value={pageSize} disabled className="h-9 rounded-md border border-tg bg-[var(--panel-bg)] px-2 text-sm text-tg-muted">
-                <option value={pageSize}>{pageSize}</option>
+              <select value={page_size || pageSizeWanted} disabled className="h-9 rounded-md border border-tg bg-[var(--panel-bg)] px-2 text-sm text-tg-muted">
+                <option value={page_size || pageSizeWanted}>{page_size || pageSizeWanted}</option>
               </select>
             </div>
 
@@ -397,19 +419,19 @@ export default function ProductosPage() {
           </div>
 
           <nav className="flex items-center gap-1">
-            <button disabled={!hasPrev} onClick={() => setPage(1)} className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
+            <button disabled={page <= 1} onClick={() => setPage(1)} className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
               <MaterialIcon name="first_page" size={16} />
             </button>
-            <button disabled={!hasPrev} onClick={() => setPage(page - 1)} className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
+            <button disabled={page <= 1} onClick={onPrev} className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
               <MaterialIcon name="chevron_left" size={16} />
             </button>
 
-            {Array.from({ length: end - start + 1 }, (_, i) => start + i).map((p) => {
+            {Array.from({ length: (end - start + 1) || 1 }, (_, i) => (start ?? 1) + i).map((p) => {
               const active = p === page;
               return (
                 <button
                   key={p}
-                  onClick={() => setPage(p)}
+                  onClick={() => goToPage(p)}
                   className={`h-9 min-w-9 px-3 rounded border ${active ? "bg-tg-primary text-white border-transparent" : "bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] text-white/90 border-white/10"} font-semibold`}
                   aria-current={active ? "page" : undefined}
                 >
@@ -418,25 +440,24 @@ export default function ProductosPage() {
               );
             })}
 
-            <button disabled={!hasNext} onClick={() => setPage(page + 1)} className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
+            <button disabled={!hasMoreServer && page >= (total_pages || 1)} onClick={onNext} className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
               <MaterialIcon name="chevron_right" size={16} />
             </button>
-            <button disabled={!hasNext} onClick={() => setPage(totalPages)} className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
+            <button disabled={!hasMoreServer && page >= (total_pages || 1)} onClick={onLast} className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
               <MaterialIcon name="last_page" size={16} />
             </button>
 
             <div className="h-9 min-w-[120px] grid place-items-center text-sm font-medium">
-              {from} - {to} de {total}
+              {from} - {to} de {total ?? 0}
             </div>
           </nav>
         </div>
       </div>
 
-      {/* Diálogos */}
       <ImportDialog
         open={openImport}
         onClose={() => { imp.reset(); setOpenImport(false); }}
-        onRun={async (opts) => { try { await imp.importFile({ ...opts, entity: "products" }); success("Importación completada"); reload?.(); } catch (e: any) { err(e?.message ?? "Error al importar"); } }}
+        onRun={async (opts) => { try { await imp.importFile({ ...opts, entity: "products" }); success("Importación completada"); refresh(); } catch (e: any) { err(e?.message ?? "Error al importar"); } }}
         loading={imp.loading}
         error={imp.error?.message ?? null}
         report={imp.data}
@@ -455,7 +476,15 @@ export default function ProductosPage() {
         defaultName="products"
       />
 
-      {openCreate && <ProductoForm intent="create" open={openCreate} onClose={() => setOpenCreate(false)} onSubmit={handleCreateSubmit} loading={creating} />}
+      {openCreate && (
+        <ProductoForm
+          intent="create"
+          open={openCreate}
+          onClose={() => setOpenCreate(false)}
+          onSubmit={(data) => handleCreateSubmit(data as ProductCreate)}  
+          loading={creating}
+        />
+      )}
       {openView && <ProductoView open={openView} onClose={() => setOpenView(false)} producto={producto} loading={viewLoading} />}
       {openEdit && (
         <ProductoForm

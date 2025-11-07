@@ -9,16 +9,29 @@ import type {
 
 type Q = { q?: string }; // el back no filtra por q; útil si luego lo agregas
 type Opts = { nocacheToken?: number; signal?: AbortSignal };
+type ListOpts = { signal?: AbortSignal; q?: string; page_size?: number };
 
 const ts = () => Date.now();
 const nocache = { "Cache-Control": "no-cache" };
 
 /** GET /products/page?page=1 */
-export async function listProductsPage(page = 1, opts?: Opts): Promise<ProductPageDTO> {
+export async function listProducts(
+    page = 1,
+    opts: ListOpts = {}
+): Promise<ProductPageDTO> {
+    const { signal, q, page_size } = opts;
+    const params: Record<string, string | number | undefined> = {
+        page,
+        page_size,
+        ...(q ? { q } : {}),
+    };
+
     const { data } = await salesApi.get("/products/page", {
-        params: { page },            // solo page
-        signal: opts?.signal,
+        params,
+        signal,
+        withCredentials: false,
     });
+
     return data as ProductPageDTO;
 }
 
@@ -37,10 +50,10 @@ export async function fetchAllProducts(
     params?: Q,
     opts?: Opts
 ): Promise<ProductDTO[]> {
-    const first = await listProductsPage(1);
+    const first = await listProducts(1);
     const acc = [...first.items];
     for (let p = 2; p <= first.total_pages; p++) {
-        const page = await listProductsPage(p);
+        const page = await listProducts(p);
         acc.push(...page.items);
     }
     return acc;

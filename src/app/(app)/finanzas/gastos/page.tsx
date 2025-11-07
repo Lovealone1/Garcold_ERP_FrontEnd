@@ -292,37 +292,55 @@ export default function GastosPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-4">
                 {filtered.map((g) => {
-                    const isSelected =
-                        selectedIds.has(g.id);
+                    const isSelected = selectedIds.has(g.id);
+
+                    const toggle = () => {
+                        setSelectedIds((prev) => {
+                            const next = new Set(prev);
+                            next.has(g.id) ? next.delete(g.id) : next.add(g.id);
+                            return next;
+                        });
+                    };
+
                     return (
                         <div
                             key={g.id}
                             role="button"
                             tabIndex={0}
-                            onClick={() =>
-                                setSelectedIds((prev) => {
-                                    const next =
-                                        new Set(prev);
-                                    next.has(g.id)
-                                        ? next.delete(
-                                            g.id
-                                        )
-                                        : next.add(
-                                            g.id
-                                        );
-                                    return next;
-                                })
-                            }
-                            className={`rounded-xl transition-colors ${isSelected
-                                    ? "ring-2 ring-[var(--tg-primary)]"
-                                    : "ring-0"
+                            onClick={toggle}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    toggle();
+                                }
+                            }}
+                            className={`relative rounded-xl transition-colors cursor-pointer border ${isSelected
+                                    ? "border-[var(--tg-primary)] ring-2 ring-[var(--tg-primary)]"
+                                    : "border-transparent hover:border-[var(--tg-primary)]"
                                 }`}
                         >
-                            <GastoCard gasto={g} />
+                            {/* Contenido de la card */}
+                            <div className="relative z-10">
+                                <GastoCard gasto={g} />
+                            </div>
+
+                            {/* Overlay POR ENCIMA para iluminar toda la card */}
+                            {isSelected && (
+                                <div
+                                    className="pointer-events-none absolute inset-0 rounded-xl z-20"
+                                    style={{
+                                        background:
+                                            "color-mix(in srgb, var(--tg-primary) 10%, transparent)",
+                                    }}
+                                />
+                            )}
                         </div>
                     );
                 })}
             </div>
+
+
+
 
             {!loading && filtered.length === 0 && (
                 <div className="text-sm text-tg-muted border border-tg rounded-md p-4">

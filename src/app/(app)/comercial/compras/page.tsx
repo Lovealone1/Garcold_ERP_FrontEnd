@@ -1,7 +1,7 @@
 // app/(compras)/compras/page.tsx
 "use client";
 
-import { useMemo, useState, useEffect, useCallback, CSSProperties } from "react";
+import { useMemo, useState, useEffect, CSSProperties } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useRouter } from "next/navigation";
@@ -13,7 +13,7 @@ import { useCompraEstados } from "@/hooks/estados/useEstados";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 
 import { listBanks } from "@/services/sales/bank.api";
-import { getPurchaseById, listPurchases } from "@/services/sales/purchase.api";
+import { getPurchaseById } from "@/services/sales/purchase.api";
 
 import CompraView from "@/features/compras/ViewDetalleCompras";
 import PagoCompraModal from "@/features/compras/PagoCompraModal";
@@ -30,10 +30,11 @@ const INNER_BG = "color-mix(in srgb, var(--tg-bg) 95%, #fff 2%)";
 const PILL_BG = "color-mix(in srgb, var(--tg-card-bg) 60%, #000 40%)";
 const ACTION_BG = "color-mix(in srgb, var(--tg-primary) 28%, transparent)";
 const BORDER = "var(--tg-border)";
-const pill = "min-w-[90px] h-8 px-2.5 rounded-md grid place-items-center text-[13px] text-white/90 border";
+const pill =
+    "min-w-[90px] h-8 px-2.5 rounded-md grid place-items-center text-[13px] text-white/90 border";
 const actionBtn =
     "h-8 w-8 grid place-items-center rounded-full text-[var(--tg-primary)] hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary";
-
+const MUTED_BG = "color-mix(in srgb, var(--tg-muted) 28%, transparent)";
 /* MÓVIL: DateRangePicker compacto */
 const DPR_MOBILE =
     "[&_input]:h-10 [&_input]:w-full [&_input]:rounded-l-md [&_input]:border [&_input]:border-tg " +
@@ -42,21 +43,37 @@ const DPR_MOBILE =
     "[&_button]:border [&_button]:border-l-0 [&_button]:border-tg [&_button]:bg-tg-card " +
     "[&_button_svg]:!m-0 inline-flex w-full";
 
-const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
-const clip = (s?: string | null, n = 24) => (s ?? "—").length > n ? (s as string).slice(0, n).trimEnd() + "…" : (s ?? "—");
+const money = new Intl.NumberFormat("es-CO", {
+    style: "currency",
+    currency: "COP",
+    maximumFractionDigits: 0,
+});
+const clip = (s?: string | null, n = 24) =>
+    (s ?? "—").length > n
+        ? (s as string).slice(0, n).trimEnd() + "…"
+        : (s ?? "—");
 const SKELETON_COUNT = 8;
 
 /* Indicador */
 function Dot({ color }: { color: string }) {
-    return <span className="inline-block h-3 w-3 rounded-full" style={{ backgroundColor: color }} />;
+    return (
+        <span
+            className="inline-block h-3 w-3 rounded-full"
+            style={{ backgroundColor: color }}
+        />
+    );
 }
 
 /* Header desktop */
 const GRID_COLS = "30px 220px 1fr 150px 170px 170px 208px";
 const HEADER_COLS = "160px 220px 1fr 160px 170px 240px 40px";
+
 function HeaderRow() {
     return (
-        <div className="hidden sm:grid items-center gap-3 mb-2 font-extrabold mx-2" style={{ gridTemplateColumns: HEADER_COLS }}>
+        <div
+            className="hidden sm:grid items-center gap-3 mb-2 font-extrabold mx-2"
+            style={{ gridTemplateColumns: HEADER_COLS }}
+        >
             <span />
             <span className="text-white">Proveedor</span>
             <span className="text-white text-right">Total</span>
@@ -81,21 +98,36 @@ function PurchaseRow({
     onReceipts: (row: Purchase) => void;
     onDelete: (row: Purchase) => void;
 }) {
+    const hasBalance = (v.balance ?? 0) > 0;
     const dotColor = (v.balance ?? 0) > 0 ? "#d97706" : "var(--tg-primary)";
     return (
-        <div className="relative rounded-xl border shadow-sm" style={{ background: OUTER_BG, borderColor: BORDER }}>
+        <div
+            className="relative rounded-xl border shadow-sm"
+            style={{ background: OUTER_BG, borderColor: BORDER }}
+        >
             {/* Desktop */}
-            <div className="hidden sm:block mx-1.5 my-2 rounded-md px-3 py-2.5" style={{ background: INNER_BG }}>
-                <div className="grid items-center gap-3" style={{ gridTemplateColumns: GRID_COLS }}>
+            <div
+                className="hidden sm:block mx-1.5 my-2 rounded-md px-3 py-2.5"
+                style={{ background: INNER_BG }}
+            >
+                <div
+                    className="grid items-center gap-3"
+                    style={{ gridTemplateColumns: GRID_COLS }}
+                >
                     <div className="grid place-items-center">
                         <Dot color={dotColor} />
                     </div>
 
                     <div className="flex items-center gap-2 min-w-0">
-                        <div className={`${pill} font-extrabold tracking-wide`} style={{ background: PILL_BG, borderColor: BORDER }}>
+                        <div
+                            className={`${pill} font-extrabold tracking-wide`}
+                            style={{ background: PILL_BG, borderColor: BORDER }}
+                        >
                             {v.id}
                         </div>
-                        <div className="text-[13px] text-white/90 truncate">{clip(v.supplier, 42)}</div>
+                        <div className="text-[13px] text-white/90 truncate">
+                            {clip(v.supplier, 42)}
+                        </div>
                     </div>
 
                     <div
@@ -106,77 +138,162 @@ function PurchaseRow({
                         {clip(v.bank, 24)}
                     </div>
 
-                    <div className={`${pill} font-semibold text-right`} style={{ background: PILL_BG, borderColor: BORDER }}>
+                    <div
+                        className={`${pill} font-semibold text-right`}
+                        style={{ background: PILL_BG, borderColor: BORDER }}
+                    >
                         {money.format(v.total)}
                     </div>
 
-                    <div className={`${pill} font-semibold text-right`} style={{ background: PILL_BG, borderColor: BORDER }}>
+                    <div
+                        className={`${pill} font-semibold text-right`}
+                        style={{ background: PILL_BG, borderColor: BORDER }}
+                    >
                         {money.format(v.balance ?? 0)}
                     </div>
 
-                    <div className={`${pill} text-center`} style={{ background: PILL_BG, borderColor: BORDER }}>
-                        {format(new Date(v.purchase_date), "dd MMM yyyy", { locale: es })}
+                    <div
+                        className={`${pill} text-center`}
+                        style={{ background: PILL_BG, borderColor: BORDER }}
+                    >
+                        {format(new Date(v.purchase_date), "dd MMM yyyy", {
+                            locale: es,
+                        })}
                     </div>
 
                     <div className="flex items-center justify-end gap-2">
-                        <button className={actionBtn} style={{ background: ACTION_BG }} aria-label="ver" onClick={() => onView(v)}>
+                        <button
+                            className={actionBtn}
+                            style={{ background: ACTION_BG }}
+                            aria-label="ver"
+                            onClick={() => onView(v)}
+                        >
                             <MaterialIcon name="visibility" size={18} />
                         </button>
-                        <button className={actionBtn} style={{ background: ACTION_BG }} aria-label="comprobantes" onClick={() => onReceipts(v)}>
+                        <button
+                            className={actionBtn}
+                            style={{ background: ACTION_BG }}
+                            aria-label="comprobantes"
+                            onClick={() => onReceipts(v)}
+                        >
                             <MaterialIcon name="upload_file" size={18} />
                         </button>
-                        <button className={actionBtn} style={{ background: ACTION_BG }} aria-label="abonar" onClick={() => onPay(v)}>
+                        <button
+                            className={`${actionBtn} ${hasBalance ? "text-[var(--tg-primary)]" : "text-tg-muted opacity-50 cursor-not-allowed"}`}
+                            style={{ background: hasBalance ? ACTION_BG : MUTED_BG }}
+                            aria-label="abonar"
+                            onClick={hasBalance ? () => onPay(v) : undefined}
+                            disabled={!hasBalance}
+                        >
                             <MaterialIcon name="payments" size={18} />
                         </button>
-                        <button className="h-8 w-8 grid place-items-center rounded-full" style={{ background: "#7a1010" }} aria-label="eliminar" onClick={() => onDelete(v)}>
-                            <MaterialIcon name="delete" size={16} className="text-[#ff4d4f]" />
+                        <button
+                            className="h-8 w-8 grid place-items-center rounded-full"
+                            style={{ background: "#7a1010" }}
+                            aria-label="eliminar"
+                            onClick={() => onDelete(v)}
+                        >
+                            <MaterialIcon
+                                name="delete"
+                                size={16}
+                                className="text-[#ff4d4f]"
+                            />
                         </button>
                     </div>
                 </div>
             </div>
 
             {/* Móvil */}
-            <div className="sm:hidden mx-2.5 my-3 rounded-md px-3 py-2 min-h-[84px]" style={{ background: INNER_BG }}>
+            <div
+                className="sm:hidden mx-2.5 my-3 rounded-md px-3 py-2 min-h-[84px]"
+                style={{ background: INNER_BG }}
+            >
                 <div className="flex items-start gap-2">
                     <Dot color={dotColor} />
                     <div className="min-w-0 flex-1">
                         <div className="flex items-baseline gap-2 min-w-0">
-                            <span className={`${pill} !h-6 !min-w-[64px] !text-[12px]`} style={{ background: PILL_BG, borderColor: BORDER }}>
+                            <span
+                                className={`${pill} !h-6 !min-w-[64px] !text-[12px]`}
+                                style={{ background: PILL_BG, borderColor: BORDER }}
+                            >
                                 {v.id}
                             </span>
-                            <span className="text-sm font-extrabold tracking-wide truncate">{v.supplier}</span>
+                            <span className="text-sm font-extrabold tracking-wide truncate">
+                                {v.supplier}
+                            </span>
                         </div>
                         <div className="mt-1 grid grid-cols-3 gap-2">
-                            <div className="rounded-md border px-2 py-1 text-center text-[12px]" style={{ background: PILL_BG, borderColor: BORDER }}>
+                            <div
+                                className="rounded-md border px-2 py-1 text-center text-[12px]"
+                                style={{ background: PILL_BG, borderColor: BORDER }}
+                            >
                                 <div className="uppercase opacity-70">Método</div>
-                                <div className="font-medium whitespace-nowrap overflow-hidden text-ellipsis">{clip(v.bank, 16)}</div>
+                                <div className="font-medium whitespace-nowrap overflow-hidden text-ellipsis">
+                                    {clip(v.bank, 16)}
+                                </div>
                             </div>
-                            <div className="rounded-md border px-2 py-1 text-center text-[12px]" style={{ background: PILL_BG, borderColor: BORDER }}>
+                            <div
+                                className="rounded-md border px-2 py-1 text-center text-[12px]"
+                                style={{ background: PILL_BG, borderColor: BORDER }}
+                            >
                                 <div className="uppercase opacity-70">Total</div>
-                                <div className="font-semibold">{money.format(v.total)}</div>
+                                <div className="font-semibold">
+                                    {money.format(v.total)}
+                                </div>
                             </div>
-                            <div className="rounded-md border px-2 py-1 text-center text-[12px]" style={{ background: PILL_BG, borderColor: BORDER }}>
+                            <div
+                                className="rounded-md border px-2 py-1 text-center text-[12px]"
+                                style={{ background: PILL_BG, borderColor: BORDER }}
+                            >
                                 <div className="uppercase opacity-70">Saldo</div>
-                                <div className="font-semibold">{money.format(v.balance ?? 0)}</div>
+                                <div className="font-semibold">
+                                    {money.format(v.balance ?? 0)}
+                                </div>
                             </div>
                         </div>
                         <div className="mt-1 text-[12px] opacity-80">
-                            {format(new Date(v.purchase_date), "dd MMM yyyy", { locale: es })}
+                            {format(new Date(v.purchase_date), "dd MMM yyyy", {
+                                locale: es,
+                            })}
                         </div>
                     </div>
 
                     <div className="ml-2 flex items-center gap-2 shrink-0">
-                        <button className={actionBtn} style={{ background: ACTION_BG }} aria-label="ver" onClick={() => onView(v)}>
+                        <button
+                            className={actionBtn}
+                            style={{ background: ACTION_BG }}
+                            aria-label="ver"
+                            onClick={() => onView(v)}
+                        >
                             <MaterialIcon name="visibility" size={18} />
                         </button>
-                        <button className={actionBtn} style={{ background: ACTION_BG }} aria-label="comprobantes" onClick={() => onReceipts(v)}>
+                        <button
+                            className={actionBtn}
+                            style={{ background: ACTION_BG }}
+                            aria-label="comprobantes"
+                            onClick={() => onReceipts(v)}
+                        >
                             <MaterialIcon name="upload_file" size={18} />
                         </button>
-                        <button className={actionBtn} style={{ background: ACTION_BG }} aria-label="abonar" onClick={() => onPay(v)}>
+                        <button
+                            className={actionBtn}
+                            style={{ background: ACTION_BG }}
+                            aria-label="abonar"
+                            onClick={() => onPay(v)}
+                        >
                             <MaterialIcon name="payments" size={18} />
                         </button>
-                        <button className="h-8 w-8 grid place-items-center rounded-full" style={{ background: "#7a1010" }} aria-label="eliminar" onClick={() => onDelete(v)}>
-                            <MaterialIcon name="delete" size={16} className="text-[#ff4d4f]" />
+                        <button
+                            className="h-8 w-8 grid place-items-center rounded-full"
+                            style={{ background: "#7a1010" }}
+                            aria-label="eliminar"
+                            onClick={() => onDelete(v)}
+                        >
+                            <MaterialIcon
+                                name="delete"
+                                size={16}
+                                className="text-[#ff4d4f]"
+                            />
                         </button>
                     </div>
                 </div>
@@ -186,28 +303,42 @@ function PurchaseRow({
 }
 
 /* ----------------- Página ----------------- */
+
 type FrameVars = CSSProperties & { ["--content-x"]?: string };
 
 export default function ComprasPage() {
     const router = useRouter();
     const { success, error } = useNotifications();
-
-    const { items, page, setPage, pageSize, loading, reload, totalPages } = usePurchases();
-
-    const [q, setQ] = useState("");
     const { options: estadoOptions } = useCompraEstados();
-    const [estadoSel, setEstadoSel] = useState<string>("");
-    const [bancoSel, setBancoSel] = useState<string>("");
-    const [range, setRange] = useState<DateRange | undefined>();
 
+    const {
+        items,
+        page,
+        setPage,
+        pageSize,
+        total,
+        totalPages,
+        loading,
+        reload,
+        loadMore,
+        hasMoreServer,
+        filters,
+        setFilters,
+    } = usePurchases({}, 8);
+
+    const [range, setRange] = useState<DateRange | undefined>();
     const [bancos, setBancos] = useState<string[]>([]);
+
+    // Bancos para filtro
     useEffect(() => {
         let alive = true;
         (async () => {
             try {
-                const data = await listBanks(Date.now());
+                const data = await listBanks();
                 if (!alive) return;
-                const unique = Array.from(new Set((data ?? []).map((b: { name: string }) => b.name))).sort();
+                const unique = Array.from(
+                    new Set((data ?? []).map((b: { name: string }) => b.name))
+                ).sort();
                 setBancos(unique);
             } catch {
                 if (alive) setBancos([]);
@@ -218,86 +349,63 @@ export default function ComprasPage() {
         };
     }, []);
 
-    const inRange = useCallback(
-        (d: Date) => {
-            if (!range?.from && !range?.to) return true;
-            const from = range?.from ? new Date(range.from.getFullYear(), range.from.getMonth(), range.from.getDate(), 0, 0, 0, 0) : undefined;
-            const to = range?.to ? new Date(range.to.getFullYear(), range.to.getMonth(), range.to.getDate(), 23, 59, 59, 999) : undefined;
-            if (from && d < from) return false;
-            if (to && d > to) return false;
-            return true;
-        },
-        [range]
-    );
+    // Handlers filtros -> se envían al hook (server-side)
+    const handleSearch = (value: string) =>
+        setFilters((f) => ({ ...f, q: value || undefined }));
 
-    /* Hydrate all pages para filtros client-side */
-    const [all, setAll] = useState<Purchase[] | null>(null);
-    const [allLoading, setAllLoading] = useState(false);
-    useEffect(() => {
-        let alive = true;
-        async function hydrateAll() {
-            if (loading) return;
-            if (!totalPages || totalPages < 1) {
-                if (alive) setAll(items);
-                return;
-            }
-            setAllLoading(true);
-            try {
-                const pages = await Promise.all(
-                    Array.from({ length: totalPages }, (_, i) => listPurchases(i + 1, undefined, Date.now()))
-                );
-                const merged = pages.flatMap((p) => p.items);
-                const dedup = Array.from(new Map(merged.map((r: Purchase) => [r.id, r])).values());
-                if (alive) setAll(dedup);
-            } catch {
-                if (alive) setAll(items);
-            } finally {
-                if (alive) setAllLoading(false);
-            }
+    const handleEstado = (value: string) =>
+        setFilters((f) => ({ ...f, status: value || undefined }));
+
+    const handleBanco = (value: string) =>
+        setFilters((f) => ({ ...f, bank: value || undefined }));
+
+    const handleRange = (r?: DateRange) => {
+        setRange(r);
+        if (!r?.from && !r?.to) {
+            setFilters((f) => ({ ...f, from: undefined, to: undefined }));
+            return;
         }
-        hydrateAll();
-        return () => {
-            alive = false;
-        };
-    }, [loading, totalPages, items]);
+        const from = r.from
+            ? r.from.toISOString().slice(0, 10)
+            : undefined;
+        const to = r.to
+            ? r.to.toISOString().slice(0, 10)
+            : from;
+        setFilters((f) => ({ ...f, from, to }));
+    };
 
-    const dataset = all ?? items;
+    const handleClearFilters = () => {
+        setRange(undefined);
+        setFilters({});
+    };
 
-    const filtered = useMemo(() => {
-        const v = q.trim().toLowerCase();
-        return dataset.filter((r: Purchase) => {
-            if (
-                v &&
-                !(String(r.id).includes(v) || r.supplier.toLowerCase().includes(v) || r.bank.toLowerCase().includes(v) || r.status.toLowerCase().includes(v))
-            )
-                return false;
-            if (bancoSel && r.bank !== bancoSel) return false;
-            if (estadoSel && r.status !== estadoSel) return false;
-            if (!inRange(new Date(r.purchase_date))) return false;
-            return true;
-        });
-    }, [dataset, q, bancoSel, estadoSel, inRange]);
+    // Paginación usando datos del hook
+    const handlePageChange = async (target: number) => {
+        if (target <= 0 || target > totalPages || target === page) return;
+        if (target > page && hasMoreServer) {
+            await loadMore();
+        }
+        setPage(target);
+    };
 
-    const clientTotal = filtered.length;
-    const clientTotalPages = Math.max(1, Math.ceil(clientTotal / pageSize));
-    useEffect(() => {
-        if (page > clientTotalPages) setPage(clientTotalPages);
-    }, [clientTotalPages, page, setPage]);
-
-    const paged = useMemo(() => {
-        const startIdx = (page - 1) * pageSize;
-        return filtered.slice(startIdx, startIdx + pageSize);
-    }, [filtered, page, pageSize]);
-
-    const fromRow = useMemo(() => (clientTotal === 0 ? 0 : (page - 1) * pageSize + 1), [page, pageSize, clientTotal]);
-    const toRow = useMemo(() => Math.min(page * pageSize, clientTotal), [page, pageSize, clientTotal]);
+    const fromRow = useMemo(
+        () => (total === 0 ? 0 : (page - 1) * pageSize + 1),
+        [page, pageSize, total]
+    );
+    const toRow = useMemo(
+        () => Math.min(page * pageSize, total || 0),
+        [page, pageSize, total]
+    );
 
     const [start, end] = useMemo(() => {
         const win = 5;
-        if (clientTotalPages <= win) return [1, clientTotalPages] as const;
-        const s = Math.max(1, Math.min(page - 2, clientTotalPages - (win - 1)));
+        if (totalPages <= win) return [1, totalPages] as const;
+        const s = Math.max(
+            1,
+            Math.min(page - 2, totalPages - (win - 1))
+        );
         return [s, s + (win - 1)] as const;
-    }, [page, clientTotalPages]);
+    }, [page, totalPages]);
 
     /* Modales y acciones */
     const [openView, setOpenView] = useState(false);
@@ -307,7 +415,12 @@ export default function ComprasPage() {
     const [compraPay, setCompraPay] = useState<Purchase | null>(null);
 
     const [openReceipts, setOpenReceipts] = useState(false);
-    const [purchaseForUpload, setPurchaseForUpload] = useState<Purchase | null>(null);
+    const [purchaseForUpload, setPurchaseForUpload] =
+        useState<Purchase | null>(null);
+
+    const { deleteCompra, loading: deleting } = useDeleteCompra();
+    const [openDelete, setOpenDelete] = useState(false);
+    const [compraDel, setCompraDel] = useState<Purchase | null>(null);
 
     function onView(row: Purchase) {
         setCompraSel(row);
@@ -326,28 +439,26 @@ export default function ComprasPage() {
         const currentPage = page;
         const fresh = await getPurchaseById(compraId);
         setCompraPay(fresh);
-        if (openView && compraSel?.id === compraId) setCompraSel(fresh);
+        if (openView && compraSel?.id === compraId) {
+            setCompraSel(fresh);
+        }
         await reload();
-        setTimeout(() => setPage(Math.min(currentPage, Math.max(1, clientTotalPages))), 0);
+        setPage(Math.min(currentPage, totalPages || 1));
         success("Compra actualizada");
     }
 
-    const { deleteCompra, loading: deleting } = useDeleteCompra();
-    const [openDelete, setOpenDelete] = useState(false);
-    const [compraDel, setCompraDel] = useState<Purchase | null>(null);
-
-    function handleClearFilters() {
-        setQ("");
-        setEstadoSel("");
-        setBancoSel("");
-        setRange(undefined);
-        setPage(1);
+    function openDeleteModal(row: Purchase) {
+        setCompraDel(row);
+        setOpenDelete(true);
     }
 
     const frameVars: FrameVars = { ["--content-x" as any]: "8px" };
 
     return (
-        <div className="app-shell__frame overflow-hidden" style={frameVars}>
+        <div
+            className="app-shell__frame overflow-hidden"
+            style={frameVars}
+        >
             {/* Toolbar DESKTOP */}
             <div className="hidden sm:flex mb-3 items-center justify-between gap-3">
                 <label className="relative flex h-10 w-full max-w-[440px]">
@@ -358,21 +469,15 @@ export default function ComprasPage() {
                         type="search"
                         placeholder="Buscar compra por proveedor, método o #..."
                         className="h-10 w-full rounded-md border border-tg bg-tg-card text-tg-card pl-9 pr-3 focus:outline-none"
-                        value={q}
-                        onChange={(e) => {
-                            setQ(e.target.value);
-                            setPage(1);
-                        }}
+                        value={filters.q ?? ""}
+                        onChange={(e) => handleSearch(e.target.value)}
                     />
                 </label>
 
                 <div className="flex items-center gap-2">
                     <select
-                        value={estadoSel}
-                        onChange={(e) => {
-                            setEstadoSel(e.target.value);
-                            setPage(1);
-                        }}
+                        value={filters.status ?? ""}
+                        onChange={(e) => handleEstado(e.target.value)}
                         className="h-10 min-w-[160px] rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted"
                         aria-label="Filtro por estado"
                     >
@@ -385,15 +490,14 @@ export default function ComprasPage() {
                     </select>
 
                     <select
-                        value={bancoSel}
-                        onChange={(e) => {
-                            setBancoSel(e.target.value);
-                            setPage(1);
-                        }}
+                        value={filters.bank ?? ""}
+                        onChange={(e) => handleBanco(e.target.value)}
                         className="h-10 min-w-[180px] rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted"
                         aria-label="Filtro por banco"
                     >
-                        <option value="">{bancoSel ? "Banco" : "Método pago"}</option>
+                        <option value="">
+                            {filters.bank ? "Banco" : "Método pago"}
+                        </option>
                         {bancos.map((nombre) => (
                             <option key={nombre} value={nombre}>
                                 {nombre}
@@ -401,7 +505,7 @@ export default function ComprasPage() {
                         ))}
                     </select>
 
-                    <DateRangePicker value={range} onChange={(r) => { setRange(r); setPage(1); }} />
+                    <DateRangePicker value={range} onChange={handleRange} />
 
                     <button
                         type="button"
@@ -414,7 +518,10 @@ export default function ComprasPage() {
                     <button
                         onClick={() => router.push("/comercial/compras/crear")}
                         className="h-10 rounded-md px-4 text-sm font-extrabold shadow-sm inline-flex items-center gap-2"
-                        style={{ background: "var(--tg-primary)", color: "#fff" }}
+                        style={{
+                            background: "var(--tg-primary)",
+                            color: "#fff",
+                        }}
                     >
                         <MaterialIcon name="add_circle" size={18} />
                         Nueva compra
@@ -432,21 +539,15 @@ export default function ComprasPage() {
                         type="search"
                         placeholder="Buscar compra por proveedor..."
                         className="h-10 w-full rounded-md border border-tg bg-tg-card text-tg-card pl-9 pr-3 focus:outline-none"
-                        value={q}
-                        onChange={(e) => {
-                            setQ(e.target.value);
-                            setPage(1);
-                        }}
+                        value={filters.q ?? ""}
+                        onChange={(e) => handleSearch(e.target.value)}
                     />
                 </label>
 
                 <div className="grid grid-cols-2 gap-2">
                     <select
-                        value={estadoSel}
-                        onChange={(e) => {
-                            setEstadoSel(e.target.value);
-                            setPage(1);
-                        }}
+                        value={filters.status ?? ""}
+                        onChange={(e) => handleEstado(e.target.value)}
                         className="h-10 w-full rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted"
                     >
                         <option value="">Estado</option>
@@ -458,14 +559,13 @@ export default function ComprasPage() {
                     </select>
 
                     <select
-                        value={bancoSel}
-                        onChange={(e) => {
-                            setBancoSel(e.target.value);
-                            setPage(1);
-                        }}
+                        value={filters.bank ?? ""}
+                        onChange={(e) => handleBanco(e.target.value)}
                         className="h-10 w-full rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted"
                     >
-                        <option value="">{bancoSel ? "Banco" : "Método pago"}</option>
+                        <option value="">
+                            {filters.bank ? "Banco" : "Método pago"}
+                        </option>
                         {bancos.map((nombre) => (
                             <option key={nombre} value={nombre}>
                                 {nombre}
@@ -475,7 +575,11 @@ export default function ComprasPage() {
                 </div>
 
                 <div className="grid grid-cols-[1fr_auto] gap-2">
-                    <DateRangePicker className={DPR_MOBILE} value={range} onChange={(r) => { setRange(r); setPage(1); }} />
+                    <DateRangePicker
+                        className={DPR_MOBILE}
+                        value={range}
+                        onChange={handleRange}
+                    />
                     <button
                         type="button"
                         onClick={handleClearFilters}
@@ -488,7 +592,10 @@ export default function ComprasPage() {
                 <button
                     onClick={() => router.push("/comercial/compras/crear")}
                     className="h-10 w-full rounded-md px-4 text-sm font-extrabold shadow-sm inline-flex items-center justify-center gap-2"
-                    style={{ background: "var(--tg-primary)", color: "#fff" }}
+                    style={{
+                        background: "var(--tg-primary)",
+                        color: "#fff",
+                    }}
                 >
                     <MaterialIcon name="add_circle" size={18} />
                     Nueva compra
@@ -496,26 +603,36 @@ export default function ComprasPage() {
             </div>
 
             {/* Marco + lista */}
-            <div className="rounded-xl border flex-1 min-h-0 flex flex-col overflow-hidden mb-1" style={{ background: FRAME_BG, borderColor: BORDER }}>
+            <div
+                className="rounded-xl border flex-1 min-h-0 flex flex-col overflow-hidden mb-1"
+                style={{ background: FRAME_BG, borderColor: BORDER }}
+            >
                 <div className="px-3 pt-3">
                     <HeaderRow />
                 </div>
 
                 <div className="flex-1 min-h-0 overflow-auto px-3 pb-1 space-y-4 sm:space-y-3.5">
-                    {(loading || allLoading)
+                    {loading
                         ? Array.from({ length: SKELETON_COUNT }).map((_, i) => (
-                            <div key={`sk-${i}`} className="h-[60px] rounded-xl border bg-black/10 animate-pulse" />
+                            <div
+                                key={`sk-${i}`}
+                                className="h-[60px] rounded-xl border bg-black/10 animate-pulse"
+                            />
                         ))
-                        : paged.length === 0
-                            ? <div className="h-full grid place-items-center text-tg-muted text-sm">Sin registros</div>
-                            : paged.map((r) => (
+                        : items.length === 0
+                            ? (
+                                <div className="h-full grid place-items-center text-tg-muted text-sm">
+                                    Sin registros
+                                </div>
+                            )
+                            : items.map((r) => (
                                 <PurchaseRow
                                     key={r.id}
                                     v={r}
-                                    onView={(row) => { setCompraSel(row); setOpenView(true); }}
-                                    onPay={(row) => { setCompraPay(row); setOpenPay(true); }}
-                                    onReceipts={(row) => { setPurchaseForUpload(row); setOpenReceipts(true); }}
-                                    onDelete={(row) => { setCompraDel(row); setOpenDelete(true); }}
+                                    onView={onView}
+                                    onPay={onPay}
+                                    onReceipts={onReceipts}
+                                    onDelete={openDeleteModal}
                                 />
                             ))}
                 </div>
@@ -524,20 +641,44 @@ export default function ComprasPage() {
                 <div className="shrink-0 px-3 pt-1 pb-2 flex flex-wrap gap-3 items-center justify-between">
                     <div className="flex items-center gap-2">
                         <span className="text-sm">Líneas por página</span>
-                        <select value={pageSize} disabled className="h-9 rounded-md border border-tg bg-[var(--panel-bg)] px-2 text-sm text-tg-muted">
+                        <select
+                            value={pageSize}
+                            disabled
+                            className="h-9 rounded-md border border-tg bg-[var(--panel-bg)] px-2 text-sm text-tg-muted"
+                        >
                             <option value={pageSize}>{pageSize}</option>
                         </select>
                     </div>
 
                     <nav className="flex items-center gap-1">
-                        {/* cálculo de ventana de páginas */}
-                        {Array.from({ length: end - start + 1 }, (_, i) => start + i).map((p) => {
+                        <button
+                            disabled={page <= 1}
+                            onClick={() => handlePageChange(1)}
+                            className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40"
+                        >
+                            <MaterialIcon name="first_page" size={16} />
+                        </button>
+                        <button
+                            disabled={page <= 1}
+                            onClick={() => handlePageChange(page - 1)}
+                            className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40"
+                        >
+                            <MaterialIcon name="chevron_left" size={16} />
+                        </button>
+
+                        {Array.from(
+                            { length: end - start + 1 },
+                            (_, i) => start + i
+                        ).map((p) => {
                             const active = p === page;
                             return (
                                 <button
                                     key={p}
-                                    onClick={() => setPage(p)}
-                                    className={`h-9 min-w-9 px-3 rounded border ${active ? "bg-tg-primary text-white border-transparent" : "bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] text-white/90 border-white/10"} font-semibold`}
+                                    onClick={() => handlePageChange(p)}
+                                    className={`h-9 min-w-9 px-3 rounded border ${active
+                                        ? "bg-tg-primary text-white border-transparent"
+                                        : "bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] text-white/90 border-white/10"
+                                        } font-semibold`}
                                     aria-current={active ? "page" : undefined}
                                 >
                                     {p}
@@ -545,15 +686,36 @@ export default function ComprasPage() {
                             );
                         })}
 
+                        <button
+                            disabled={page >= totalPages}
+                            onClick={() => handlePageChange(page + 1)}
+                            className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40"
+                        >
+                            <MaterialIcon name="chevron_right" size={16} />
+                        </button>
+                        <button
+                            disabled={page >= totalPages}
+                            onClick={() => handlePageChange(totalPages)}
+                            className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40"
+                        >
+                            <MaterialIcon name="last_page" size={16} />
+                        </button>
+
                         <div className="h-9 min-w-[120px] grid place-items-center text-sm font-medium">
-                            {clientTotal === 0 ? "0 - 0" : `${fromRow} - ${toRow}`} de {clientTotal}
+                            {fromRow} - {toRow} de {total ?? 0}
                         </div>
                     </nav>
                 </div>
             </div>
 
             {/* Ver */}
-            {openView && <CompraView open={openView} onClose={() => setOpenView(false)} compra={compraSel} />}
+            {openView && (
+                <CompraView
+                    open={openView}
+                    onClose={() => setOpenView(false)}
+                    compra={compraSel}
+                />
+            )}
 
             {/* Pagar */}
             {openPay && (
@@ -588,19 +750,36 @@ export default function ComprasPage() {
                         if (e.key === "Escape") setOpenDelete(false);
                     }}
                     onClick={(e) => {
-                        if (e.target === e.currentTarget && !deleting) setOpenDelete(false);
+                        if (e.target === e.currentTarget && !deleting)
+                            setOpenDelete(false);
                     }}
                 >
-                    <div className="w-[420px] rounded-lg border bg-[var(--panel-bg)] shadow-xl" style={{ borderColor: BORDER }}>
-                        <div className="px-4 py-3 border-b flex items-center gap-2" style={{ borderColor: BORDER }}>
+                    <div
+                        className="w-[420px] rounded-lg border bg-[var(--panel-bg)] shadow-xl"
+                        style={{ borderColor: BORDER }}
+                    >
+                        <div
+                            className="px-4 py-3 border-b flex items-center gap-2"
+                            style={{ borderColor: BORDER }}
+                        >
                             <MaterialIcon name="warning" size={18} />
-                            <h3 className="text-base font-semibold">Confirmar eliminación</h3>
+                            <h3 className="text-base font-semibold">
+                                Confirmar eliminación
+                            </h3>
                         </div>
                         <div className="px-4 py-4 text-sm">
-                            ¿Seguro que deseas eliminar la compra #{compraDel?.id}? Esta acción no se puede deshacer.
+                            ¿Seguro que deseas eliminar la compra #{compraDel?.id}? Esta
+                            acción no se puede deshacer.
                         </div>
-                        <div className="px-4 py-3 border-t flex justify-end gap-2" style={{ borderColor: BORDER }}>
-                            <button onClick={() => setOpenDelete(false)} className="h-9 rounded-md px-3 text-sm hover:bg-black/10" disabled={deleting}>
+                        <div
+                            className="px-4 py-3 border-t flex justify-end gap-2"
+                            style={{ borderColor: BORDER }}
+                        >
+                            <button
+                                onClick={() => setOpenDelete(false)}
+                                className="h-9 rounded-md px-3 text-sm hover:bg-black/10"
+                                disabled={deleting}
+                            >
                                 Cancelar
                             </button>
                             <button
@@ -610,9 +789,12 @@ export default function ComprasPage() {
                                         await deleteCompra(compraDel.id);
                                         setOpenDelete(false);
                                         success("Compra eliminada");
-                                        await reload?.();
+                                        await reload();
                                     } catch (e: any) {
-                                        error(e?.response?.data?.detail ?? "Error eliminando compra");
+                                        error(
+                                            e?.response?.data?.detail ??
+                                            "Error eliminando compra"
+                                        );
                                     }
                                 }}
                                 className="h-9 rounded-md px-3 text-sm font-medium text-white disabled:opacity-60"

@@ -8,15 +8,40 @@ import type {
   PurchasePaymentCreate,
 } from "@/types/purchase";
 
+type ListPurchasesOpts = {
+  signal?: AbortSignal;
+  q?: string;
+  supplier?: string;
+  status?: string;
+  bank?: string;
+  from?: string;
+  to?: string;
+  page_size?: number;
+};
+
 export async function listPurchases(
   page = 1,
-  params?: Record<string, any>,
-  nocacheToken?: number
+  opts: ListPurchasesOpts = {}
 ): Promise<PurchasePage> {
+  const { signal, q, supplier, status, bank, from, to, page_size } = opts;
+
+  const params: Record<string, string | number | undefined> = {
+    page,
+    page_size,
+    ...(q ? { q } : {}),
+    ...(supplier ? { supplier } : {}),
+    ...(status ? { status } : {}),
+    ...(bank ? { bank } : {}),
+    ...(from ? { from } : {}),
+    ...(to ? { to } : {}),
+  };
+
   const { data } = await salesApi.get("/purchases/", {
-    params: { page, ...params, _ts: nocacheToken ?? Date.now() },
-    headers: { "Cache-Control": "no-cache" },
+    params,
+    signal,
+    withCredentials: false,
   });
+
   return data as PurchasePage;
 }
 

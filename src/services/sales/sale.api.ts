@@ -9,17 +9,41 @@ import type {
   SalePaymentCreate,
 } from "@/types/sale";
 
+type ListSalesOpts = {
+  signal?: AbortSignal;
+  q?: string;
+  status?: string;
+  bank?: string;
+  from?: string;
+  to?: string;
+  page_size?: number;
+};
+
 export async function listSales(
   page = 1,
-  params?: Record<string, any>,
-  nocacheToken?: number
+  opts: ListSalesOpts = {}
 ): Promise<SalePage> {
+  const { signal, q, status, bank, from, to, page_size } = opts;
+
+  const params: Record<string, string | number | undefined> = {
+    page,
+    page_size,
+    ...(q ? { q } : {}),
+    ...(status ? { status } : {}),
+    ...(bank ? { bank } : {}),
+    ...(from ? { from } : {}),
+    ...(to ? { to } : {}),
+  };
+
   const { data } = await salesApi.get("/sales", {
-    params: { page, ...params, _ts: nocacheToken ?? Date.now() },
-    headers: { "Cache-Control": "no-cache" },
+    params,
+    signal,
+    withCredentials: false,
   });
+
   return data as SalePage;
 }
+
 
 export async function getSaleById(saleId: number, nocacheToken?: number): Promise<Sale> {
   const { data } = await salesApi.get(`/sales/by-id/${saleId}`, {

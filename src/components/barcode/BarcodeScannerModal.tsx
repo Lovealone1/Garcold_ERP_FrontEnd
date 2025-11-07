@@ -1,4 +1,3 @@
-// components/barcode/BarcodeScannerModal.tsx
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -14,7 +13,6 @@ type Props = {
     onClose: () => void;
 };
 
-// Hints: formatos soportados + TRY_HARDER
 const hints = new Map();
 hints.set(DecodeHintType.POSSIBLE_FORMATS, [
     BarcodeFormat.EAN_13,
@@ -69,14 +67,13 @@ export function BarcodeScannerModal({ open, onDetected, onClose }: Props) {
                             let formatName: string | undefined;
 
                             if (typeof raw === "number") {
-                                // 7 -> "EAN_13", etc
                                 formatName = (BarcodeFormat as any)[raw];
                             } else if (typeof raw === "string") {
                                 formatName = raw;
                             }
 
                             onDetected(result.getText(), formatName);
-                            onClose(); // cierre inmediato al detectar
+                            onClose(); 
                         }
                     }
                 );
@@ -90,7 +87,6 @@ export function BarcodeScannerModal({ open, onDetected, onClose }: Props) {
             try {
                 controls?.stop();
             } catch {
-                // silencioso
             }
             stopStream();
         };

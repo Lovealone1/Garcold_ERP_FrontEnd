@@ -1,4 +1,3 @@
-// ThemeToggle.tsx
 "use client";
 import { MaterialIcon } from "@/components/ui/material-icon";
 

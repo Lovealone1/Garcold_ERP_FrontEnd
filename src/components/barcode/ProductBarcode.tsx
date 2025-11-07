@@ -1,4 +1,3 @@
-// components/barcode/ProductBarcode.tsx
 "use client";
 
 import Barcode, { type BarcodeProps } from "react-barcode";

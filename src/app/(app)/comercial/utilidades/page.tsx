@@ -22,24 +22,16 @@ const ACTION_BG = "color-mix(in srgb, var(--tg-primary) 28%, transparent)";
 const BORDER = "var(--tg-border)";
 const actionBtn =
     "h-8 w-8 grid place-items-center rounded-full text-[var(--tg-primary)] hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary";
-
-/* Estilo *inline* para el DateRangePicker (un solo “chip” con el icono adentro) */
 const DPR_SOLID =
-    "inline-flex items-stretch h-10 w-full rounded-md border border-tg bg-tg-card overflow-hidden " +
-    // input
-    "[&_input]:flex-1 [&_input]:h-10 [&_input]:bg-transparent [&_input]:border-0 [&_input]:px-3 [&_input]:text-tg-card " +
-    // botón SIN divider
-    "[&_button]:h-10 [&_button]:w-10 [&_button]:p-0 [&_button]:bg-transparent [&_button]:border-0 " +
-    "[&_button]:outline-none [&_button]:shadow-none " +          // evita sombras/bordes de lib
-    // svg sin márgenes
-    "[&_button_svg]:!m-0";
-
-/* Skeleton compacto */
+    "inline-flex items-stretch h-10 w-full rounded-md border border-tg bg-tg-card " +
+    "[&>input]:flex-1 [&>input]:h-10 [&>input]:bg-transparent [&>input]:border-0 [&>input]:px-3 [&>input]:text-tg-card " +
+    "[&>button]:h-10 [&>button]:w-10 [&>button]:p-0 [&>button]:bg-transparent [&>button]:border-0 " +
+    "[&>button]:outline-none [&>button]:shadow-none [&>button]:pointer-events-auto " +
+    "[&>button_svg]:!m-0";
 const SKEL = "h-[56px] rounded-lg border border-white/10 bg-black/10 animate-pulse";
 
 const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 
-/* ----------------- Card ----------------- */
 function ProfitCard({
     r, customer, onView,
 }: { r: Profit; customer?: string; onView: (saleId: number) => void }) {
@@ -95,21 +87,14 @@ function ProfitCard({
     );
 }
 
-/* ----------------- Página ----------------- */
 export default function UtilidadesPage() {
     const [all, setAll] = useState<Profit[]>([]);
     const [loading, setLoading] = useState(true);
     const [clienteByVenta, setClienteByVenta] = useState<Record<number, string>>({});
-
-    // filtros
     const [q, setQ] = useState("");
     const [range, setRange] = useState<DateRange | undefined>(undefined);
-
-    // paginación fija a 16
     const pageSize = 16;
     const [page, setPage] = useState(1);
-
-    // modal
     const [openView, setOpenView] = useState(false);
     const [ventaToView, setVentaToView] = useState<number | null>(null);
 
@@ -127,7 +112,6 @@ export default function UtilidadesPage() {
         return () => { alive = false; };
     }, []);
 
-    // cargar nombres por lotes
     useEffect(() => {
         if (!all.length) return;
         const missing = Array.from(new Set(all.map(u => u.sale_id).filter(id => clienteByVenta[id] == null)));
@@ -147,7 +131,6 @@ export default function UtilidadesPage() {
         return () => { cancelled = true; };
     }, [all, clienteByVenta]);
 
-    // filtros
     const filtered = useMemo(() => {
         const v = q.trim().toLowerCase();
         const byVentaOrCliente = (u: Profit) => {

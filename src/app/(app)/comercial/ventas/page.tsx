@@ -21,7 +21,7 @@ import type { DateRange } from "react-day-picker";
 import DateRangePicker from "@/components/ui/DateRangePicker/DateRangePicker";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 import FacturaPreviewModal from "@/features/factura/FacturaPreviewModal";
-/* -------- Tokens visuales -------- */
+
 const FRAME_BG = "color-mix(in srgb, var(--tg-bg) 90%, #fff 3%)";
 const OUTER_BG = "color-mix(in srgb, var(--tg-bg) 55%, #000 45%)";
 const INNER_BG = "color-mix(in srgb, var(--tg-bg) 95%, #fff 2%)";

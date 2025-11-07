@@ -6,8 +6,8 @@ import { MaterialIcon } from "@/components/ui/material-icon";
 import ClienteForm from "@/features/clientes/ClienteForm";
 import ClienteView from "@/features/clientes/ClienteView";
 import PagoClienteModal from "@/features/clientes/PagoClienteSimpleModal";
-import { useCustomers } from "@/hooks/clientes/useClientes";
-import { useCustomer } from "@/hooks/clientes/useCliente";
+import { useCustomers } from "@/hooks/clientes/useCustomers";
+import { useCustomer } from "@/hooks/clientes/useCustomer";
 import { createCustomer, updateCustomer, deleteCustomer } from "@/services/sales/customer.api";
 import type { Customer, CustomerCreate, CustomerUpdate } from "@/types/customer";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
@@ -23,13 +23,14 @@ const OUTER_BG = "color-mix(in srgb, var(--tg-bg) 55%, #000 45%)";
 const INNER_BG = "color-mix(in srgb, var(--tg-bg) 95%, #fff 2%)";
 const PILL_BG = "color-mix(in srgb, var(--tg-card-bg) 60%, #000 40%)";
 const ACTION_BG = "color-mix(in srgb, var(--tg-primary) 28%, transparent)";
+const MUTED_BG = "color-mix(in srgb, var(--tg-muted) 28%, transparent)";
 const BORDER = "var(--tg-border)";
 
 /* Base compacta */
 const pill =
   "min-w-[90px] h-8 px-2.5 rounded-md grid place-items-center text-[13px] text-white/90 border";
 const actionBtn =
-  "h-8 w-8 grid place-items-center rounded-full text-[var(--tg-primary)] hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary";
+  "h-8 w-8 grid place-items-center rounded-full hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary";
 
 /* Utilidad: recortar con “…” */
 const clip = (s?: string | null, n = 22) =>
@@ -81,6 +82,7 @@ function CustomerRow({
   const saldo = c.balance ?? 0;
   const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
   const dotColor = saldo > 0 ? "#d4b000" : "var(--tg-primary)";
+  const canPay = saldo > 0;
 
   return (
     <div className="relative rounded-xl border shadow-sm" style={{ background: OUTER_BG, borderColor: BORDER }}>
@@ -120,12 +122,35 @@ function CustomerRow({
           </div>
 
           <div className="flex items-center justify-end gap-2">
-            <button className={actionBtn} style={{ background: ACTION_BG }} aria-label="ver" onClick={() => onView(c.id)}>
+            <button
+              className={`${actionBtn} text-[var(--tg-primary)]`}
+              style={{ background: ACTION_BG }}
+              aria-label="ver"
+              onClick={() => onView(c.id)}
+            >
               <MaterialIcon name="visibility" size={18} />
             </button>
-            <button className={actionBtn} style={{ background: ACTION_BG }} aria-label="editar" onClick={() => onEdit(c.id)}>
+            <button
+              className={`${actionBtn} text-[var(--tg-primary)]`}
+              style={{ background: ACTION_BG }}
+              aria-label="editar"
+              onClick={() => onEdit(c.id)}
+            >
               <MaterialIcon name="edit" size={18} />
             </button>
+
+            {/* Pago siempre visible; muted si no hay saldo */}
+            <button
+              className={`${actionBtn} ${canPay ? "text-[var(--tg-primary)]" : "text-tg-muted opacity-50 cursor-not-allowed"}`}
+              style={{ background: canPay ? ACTION_BG : MUTED_BG }}
+              aria-label="abonar"
+              onClick={() => canPay && onPay(c)}
+              disabled={!canPay}
+              title={canPay ? "Registrar pago" : "Sin saldo pendiente"}
+            >
+              <MaterialIcon name="paid" size={18} className={canPay ? "" : "text-tg-muted"} />
+            </button>
+
             <button
               className="h-8 w-8 grid place-items-center rounded-full"
               style={{ background: "#7a1010" }}
@@ -135,17 +160,6 @@ function CustomerRow({
             >
               <MaterialIcon name="delete" size={16} className="text-[#ff4d4f]" />
             </button>
-            {saldo > 0 && (
-              <button
-                className={actionBtn}
-                style={{ background: ACTION_BG }}
-                aria-label="abonar"
-                onClick={() => onPay(c)}
-                title="Registrar pago"
-              >
-                <MaterialIcon name="paid" size={18} />
-              </button>
-            )}
           </div>
         </div>
       </div>
@@ -184,17 +198,35 @@ function CustomerRow({
           </div>
 
           <div className="ml-2 flex items-center gap-2 shrink-0">
-            <button className={actionBtn} style={{ background: ACTION_BG }} aria-label="ver" onClick={() => onView(c.id)}>
+            <button
+              className={`${actionBtn} text-[var(--tg-primary)]`}
+              style={{ background: ACTION_BG }}
+              aria-label="ver"
+              onClick={() => onView(c.id)}
+            >
               <MaterialIcon name="visibility" size={18} />
             </button>
-            <button className={actionBtn} style={{ background: ACTION_BG }} aria-label="editar" onClick={() => onEdit(c.id)}>
+            <button
+              className={`${actionBtn} text-[var(--tg-primary)]`}
+              style={{ background: ACTION_BG }}
+              aria-label="editar"
+              onClick={() => onEdit(c.id)}
+            >
               <MaterialIcon name="edit" size={18} />
             </button>
-            {saldo > 0 && (
-              <button className={actionBtn} style={{ background: ACTION_BG }} aria-label="abonar" onClick={() => onPay(c)}>
-                <MaterialIcon name="paid" size={18} />
-              </button>
-            )}
+
+            {/* Pago siempre visible; muted si no hay saldo */}
+            <button
+              className={`${actionBtn} ${canPay ? "text-[var(--tg-primary)]" : "text-tg-muted opacity-50 cursor-not-allowed"}`}
+              style={{ background: ACTION_BG }}
+              aria-label="abonar"
+              onClick={() => canPay && onPay(c)}
+              disabled={!canPay}
+              title={canPay ? "Registrar pago" : "Sin saldo pendiente"}
+            >
+              <MaterialIcon name="paid" size={18} className={canPay ? "" : "text-tg-muted"} />
+            </button>
+
             <button
               className="h-8 w-8 grid place-items-center rounded-full"
               style={{ background: "#7a1010" }}
@@ -214,7 +246,6 @@ function CustomerRow({
 export default function ClientesPage() {
   // perPage fijo por montaje. En móvil queda en 5.
   const [perPage] = useState<number>(getInitialPerPage);
-  // uso del hook para UI secundaria: cerrar dropdown al cambiar ancho
   const isNarrow = useMediaQuery("(max-width: 639px)");
 
   const {
@@ -547,7 +578,7 @@ export default function ClientesPage() {
 
         {/* Paginación + IO */}
         <div className="shrink-0 px-3 pt-1 pb-2 flex flex-wrap gap-3 items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <div className="flex items-center gap-2">
               <span className="text-sm">Líneas por página</span>
               <select value={pageSize} disabled className="h-9 rounded-md border border-tg bg-[var(--panel-bg)] px-2 text-sm text-tg-muted">
@@ -606,7 +637,6 @@ export default function ClientesPage() {
         onRun={async (opts) => { try { await imp.importFile({ ...opts, entity: "customers" }); success("Importación completada"); reload?.(); } catch (e: any) { err(e?.message ?? "Error al importar"); } }}
         loading={imp.loading}
         error={imp.error?.message ?? null}
-        report={imp.data}
         fixedEntity="customers"
         title="Importar clientes"
       />

@@ -5,7 +5,7 @@ import { useMemo, useState, useEffect, CSSProperties } from "react";
 import { MaterialIcon } from "@/components/ui/material-icon";
 import ProveedorForm from "@/features/proveedores/ProveedorForm";
 import ProveedorView from "@/features/proveedores/ProveedorView";
-import { useSuppliers } from "@/hooks/proveedores/useProveedores";
+import { useSuppliers } from "@/hooks/proveedores/useSuppliers";
 import { useSupplier } from "@/hooks/proveedores/useProveedor";
 import { createSupplier, updateSupplier, deleteSupplier } from "@/services/sales/supplier.api";
 import type { Supplier, SupplierCreate, SupplierUpdate } from "@/types/supplier";

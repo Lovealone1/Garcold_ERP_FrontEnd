@@ -16,10 +16,26 @@ function inRange(d: string, range?: DateRange) {
     if (!range?.from && !range?.to) return true;
     const t = new Date(d).getTime();
     const from = range?.from
-        ? new Date(range.from.getFullYear(), range.from.getMonth(), range.from.getDate(), 0, 0, 0, 0).getTime()
+        ? new Date(
+            range.from.getFullYear(),
+            range.from.getMonth(),
+            range.from.getDate(),
+            0,
+            0,
+            0,
+            0
+        ).getTime()
         : undefined;
     const to = range?.to
-        ? new Date(range.to.getFullYear(), range.to.getMonth(), range.to.getDate(), 23, 59, 59, 999).getTime()
+        ? new Date(
+            range.to.getFullYear(),
+            range.to.getMonth(),
+            range.to.getDate(),
+            23,
+            59,
+            59,
+            999
+        ).getTime()
         : undefined;
     if (from !== undefined && t < from) return false;
     if (to !== undefined && t > to) return false;
@@ -27,9 +43,6 @@ function inRange(d: string, range?: DateRange) {
 }
 
 export default function GastosPage() {
-    const [page, setPage] = useState(1);
-    const [categoria, setCategoria] = useState<string | undefined>(undefined);
-    const [banco, setBanco] = useState<string | undefined>(undefined);
     const [range, setRange] = useState<DateRange | undefined>();
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
     const [confirmDelete, setConfirmDelete] = useState(false);
@@ -37,39 +50,56 @@ export default function GastosPage() {
 
     const { success, error } = useNotifications();
 
-    const params = useMemo(() => {
-        const p: Record<string, any> = {};
-        if (categoria) p.categoria = categoria;
-        if (banco) p.banco = banco;
-        return Object.keys(p).length ? p : undefined;
-    }, [categoria, banco]);
+    const {
+        items,
+        page,
+        setPage,
+        pageSize,
+        totalPages,
+        loading,
+        error: loadError,
+        reload,
+        filters,
+        setFilters,
+        hasPrev,
+        hasNext,
+        loadMore,
+        hasMoreServer,
+    } = useExpenses({}, 8);
 
-    const { data, items, loading, error: loadError, refresh } = useExpenses(page, params);
     const { items: categorias, loading: loadingCats } = useExpenseCategories();
+
     const { remove, loading: deleting } = useDeleteExpense(() => {
         setSelectedIds(new Set());
-        refresh();
+        reload();
     });
 
     const bancos = useMemo(
-        () => Array.from(new Set(items.map((g) => g.bank_name).filter(Boolean))).sort((a, b) => a.localeCompare(b)),
+        () =>
+            Array.from(
+                new Set(items.map((g) => g.bank_name).filter(Boolean))
+            ).sort((a, b) => a.localeCompare(b)),
         [items]
     );
 
     const filtered = useMemo(
         () =>
             items.filter((g) => {
-                if (categoria && g.category_name !== categoria) return false;
-                if (banco && g.bank_name !== banco) return false;
+                if (filters.category && g.category_name !== filters.category)
+                    return false;
+                if (filters.bank && g.bank_name !== filters.bank) return false;
                 if (!inRange(g.expense_date, range)) return false;
                 return true;
             }),
-        [items, categoria, banco, range]
+        [items, filters.category, filters.bank, range]
     );
 
     async function handleConfirmDelete() {
         try {
-            for (const id of selectedIds) await remove(id);
+            for (const id of selectedIds) {
+                // eslint-disable-next-line no-await-in-loop
+                await remove(id);
+            }
             success(
                 selectedIds.size > 1
                     ? `Se eliminaron ${selectedIds.size} gastos correctamente.`
@@ -83,31 +113,64 @@ export default function GastosPage() {
     }
 
     function clearFilters() {
-        setCategoria(undefined);
-        setBanco(undefined);
+        setFilters({});
         setRange(undefined);
         setPage(1);
-        refresh();
+        reload();
     }
+
+    // Navegación con prefetch automático al estilo useTransactions
+    const handlePageChange = async (target: number) => {
+        if (target <= 0 || target === page) return;
+
+        // Ir hacia atrás es trivial
+        if (target < page) {
+            setPage(target);
+            return;
+        }
+
+        // Ir hacia adelante: si la página pedida no está en cache,
+        // y el server dice que hay más, pedimos más páginas.
+        if (hasMoreServer && target > totalPages) {
+            await loadMore();
+        }
+
+        // Después del posible loadMore, usamos el totalPages actualizado si existe.
+        const max =
+            totalPages && totalPages > 0
+                ? totalPages
+                : target; // fallback: como mínimo permite avanzar uno
+
+        const safe = Math.max(1, Math.min(target, max));
+        if (safe !== page) setPage(safe);
+    };
 
     return (
         <div className="p-4 space-y-4">
             <div className="flex items-center justify-between gap-3 flex-wrap">
-                <h2 className="text-4xl font-extrabold text-tg-fg">Gastos</h2>
+                <h2 className="text-4xl font-extrabold text-tg-fg">
+                    Gastos
+                </h2>
 
                 <div className="flex items-center gap-3 flex-wrap">
                     <div className="flex items-center gap-2">
+                        {/* Categoría */}
                         <select
                             className="h-10 min-w-[220px] rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-card"
-                            value={categoria ?? ""}
+                            value={filters.category ?? ""}
                             onChange={(e) => {
-                                const val = e.target.value;
+                                const val = e.target.value || undefined;
+                                setFilters((f) => ({
+                                    ...f,
+                                    category: val,
+                                }));
                                 setPage(1);
-                                setCategoria(val ? val : undefined);
                             }}
                             disabled={loadingCats}
                         >
-                            <option value="">Todas las categorías</option>
+                            <option value="">
+                                Todas las categorías
+                            </option>
                             {categorias.map((c) => (
                                 <option key={c.id} value={c.name}>
                                     {c.name}
@@ -115,17 +178,23 @@ export default function GastosPage() {
                             ))}
                         </select>
 
+                        {/* Banco */}
                         <select
                             className="h-10 min-w-[200px] rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-card"
-                            value={banco ?? ""}
+                            value={filters.bank ?? ""}
                             onChange={(e) => {
-                                const val = e.target.value;
+                                const val = e.target.value || undefined;
+                                setFilters((f) => ({
+                                    ...f,
+                                    bank: val,
+                                }));
                                 setPage(1);
-                                setBanco(val ? val : undefined);
                             }}
                             disabled={loading}
                         >
-                            <option value="">Todos los bancos</option>
+                            <option value="">
+                                Todos los bancos
+                            </option>
                             {bancos.map((b) => (
                                 <option key={b} value={b}>
                                     {b}
@@ -133,6 +202,8 @@ export default function GastosPage() {
                             ))}
                         </select>
 
+                        {/* Rango fechas (solo filtro local) */}
+                        From DB to role no change
                         <DateRangePicker
                             value={range}
                             onChange={(r) => {
@@ -141,16 +212,22 @@ export default function GastosPage() {
                             }}
                         />
 
+                        {/* Limpiar filtros */}
                         <span
                             role="button"
                             tabIndex={0}
                             onClick={clearFilters}
-                            onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && clearFilters()}
+                            onKeyDown={(e) =>
+                                (e.key === "Enter" ||
+                                    e.key === " ") &&
+                                clearFilters()
+                            }
                             className="cursor-pointer text-sm text-tg-primary hover:underline ml-2 select-none"
                         >
                             Limpiar filtros
                         </span>
 
+                        {/* Crear gasto */}
                         <button
                             type="button"
                             className="h-10 rounded-md bg-tg-primary px-4 text-sm font-medium text-tg-on-primary shadow-sm inline-flex items-center gap-1"
@@ -160,22 +237,30 @@ export default function GastosPage() {
                         </button>
                     </div>
 
+                    {/* Paginación desktop */}
                     <div className="hidden sm:flex items-center">
                         <button
                             className="h-9 w-9 grid place-items-center rounded border border-tg disabled:opacity-50"
-                            onClick={() => setPage((p) => Math.max(1, p - 1))}
-                            disabled={!data?.has_prev || loading}
+                            onClick={() =>
+                                handlePageChange(page - 1)
+                            }
+                            disabled={!hasPrev || loading}
                             type="button"
                         >
                             <ChevronLeftIcon fontSize="small" />
                         </button>
                         <span className="mx-2 text-sm">
-                            {data?.page ?? page} / {data?.total_pages ?? 1}
+                            {page} / {totalPages || 1}
                         </span>
                         <button
                             className="h-9 w-9 grid place-items-center rounded border border-tg disabled:opacity-50"
-                            onClick={() => setPage((p) => p + 1)}
-                            disabled={!data?.has_next || loading}
+                            onClick={() =>
+                                handlePageChange(page + 1)
+                            }
+                            disabled={
+                                (!hasNext && !hasMoreServer) ||
+                                loading
+                            }
                             type="button"
                         >
                             <ChevronRightIcon fontSize="small" />
@@ -192,39 +277,75 @@ export default function GastosPage() {
                         onClick={() => setConfirmDelete(true)}
                         disabled={deleting}
                     >
-                        {deleting ? "Eliminando…" : `Eliminar (${selectedIds.size})`}
+                        {deleting
+                            ? "Eliminando…"
+                            : `Eliminar (${selectedIds.size})`}
                     </button>
                 </div>
             )}
 
-            {loadError && <div className="text-sm text-red-600">{String(loadError)}</div>}
+            {loadError && (
+                <div className="text-sm text-red-600">
+                    {String(loadError)}
+                </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-4">
                 {filtered.map((g) => {
                     const isSelected = selectedIds.has(g.id);
+
+                    const toggle = () => {
+                        setSelectedIds((prev) => {
+                            const next = new Set(prev);
+                            next.has(g.id) ? next.delete(g.id) : next.add(g.id);
+                            return next;
+                        });
+                    };
+
                     return (
                         <div
                             key={g.id}
                             role="button"
                             tabIndex={0}
-                            onClick={() =>
-                                setSelectedIds((prev) => {
-                                    const next = new Set(prev);
-                                    next.has(g.id) ? next.delete(g.id) : next.add(g.id);
-                                    return next;
-                                })
-                            }
-                            className={`rounded-xl transition-colors ${isSelected ? "ring-2 ring-[var(--tg-primary)]" : "ring-0"
+                            onClick={toggle}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    toggle();
+                                }
+                            }}
+                            className={`relative rounded-xl transition-colors cursor-pointer border ${isSelected
+                                    ? "border-[var(--tg-primary)] ring-2 ring-[var(--tg-primary)]"
+                                    : "border-transparent hover:border-[var(--tg-primary)]"
                                 }`}
                         >
-                            <GastoCard gasto={g} />
+                            {/* Contenido de la card */}
+                            <div className="relative z-10">
+                                <GastoCard gasto={g} />
+                            </div>
+
+                            {/* Overlay POR ENCIMA para iluminar toda la card */}
+                            {isSelected && (
+                                <div
+                                    className="pointer-events-none absolute inset-0 rounded-xl z-20"
+                                    style={{
+                                        background:
+                                            "color-mix(in srgb, var(--tg-primary) 10%, transparent)",
+                                    }}
+                                />
+                            )}
                         </div>
                     );
                 })}
             </div>
 
+
+
+
             {!loading && filtered.length === 0 && (
-                <div className="text-sm text-tg-muted border border-tg rounded-md p-4">Sin resultados.</div>
+                <div className="text-sm text-tg-muted border border-tg rounded-md p-4">
+                    Sin resultados.
+                </div>
             )}
 
             {confirmDelete && (
@@ -233,30 +354,48 @@ export default function GastosPage() {
                     aria-modal="true"
                     className="fixed inset-0 z-50 grid place-items-center bg-black/50"
                     onClick={(e) => {
-                        if (e.target === e.currentTarget && !deleting) setConfirmDelete(false);
+                        if (
+                            e.target ===
+                            e.currentTarget &&
+                            !deleting
+                        )
+                            setConfirmDelete(
+                                false
+                            );
                     }}
                 >
                     <div className="w-[420px] rounded-lg border border-tg bg-[var(--panel-bg)] shadow-xl">
                         <div className="px-4 py-3 border-b border-tg">
-                            <h3 className="text-base font-semibold">Confirmar eliminación</h3>
+                            <h3 className="text-base font-semibold">
+                                Confirmar eliminación
+                            </h3>
                         </div>
                         <div className="px-4 py-4 text-sm">
-                            ¿Eliminar {selectedIds.size} gasto(s)? Esta acción no se puede deshacer.
+                            ¿Eliminar {selectedIds.size} gasto(s)?
+                            Esta acción no se puede deshacer.
                         </div>
                         <div className="px-4 py-3 border-t border-tg flex justify-end gap-2">
                             <button
-                                className="h-9 rounded-md px-3 text-sm hover:bg-black/10 dark:hover:bg-white/10"
-                                onClick={() => setConfirmDelete(false)}
+                                className="h-9 rounded-md px-3 text-sm hover:bg-black/10 dark:hover:bg:white/10"
+                                onClick={() =>
+                                    setConfirmDelete(
+                                        false
+                                    )
+                                }
                                 disabled={deleting}
                             >
                                 Cancelar
                             </button>
                             <button
                                 className="h-9 rounded-md bg-red-600 px-3 text-sm font-medium text-white disabled:opacity-60"
-                                onClick={handleConfirmDelete}
+                                onClick={
+                                    handleConfirmDelete
+                                }
                                 disabled={deleting}
                             >
-                                {deleting ? "Eliminando…" : "Eliminar"}
+                                {deleting
+                                    ? "Eliminando…"
+                                    : "Eliminar"}
                             </button>
                         </div>
                     </div>
@@ -268,8 +407,10 @@ export default function GastosPage() {
                 onClose={() => setOpenCreate(false)}
                 onCreated={() => {
                     setOpenCreate(false);
-                    refresh();
-                    success("Gasto registrado correctamente.");
+                    reload();
+                    success(
+                        "Gasto registrado correctamente."
+                    );
                 }}
             />
         </div>

@@ -5,68 +5,116 @@ import type {
   CustomerCreate,
   CustomerUpdate,
   CustomerLite,
-  CustomerStandalonePaymentIn
+  CustomerStandalonePaymentIn,
 } from "@/types/customer";
+
+type Q = { q?: string };
+type Opts = { nocacheToken?: number; signal?: AbortSignal };
+type ListOpts = { signal?: AbortSignal; q?: string; page_size?: number };
+
+const ts = () => Date.now();
+const nocache = { "Cache-Control": "no-cache" };
 
 export async function listCustomers(
   page = 1,
-  params?: { q?: string },
-  nocacheToken?: number
+  opts: ListOpts = {}
 ): Promise<CustomerPage> {
+  const { signal, q, page_size } = opts;
+  const params: Record<string, string | number | undefined> = {
+    page,
+    page_size,
+    ...(q ? { q } : {}),
+  };
+
   const { data } = await salesApi.get("/customers/page", {
-    params: { page, ...params, _ts: nocacheToken ?? Date.now() },
-    headers: { "Cache-Control": "no-cache" },
+    params,
+    signal,
   });
   return data as CustomerPage;
 }
 
 export async function fetchAllCustomers(
-  params?: { q?: string },
-  nocacheToken?: number
+  params?: Q,
+  opts?: Opts
 ): Promise<Customer[]> {
-  let page = 1;
-  const acc: Customer[] = [];
-  const first = await listCustomers(page, params, nocacheToken);
-  acc.push(...first.items);
-  while (page < first.total_pages) {
-    page += 1;
-    const p = await listCustomers(page, params, nocacheToken);
-    acc.push(...p.items);
+  const first = await listCustomers(1, { q: params?.q });
+  const acc = [...first.items];
+  for (let p = 2; p <= first.total_pages; p++) {
+    const page = await listCustomers(p, { q: params?.q });
+    acc.push(...page.items);
   }
   return acc;
 }
 
-export async function getCustomerById(customerId: number): Promise<Customer> {
-  const { data } = await salesApi.get(`/customers/by-id/${customerId}`);
-  return data as Customer;
-}
-
-export async function createCustomer(payload: CustomerCreate): Promise<Customer> {
-  const { data } = await salesApi.post("/customers/create", payload);
-  return data as Customer;
-}
-
-export async function updateCustomer(id: number, payload: CustomerUpdate): Promise<Customer> {
-  const { data } = await salesApi.patch(`/customers/by-id/${id}`, payload);
-  return data as Customer;
-}
-
-export async function updateCustomerBalance(id: number, newBalance: number): Promise<Customer> {
-  const { data } = await salesApi.patch(`/customers/by-id/${id}/balance`, {
-    new_balance: newBalance,
+export async function getCustomerById(
+  customerId: number,
+  opts?: Opts
+): Promise<Customer> {
+  const { data } = await salesApi.get(`/customers/by-id/${customerId}`, {
+    params: { _ts: opts?.nocacheToken ?? ts() },
+    headers: nocache,
+    signal: opts?.signal,
   });
   return data as Customer;
 }
 
-export async function deleteCustomer(id: number): Promise<{ message: string }> {
-  const { data } = await salesApi.delete(`/customers/by-id/${id}`);
+export async function createCustomer(
+  payload: CustomerCreate,
+  opts?: Opts
+): Promise<Customer> {
+  const { data } = await salesApi.post("/customers/create", payload, {
+    params: { _ts: opts?.nocacheToken ?? ts() },
+    headers: nocache,
+    signal: opts?.signal,
+  });
+  return data as Customer;
+}
+
+export async function updateCustomer(
+  id: number,
+  payload: CustomerUpdate,
+  opts?: Opts
+): Promise<Customer> {
+  const { data } = await salesApi.patch(`/customers/by-id/${id}`, payload, {
+    params: { _ts: opts?.nocacheToken ?? ts() },
+    headers: nocache,
+    signal: opts?.signal,
+  });
+  return data as Customer;
+}
+
+export async function updateCustomerBalance(
+  id: number,
+  newBalance: number,
+  opts?: Opts
+): Promise<Customer> {
+  const { data } = await salesApi.patch(
+    `/customers/by-id/${id}/balance`,
+    { new_balance: newBalance },
+    { params: { _ts: opts?.nocacheToken ?? ts() }, headers: nocache, signal: opts?.signal }
+  );
+  return data as Customer;
+}
+
+export async function deleteCustomer(
+  id: number,
+  opts?: Opts
+): Promise<{ message: string }> {
+  const { data } = await salesApi.delete(`/customers/by-id/${id}`, {
+    params: { _ts: opts?.nocacheToken ?? ts() },
+    headers: nocache,
+    signal: opts?.signal,
+  });
   return data as { message: string };
 }
 
-export async function listCustomersAll(nocacheToken?: number): Promise<CustomerLite[]> {
+export async function listCustomersAll(
+  opts?: Opts
+): Promise<CustomerLite[]> {
   const { data } = await salesApi.get("/customers", {
-    params: { _ts: nocacheToken ?? Date.now() },
-    headers: { "Cache-Control": "no-cache" },
+    params: { _ts: opts?.nocacheToken ?? ts() },
+    headers: nocache,
+    signal: opts?.signal,
   });
   const full: Customer[] = data as Customer[];
   return full.map((c) => ({ id: c.id, name: c.name }));
@@ -74,11 +122,13 @@ export async function listCustomersAll(nocacheToken?: number): Promise<CustomerL
 
 export async function createCustomerSimplePayment(
   customerId: number,
-  payload: CustomerStandalonePaymentIn
+  payload: CustomerStandalonePaymentIn,
+  opts?: Opts
 ): Promise<boolean> {
   const res = await salesApi.post(
     `/customers/by-id/${customerId}/payments/simple`,
-    payload
+    payload,
+    { params: { _ts: opts?.nocacheToken ?? ts() }, headers: nocache, signal: opts?.signal }
   );
   return res.data as boolean;
 }

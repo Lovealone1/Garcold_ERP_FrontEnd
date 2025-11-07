@@ -7,7 +7,7 @@ import { listTransactions } from "@/services/sales/transaction.api";
 export type OriginFilter = "all" | "auto" | "manual";
 export interface TransactionFilters { q?: string; bank?: string; type?: string; origin?: OriginFilter; }
 
-export function useTransactions(initialPage = 1, pageSize = 10) {
+export function useTransactions(initialPage = 1, pageSize = 8) {
     const qc = useQueryClient();
     const [page, setPage] = useState(initialPage);
     const [filters, setFilters] = useState<TransactionFilters>({ q: "", bank: "", type: "", origin: "all" });

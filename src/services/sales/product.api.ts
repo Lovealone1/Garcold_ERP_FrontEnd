@@ -7,14 +7,13 @@ import type {
     SaleProductsDTO,
 } from "@/types/product";
 
-type Q = { q?: string }; // el back no filtra por q; útil si luego lo agregas
+type Q = { q?: string }; 
 type Opts = { nocacheToken?: number; signal?: AbortSignal };
 type ListOpts = { signal?: AbortSignal; q?: string; page_size?: number };
 
 const ts = () => Date.now();
 const nocache = { "Cache-Control": "no-cache" };
 
-/** GET /products/page?page=1 */
 export async function listProducts(
     page = 1,
     opts: ListOpts = {}
@@ -35,7 +34,6 @@ export async function listProducts(
     return data as ProductPageDTO;
 }
 
-/** GET /products  → lista completa */
 export async function listAllProducts(opts?: Opts): Promise<ProductDTO[]> {
     const { data } = await salesApi.get("/products", {
         params: { _ts: opts?.nocacheToken ?? ts() },
@@ -45,21 +43,6 @@ export async function listAllProducts(opts?: Opts): Promise<ProductDTO[]> {
     return data as ProductDTO[];
 }
 
-/** Pager helper que acumula todas las páginas de /products/page */
-export async function fetchAllProducts(
-    params?: Q,
-    opts?: Opts
-): Promise<ProductDTO[]> {
-    const first = await listProducts(1);
-    const acc = [...first.items];
-    for (let p = 2; p <= first.total_pages; p++) {
-        const page = await listProducts(p);
-        acc.push(...page.items);
-    }
-    return acc;
-}
-
-/** GET /products/by-id/{id} */
 export async function getProductById(
     id: number,
     opts?: Opts
@@ -72,7 +55,6 @@ export async function getProductById(
     return data as ProductDTO;
 }
 
-/** POST /products/create */
 export async function createProduct(
     payload: ProductCreate,
     opts?: Opts
@@ -85,7 +67,6 @@ export async function createProduct(
     return data as ProductDTO;
 }
 
-/** PATCH /products/by-id/{id} */
 export async function updateProduct(
     id: number,
     payload: ProductUpdate,
@@ -99,7 +80,6 @@ export async function updateProduct(
     return data as ProductDTO;
 }
 
-/** DELETE /products/by-id/{id} */
 export async function deleteProduct(
     id: number,
     opts?: Opts
@@ -112,7 +92,6 @@ export async function deleteProduct(
     return data as { message: string };
 }
 
-/** PATCH /products/by-id/{id}/increase  body: { amount } */
 export async function increaseQuantity(
     id: number,
     amount: number,
@@ -126,7 +105,6 @@ export async function increaseQuantity(
     return data as ProductDTO;
 }
 
-/** PATCH /products/by-id/{id}/decrease  body: { amount } */
 export async function decreaseQuantity(
     id: number,
     amount: number,
@@ -140,7 +118,6 @@ export async function decreaseQuantity(
     return data as ProductDTO;
 }
 
-/** PATCH /products/by-id/{id}/toggle-active */
 export async function toggleProductActive(
     id: number,
     opts?: Opts
@@ -153,7 +130,6 @@ export async function toggleProductActive(
     return data as ProductDTO;
 }
 
-/** GET /products/top?date_from=YYYY-MM-DD&date_to=YYYY-MM-DD&limit=10 */
 export type TopProductQty = {
     product_id: number;
     product: string;
@@ -171,7 +147,6 @@ export async function topProductsByQuantity(
     return data as TopProductQty[];
 }
 
-/** POST /products/sold-in-range */
 export async function soldProductsInRange(
     payload: { date_from: string | Date; date_to: string | Date; product_ids: number[] },
     opts?: Opts

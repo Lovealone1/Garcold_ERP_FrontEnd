@@ -1,4 +1,3 @@
-// app/(ventas)/ventas/crear/page.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -16,7 +15,7 @@ import ProductoAgregate from "@/features/productos/ProductoForm";
 import DateInput from "@/components/ui/DateRangePicker/DateInput";
 
 import { useProductosAll } from "@/hooks/productos/useProductosAll";
-import { useCustomerOptions, type CustomerOption } from "@/hooks/clientes/useClienteOptions";
+import { useCustomerOptions, type CustomerOption } from "@/hooks/clientes/useCustomerOptions";
 import { useVentaEstados } from "@/hooks/estados/useEstados";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 import { useRouter } from "next/navigation";
@@ -235,6 +234,8 @@ export default function VentaCrearPage() {
             await Promise.all([
                 qc.invalidateQueries({ queryKey: ["products"] }),
                 qc.invalidateQueries({ queryKey: ["products", "all"] }),
+                qc.invalidateQueries({ queryKey: ["profits"] }),
+                qc.invalidateQueries({ queryKey: ["profits", "all"] }),
             ]); limpiar(); router.push("/comercial/ventas");
         },
     });

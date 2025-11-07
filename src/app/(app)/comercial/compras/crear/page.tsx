@@ -15,7 +15,7 @@ import ProductoAgregate from "@/features/productos/ProductoForm";
 import DateInput from "@/components/ui/DateRangePicker/DateInput";
 
 import { useProductosAll } from "@/hooks/productos/useProductosAll";
-import { useSupplierOptions, type SupplierOption } from "@/hooks/proveedores/useProveedorOptions";
+import { useSupplierOptions, type SupplierOption } from "@/hooks/proveedores/useSupplierOptions";
 import { useCompraEstados } from "@/hooks/estados/useEstados";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 import { useRouter } from "next/navigation";

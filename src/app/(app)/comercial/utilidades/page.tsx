@@ -7,11 +7,11 @@ import { es } from "date-fns/locale";
 import type { DateRange } from "react-day-picker";
 
 import { MaterialIcon } from "@/components/ui/material-icon";
-import { fetchAllProfits } from "@/services/sales/profit.api";
 import { getSaleById } from "@/services/sales/sale.api";
 import type { Profit } from "@/types/profit";
 import UtilidadView from "@/features/utilidades/ViewDetalleUtilidades";
 import DateRangeInput from "@/components/ui/DateRangePicker/DateRangePicker";
+import { useAllProfits } from "@/hooks/utilidades/useAllProfits";
 
 /* -------- Tokens visuales -------- */
 const FRAME_BG = "color-mix(in srgb, var(--tg-bg) 90%, #fff 3%)";
@@ -41,12 +41,16 @@ function ProfitCard({
             <div className="hidden sm:block mx-1.5 my-2 rounded-md px-3 py-2.5" style={{ background: INNER_BG }}>
                 <div className="grid items-center gap-3" style={{ gridTemplateColumns: "1fr 150px 150px 120px" }}>
                     <div className="min-w-0 text-[13px] text-white/90 truncate">{customer || "…"}</div>
-                    <div className="min-w-[140px] h-8 px-2.5 rounded-md grid place-items-center text-[13px] font-semibold text-white/90 border justify-self-end"
-                        style={{ background: PILL_BG, borderColor: BORDER }}>
+                    <div
+                        className="min-w-[140px] h-8 px-2.5 rounded-md grid place-items-center text-[13px] font-semibold text-white/90 border justify-self-end"
+                        style={{ background: PILL_BG, borderColor: BORDER }}
+                    >
                         {money.format(r.profit)}
                     </div>
-                    <div className="min-w-[140px] h-8 px-2.5 rounded-md grid place-items-center text-[13px] text-white/90 border justify-self-end"
-                        style={{ background: PILL_BG, borderColor: BORDER }}>
+                    <div
+                        className="min-w-[140px] h-8 px-2.5 rounded-md grid place-items-center text-[13px] text-white/90 border justify-self-end"
+                        style={{ background: PILL_BG, borderColor: BORDER }}
+                    >
                         {format(new Date(r.created_at), "dd MMM yyyy", { locale: es })}
                     </div>
                     <div className="flex items-center justify-end gap-2">
@@ -88,8 +92,7 @@ function ProfitCard({
 }
 
 export default function UtilidadesPage() {
-    const [all, setAll] = useState<Profit[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { items: all, loading } = useAllProfits();
     const [clienteByVenta, setClienteByVenta] = useState<Record<number, string>>({});
     const [q, setQ] = useState("");
     const [range, setRange] = useState<DateRange | undefined>(undefined);
@@ -97,20 +100,6 @@ export default function UtilidadesPage() {
     const [page, setPage] = useState(1);
     const [openView, setOpenView] = useState(false);
     const [ventaToView, setVentaToView] = useState<number | null>(null);
-
-    useEffect(() => {
-        let alive = true;
-        (async () => {
-            setLoading(true);
-            try {
-                const data = await fetchAllProfits(Date.now());
-                if (alive) setAll(data);
-            } finally {
-                if (alive) setLoading(false);
-            }
-        })();
-        return () => { alive = false; };
-    }, []);
 
     useEffect(() => {
         if (!all.length) return;
@@ -147,7 +136,10 @@ export default function UtilidadesPage() {
         return all.filter(u => byVentaOrCliente(u) && byDate(u));
     }, [all, q, range, clienteByVenta]);
 
-    const totalProfitFiltered = useMemo(() => filtered.reduce((acc, u) => acc + (u.profit ?? 0), 0), [filtered]);
+    const totalProfitFiltered = useMemo(
+        () => filtered.reduce((acc, u) => acc + (u.profit ?? 0), 0),
+        [filtered]
+    );
 
     useEffect(() => { setPage(1); }, [q, range]);
 

@@ -234,6 +234,8 @@ export default function VentaCrearPage() {
             await Promise.all([
                 qc.invalidateQueries({ queryKey: ["products"] }),
                 qc.invalidateQueries({ queryKey: ["products", "all"] }),
+                qc.invalidateQueries({ queryKey: ["profits"] }),
+                qc.invalidateQueries({ queryKey: ["profits", "all"] }),
             ]); limpiar(); router.push("/comercial/ventas");
         },
     });

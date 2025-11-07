@@ -15,7 +15,7 @@ import type { Sale } from "@/types/sale";
 import { getSaleById } from "@/services/sales/sale.api";
 import { useVentaDetalles } from "@/hooks/ventas/useVentaDetalles";
 import type { SaleItemView } from "@/types/sale";
-import { useProfit } from "@/hooks/utilidades/useUtilidad";
+import { useProfit } from "@/hooks/utilidades/useProfit";
 
 type Props = {
     open: boolean;

@@ -13,7 +13,7 @@ import Typography from "@mui/material/Typography";
 import Divider from "@mui/material/Divider";
 
 import { useVenta } from "@/hooks/ventas/useVenta";
-import { useProfitDetails } from "@/hooks/utilidades/useDetallesUtilidad";
+import { useProfitDetails } from "@/hooks/utilidades/useProfitDetails";
 import type { ProfitDetail } from "@/types/profit";
 
 type Props = {

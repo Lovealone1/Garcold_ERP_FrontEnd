@@ -4,7 +4,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { gsap } from "gsap";
-import SplitText from "@/components/SplitText";
+import SplitText from "@/components/ui/SplitText";
 import SoftFlaresBG from "@/components/ui/SoftFlaresBG";
 
 function AdiosInner() {

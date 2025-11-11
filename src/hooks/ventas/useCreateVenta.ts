@@ -1,5 +1,7 @@
+// useCreateVenta.ts
 "use client";
 import { useCallback, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { createSale } from "@/services/sales/sale.api";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 import type { SaleCreate, Sale } from "@/types/sale";
@@ -10,6 +12,7 @@ type Options = {
 };
 
 export function useCreateVenta(opts: Options = {}) {
+    const qc = useQueryClient();
     const { success, error: notifyError } = useNotifications();
     const [loading, setLoading] = useState(false);
     const [venta, setVenta] = useState<Sale | null>(null);
@@ -23,12 +26,20 @@ export function useCreateVenta(opts: Options = {}) {
                 const v = await createSale(
                     saleDate ? { ...payload, sale_date: saleDate } : payload
                 );
+
                 setVenta(v);
                 success("Venta creada correctamente");
+
+                qc.invalidateQueries({
+                    queryKey: ["sales"],
+                    refetchType: "all", 
+                });
+
                 opts.onSuccess?.(v);
                 return v;
             } catch (e: any) {
-                const msg = e?.response?.data?.detail ?? "No fue posible crear la venta";
+                const msg =
+                    e?.response?.data?.detail ?? "No fue posible crear la venta";
                 setError(e);
                 notifyError(msg);
                 opts.onError?.(e);
@@ -37,14 +48,14 @@ export function useCreateVenta(opts: Options = {}) {
                 setLoading(false);
             }
         },
-        [notifyError, success, opts]
+        [qc, success, notifyError, opts]
     );
 
-    const reset = useCallback(() => {
+    const reset = () => {
         setVenta(null);
         setError(null);
         setLoading(false);
-    }, []);
+    };
 
     return { create: mutate, loading, venta, error, reset };
 }

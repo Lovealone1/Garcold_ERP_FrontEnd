@@ -1,3 +1,4 @@
+// useVentas.ts
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -38,17 +39,11 @@ export function useVentas(initialFilters: Filters = {}, pageSize = 8) {
     [filters.q, filters.estado, filters.banco, filters.from, filters.to, pageSize]
   );
 
-  const query = useInfiniteQuery<
-    SalePage,
-    Error,
-    InfiniteData<SalePage>,
-    typeof key,
-    number
-  >({
+  const query = useInfiniteQuery({
     queryKey: key,
     initialPageParam: 1,
     queryFn: async ({ pageParam = 1, signal, queryKey }) => {
-      const [, f] = queryKey;
+      const [, f] = queryKey as typeof key;
       return listSales(pageParam, {
         signal,
         page_size: f.pageSize,
@@ -78,7 +73,8 @@ export function useVentas(initialFilters: Filters = {}, pageSize = 8) {
     gcTime: 1000 * 60 * 60 * 24 * 3,
   });
 
-  // Autoprefetch en background
+
+  // autoprefetch
   useEffect(() => {
     let cancelled = false;
 
@@ -111,12 +107,7 @@ export function useVentas(initialFilters: Filters = {}, pageSize = 8) {
     return () => {
       cancelled = true;
     };
-  }, [
-    query.hasNextPage,
-    query.isLoading,
-    query.isFetchingNextPage,
-    key,
-  ]);
+  }, [query.hasNextPage, query.isLoading, query.isFetchingNextPage, key]);
 
   // reset página al cambiar filtros
   useEffect(() => {
@@ -152,7 +143,11 @@ export function useVentas(initialFilters: Filters = {}, pageSize = 8) {
     [all, safePage, pageSize]
   );
 
-  const reload = () => qc.invalidateQueries({ queryKey: key });
+  const reload = () =>
+    qc.invalidateQueries({
+      queryKey: ["sales"],
+      refetchType: "active", // o "all" si quieres refetch también de queries inactivas
+    });
 
   const loadedCount = pages.reduce(
     (a, p) => a + (p.items?.length ?? 0),

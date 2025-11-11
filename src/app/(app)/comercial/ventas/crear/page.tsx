@@ -236,7 +236,9 @@ export default function VentaCrearPage() {
                 qc.invalidateQueries({ queryKey: ["products", "all"] }),
                 qc.invalidateQueries({ queryKey: ["profits"] }),
                 qc.invalidateQueries({ queryKey: ["profits", "all"] }),
-            ]); limpiar(); router.push("/comercial/ventas");
+            ]);
+            limpiar();
+            router.push("/comercial/ventas");
         },
     });
 

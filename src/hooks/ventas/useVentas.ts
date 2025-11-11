@@ -1,14 +1,12 @@
-// useVentas.ts
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
 import {
   useInfiniteQuery,
   useQueryClient,
-  type InfiniteData,
 } from "@tanstack/react-query";
 import { listSales } from "@/services/sales/sale.api";
-import type { Sale, SalePage } from "@/types/sale";
+import type { Sale } from "@/types/sale";
 
 type Filters = {
   q?: string;
@@ -28,15 +26,10 @@ export function useVentas(initialFilters: Filters = {}, pageSize = 8) {
       [
         "sales",
         {
-          q: filters.q || "",
-          estado: filters.estado || "",
-          banco: filters.banco || "",
-          from: filters.from || "",
-          to: filters.to || "",
           pageSize,
         },
       ] as const,
-    [filters.q, filters.estado, filters.banco, filters.from, filters.to, pageSize]
+    [pageSize]
   );
 
   const query = useInfiniteQuery({
@@ -47,11 +40,6 @@ export function useVentas(initialFilters: Filters = {}, pageSize = 8) {
       return listSales(pageParam, {
         signal,
         page_size: f.pageSize,
-        q: f.q || undefined,
-        status: f.estado || undefined,
-        bank: f.banco || undefined,
-        from: f.from || undefined,
-        to: f.to || undefined,
       });
     },
     getNextPageParam: (last) => {
@@ -73,8 +61,6 @@ export function useVentas(initialFilters: Filters = {}, pageSize = 8) {
     gcTime: 1000 * 60 * 60 * 24 * 3,
   });
 
-
-  // autoprefetch
   useEffect(() => {
     let cancelled = false;
 
@@ -109,13 +95,11 @@ export function useVentas(initialFilters: Filters = {}, pageSize = 8) {
     };
   }, [query.hasNextPage, query.isLoading, query.isFetchingNextPage, key]);
 
-  // reset página al cambiar filtros
   useEffect(() => {
     setPage(1);
   }, [filters.q, filters.estado, filters.banco, filters.from, filters.to]);
 
   const pages = query.data?.pages ?? [];
-
   const serverTotal = pages[0]?.total;
   const serverPageSize = pages[0]?.page_size ?? pageSize;
   const serverTotalPages =
@@ -128,7 +112,50 @@ export function useVentas(initialFilters: Filters = {}, pageSize = 8) {
     [pages]
   );
 
-  const totalClient = all.length;
+  const filtered: Sale[] = useMemo(() => {
+    return all.filter((s) => {
+      if (filters.q) {
+        const q = filters.q.toLowerCase().trim();
+        const target = `${s.id} ${s.customer ?? ""} ${s.bank ?? ""} ${s.status ?? ""
+          }`.toLowerCase();
+
+        if (!target.includes(q)) return false;
+      }
+
+      if (filters.estado && String(s.status) !== String(filters.estado)) {
+        return false;
+      }
+
+      if (filters.banco && String(s.bank) !== String(filters.banco)) {
+        return false;
+      }
+
+      if (filters.from) {
+        const saleDate = new Date(s.created_at);
+        const from = new Date(filters.from);
+        const tSale = saleDate.getTime();
+        const tFrom = from.getTime();
+        if (!Number.isNaN(tSale) && !Number.isNaN(tFrom) && tSale < tFrom) {
+          return false;
+        }
+      }
+
+      if (filters.to) {
+        const saleDate = new Date(s.created_at);
+        const to = new Date(filters.to);
+        const tSale = saleDate.getTime();
+        const tTo = to.getTime();
+        if (!Number.isNaN(tSale) && !Number.isNaN(tTo) && tSale > tTo) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [all, filters]);
+
+
+  const totalClient = filtered.length;
   const localTotalPages = Math.max(1, Math.ceil(totalClient / pageSize));
   const uiTotalPages = serverTotalPages ?? localTotalPages;
 
@@ -136,17 +163,17 @@ export function useVentas(initialFilters: Filters = {}, pageSize = 8) {
 
   const items = useMemo(
     () =>
-      all.slice(
+      filtered.slice(
         (safePage - 1) * pageSize,
         (safePage - 1) * pageSize + pageSize
       ),
-    [all, safePage, pageSize]
+    [filtered, safePage, pageSize]
   );
 
   const reload = () =>
     qc.invalidateQueries({
       queryKey: ["sales"],
-      refetchType: "active", // o "all" si quieres refetch también de queries inactivas
+      refetchType: "active",
     });
 
   const loadedCount = pages.reduce(

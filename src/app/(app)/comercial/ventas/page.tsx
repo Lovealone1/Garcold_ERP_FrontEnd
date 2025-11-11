@@ -95,9 +95,26 @@ function SaleRow({
     onPreview: (id: number) => void;
     onDelete: (row: Sale) => void;
 }) {
+    const status = (v.status || "").toLowerCase();
+
+    const isCanceled = status.includes("cancel"); // "Venta cancelada"
+    const isCredit =
+        status.includes("credito") || status.includes("crédito");
     const hasBalance = (v.remaining_balance ?? 0) > 0;
-    const dotColor =
-        (v.remaining_balance ?? 0) > 0 ? "#d97706" : "var(--tg-primary)";
+
+    // Punto de estado:
+    // - Cancelada: rojo
+    // - Crédito o saldo pendiente: naranja
+    // - Contado pagada (sin saldo y no cancelada): verde (primary)
+    const dotColor = isCanceled
+        ? "#7a1010"
+        : hasBalance || isCredit
+            ? "#d97706"
+            : "var(--tg-primary)";
+
+    // Solo se puede abonar si no está cancelada y tiene saldo
+    const canPay = !isCanceled && hasBalance;
+
     return (
         <div
             className="relative rounded-xl border shadow-sm"
@@ -166,6 +183,7 @@ function SaleRow({
                         >
                             <MaterialIcon name="visibility" size={18} />
                         </button>
+
                         <button
                             className={actionBtn}
                             style={{ background: ACTION_BG }}
@@ -174,14 +192,22 @@ function SaleRow({
                         >
                             <MaterialIcon name="download" size={18} />
                         </button>
+
                         <button
-                            className={`${actionBtn} ${hasBalance ? "text-[var(--tg-primary)]" : "text-tg-muted opacity-50 cursor-not-allowed"}`}
-                            style={{ background: hasBalance ? ACTION_BG : MUTED_BG }}
+                            className={`${actionBtn} ${canPay
+                                ? "text-[var(--tg-primary)]"
+                                : "text-tg-muted opacity-50 cursor-not-allowed"
+                                }`}
+                            style={{ background: canPay ? ACTION_BG : MUTED_BG }}
                             aria-label="abonar"
-                            onClick={() => onPay(v)}
+                            onClick={() => {
+                                if (!canPay) return;
+                                onPay(v);
+                            }}
                         >
                             <MaterialIcon name="payments" size={18} />
                         </button>
+
                         <button
                             className="h-8 w-8 grid place-items-center rounded-full"
                             style={{ background: "#7a1010" }}
@@ -205,6 +231,7 @@ function SaleRow({
             >
                 <div className="flex items-start gap-2">
                     <Dot color={dotColor} />
+
                     <div className="min-w-0 flex-1">
                         <div className="flex items-baseline gap-2 min-w-0">
                             <span
@@ -217,6 +244,7 @@ function SaleRow({
                                 {v.customer}
                             </span>
                         </div>
+
                         <div className="mt-1 grid grid-cols-3 gap-2">
                             <div
                                 className="rounded-md border px-2 py-1 text-center text-[12px]"
@@ -227,6 +255,7 @@ function SaleRow({
                                     {clip(v.bank, 16)}
                                 </div>
                             </div>
+
                             <div
                                 className="rounded-md border px-2 py-1 text-center text-[12px]"
                                 style={{ background: PILL_BG, borderColor: BORDER }}
@@ -236,6 +265,7 @@ function SaleRow({
                                     {money.format(v.total)}
                                 </div>
                             </div>
+
                             <div
                                 className="rounded-md border px-2 py-1 text-center text-[12px]"
                                 style={{ background: PILL_BG, borderColor: BORDER }}
@@ -246,6 +276,7 @@ function SaleRow({
                                 </div>
                             </div>
                         </div>
+
                         <div className="mt-1 text-[12px] opacity-80">
                             {format(new Date(v.created_at), "dd MMM yyyy", {
                                 locale: es,
@@ -262,6 +293,7 @@ function SaleRow({
                         >
                             <MaterialIcon name="visibility" size={18} />
                         </button>
+
                         <button
                             className={actionBtn}
                             style={{ background: ACTION_BG }}
@@ -270,14 +302,22 @@ function SaleRow({
                         >
                             <MaterialIcon name="download" size={18} />
                         </button>
+
                         <button
-                            className={actionBtn}
-                            style={{ background: ACTION_BG }}
+                            className={`${actionBtn} ${canPay
+                                ? "text-[var(--tg-primary)]"
+                                : "text-tg-muted opacity-50 cursor-not-allowed"
+                                }`}
+                            style={{ background: canPay ? ACTION_BG : MUTED_BG }}
                             aria-label="abonar"
-                            onClick={() => onPay(v)}
+                            onClick={() => {
+                                if (!canPay) return;
+                                onPay(v);
+                            }}
                         >
                             <MaterialIcon name="payments" size={18} />
                         </button>
+
                         <button
                             className="h-8 w-8 grid place-items-center rounded-full"
                             style={{ background: "#7a1010" }}
@@ -296,6 +336,7 @@ function SaleRow({
         </div>
     );
 }
+
 
 export default function VentasPage() {
     const router = useRouter();
@@ -446,7 +487,7 @@ export default function VentasPage() {
                     <select
                         value={filters.estado ?? ""}
                         onChange={(e) => handleEstado(e.target.value)}
-                        className="h-10 min-w-[160px] rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted"
+                        className="h-10 min-w-[160px] rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0"
                         aria-label="Filtro por estado"
                     >
                         <option value="">Estado</option>
@@ -460,9 +501,10 @@ export default function VentasPage() {
                     <select
                         value={filters.banco ?? ""}
                         onChange={(e) => handleBanco(e.target.value)}
-                        className="h-10 min-w-[180px] rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted"
+                        className="h-10 min-w-[180px] rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0"
                         aria-label="Filtro por banco"
                     >
+
                         <option value="">
                             {filters.banco ? "Banco" : "Método pago"}
                         </option>
@@ -524,7 +566,7 @@ export default function VentasPage() {
                             handleEstado(e.target.value);
                             setPage(1);
                         }}
-                        className="h-10 w-full rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted"
+                        className="h-10 w-full rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0"
                     >
                         <option value="">Estado</option>
                         {estadoOptions.map((nombre) => (
@@ -540,7 +582,7 @@ export default function VentasPage() {
                             handleBanco(e.target.value);
                             setPage(1);
                         }}
-                        className="h-10 w-full rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted"
+                        className="h-10 w-full rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0"
                     >
                         <option value="">
                             {filters.banco ? "Banco" : "Método pago"}
@@ -638,7 +680,7 @@ export default function VentasPage() {
                         <select
                             value={pageSize}
                             disabled
-                            className="h-9 rounded-md border border-tg bg-[var(--panel-bg)] px-2 text-sm text-tg-muted"
+                            className="h-9 rounded-md border border-tg bg-[var(--panel-bg)] px-2 text-sm text-tg-muted focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0"
                         >
                             <option value={pageSize}>{pageSize}</option>
                         </select>

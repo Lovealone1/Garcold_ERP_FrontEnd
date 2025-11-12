@@ -4,31 +4,32 @@ import { useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import { useRealtime } from "./useRealtime";
 import type { Sale } from "@/types/sale";
 
-type Page = {
-  items: Sale[];
-  page: number;
-  page_size: number;
-  total?: number;
-  total_pages?: number;
-  has_next?: boolean;
-};
+type SalePage = { items: Sale[]; page: number; page_size: number; total?: number; total_pages?: number; has_next?: boolean };
+type Tx = { id: number; sale_id?: number | null };
+type TxPage = { items: Tx[]; page: number; page_size: number; total?: number; total_pages?: number; has_next?: boolean };
 
-function stripId(data: InfiniteData<Page> | undefined, id: number) {
+function stripId<T extends { id: number }>(data: InfiniteData<{ items: T[]; page: number; page_size: number }> | undefined, id: number) {
   if (!data) return data;
   let removed = false;
-  const pages = data.pages.map((p) => {
-    const filtered = p.items?.filter((x) => x.id !== id) ?? [];
+  const pages = data.pages.map(p => {
+    const filtered = (p.items ?? []).filter(x => x.id !== id);
     if (filtered.length !== (p.items?.length ?? 0)) removed = true;
     return { ...p, items: filtered };
   });
   if (!removed) return data;
+  return { ...data, pages, pageParams: data.pageParams } as typeof data;
+}
 
-  const first = pages[0];
-  const total = Math.max(0, (first.total ?? 0) - 1);
-  const pageSize = first.page_size || 1;
-  const total_pages = Math.max(1, Math.ceil(total / pageSize));
-
-  return { ...data, pages: pages.slice(0, total_pages), pageParams: data.pageParams } as InfiniteData<Page>;
+function stripTxBySaleId(data: InfiniteData<TxPage> | undefined, saleId: number) {
+  if (!data) return data;
+  let removed = false;
+  const pages = data.pages.map(p => {
+    const filtered = (p.items ?? []).filter(t => Number(t.sale_id) !== Number(saleId));
+    if (filtered.length !== (p.items?.length ?? 0)) removed = true;
+    return { ...p, items: filtered };
+  });
+  if (!removed) return data;
+  return { ...data, pages, pageParams: data.pageParams } as InfiniteData<TxPage>;
 }
 
 function isSaleDeleted(m: unknown): m is { resource: "sale"; action: "deleted"; payload: { id: number | string } } {
@@ -36,8 +37,7 @@ function isSaleDeleted(m: unknown): m is { resource: "sale"; action: "deleted"; 
   const r = m as Record<string, unknown>;
   if (r.resource !== "sale" || r.action !== "deleted") return false;
   const p = r.payload as unknown;
-  if (!p || typeof p !== "object") return false;
-  return "id" in (p as Record<string, unknown>);
+  return !!p && typeof p === "object" && "id" in (p as Record<string, unknown>);
 }
 
 export function useSalesRealtime() {
@@ -46,14 +46,16 @@ export function useSalesRealtime() {
   const onMsg = useCallback((m: unknown) => {
     if (!isSaleDeleted(m)) return;
 
-    const id = Number((m.payload as { id: number | string }).id);
-    if (Number.isNaN(id)) {
-      qc.invalidateQueries({ queryKey: ["sales"], refetchType: "active" });
-      return;
-    }
+    const saleId = Number((m.payload as any).id);
 
-    qc.setQueriesData<InfiniteData<Page>>({ queryKey: ["sales"] }, (curr) => stripId(curr, id));
+    qc.setQueriesData<InfiniteData<SalePage>>({ queryKey: ["sales"] }, curr => stripId(curr, saleId));
     qc.invalidateQueries({ queryKey: ["sales"], refetchType: "active" });
+
+    qc.setQueriesData<InfiniteData<TxPage>>({ queryKey: ["transactions"] }, curr => stripTxBySaleId(curr, saleId));
+    qc.invalidateQueries({
+      predicate: ({ queryKey }) => Array.isArray(queryKey) && queryKey[0] === "transactions",
+      refetchType: "active",
+    });
   }, [qc]);
 
   useRealtime(onMsg);

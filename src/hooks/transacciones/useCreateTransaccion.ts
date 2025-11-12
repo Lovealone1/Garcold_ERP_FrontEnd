@@ -1,27 +1,35 @@
+// hooks/transactions/useCreateTransaction.ts
 "use client";
-import { useCallback, useState } from "react";
-import type { TransactionCreate, TransactionCreated } from "@/types/transaction";
+import { useState, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useNotifications } from "@/components/providers/NotificationsProvider";
 import { createTransaction } from "@/services/sales/transaction.api";
+import type { TransactionCreate, TransactionCreated } from "@/types/transaction";
 
 export function useCreateTransaction() {
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+  const qc = useQueryClient();
+  const { success, error: notifyError } = useNotifications();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<unknown>(null);
 
-    const create = useCallback(async (payload: TransactionCreate): Promise<TransactionCreated> => {
-        setLoading(true);
-        setError(null);
-        try {
-            return await createTransaction(payload);
-        } catch (e: unknown) {
-            const msg =
-                (e as any)?.response?.data?.detail ??
-                (e instanceof Error ? e.message : "Error al crear la transacción");
-            setError(msg);
-            throw new Error(msg);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+  const create = useCallback(async (payload: TransactionCreate): Promise<TransactionCreated> => {
+    setLoading(true);
+    setError(null);
+    try {
+      const tx = await createTransaction(payload);
+      success("Transacción creada correctamente");
 
-    return { create, loading, error };
+      // Cliente que crea → refresca head y tail activos
+      qc.invalidateQueries({ queryKey: ["transactions-head"], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["transactions"], refetchType: "active" });
+      return tx;
+    } catch (e: any) {
+      const msg = e?.response?.data?.detail ?? e?.message ?? "Error al crear la transacción";
+      setError(e); notifyError(msg); throw e;
+    } finally {
+      setLoading(false);
+    }
+  }, [qc, success, notifyError]);
+
+  return { create, loading, error };
 }

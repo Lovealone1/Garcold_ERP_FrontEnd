@@ -44,6 +44,7 @@ export function useDeletePagoVenta() {
 
       qc.invalidateQueries({ queryKey: ["sales"], refetchType: "active" });
       qc.invalidateQueries({ queryKey: ["sale-payments", { saleId }], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["transactions"], refetchType: "active" });
 
       return !!ok;
     } catch (e: any) {

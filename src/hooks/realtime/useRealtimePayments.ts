@@ -37,6 +37,7 @@ export function usePaymentsRealtime() {
                     queryKey: ["sale-payments", { saleId }],
                     refetchType: "active",
                 });
+            qc.invalidateQueries({ queryKey: ["transactions"], refetchType: "active" });
             }
         }
     }, [qc]);

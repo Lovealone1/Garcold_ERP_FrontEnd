@@ -32,7 +32,12 @@ export function useCreateVenta(opts: Options = {}) {
 
                 qc.invalidateQueries({
                     queryKey: ["sales"],
-                    refetchType: "all", 
+                    refetchType: "all",
+                });
+
+                qc.invalidateQueries({
+                    queryKey: ["transactions"],
+                    refetchType: "active"
                 });
 
                 opts.onSuccess?.(v);

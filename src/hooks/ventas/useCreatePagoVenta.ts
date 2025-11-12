@@ -47,7 +47,7 @@ export function useCreatePagoVenta() {
 
       qc.invalidateQueries({ queryKey: ["sales"], refetchType: "active" });
       qc.invalidateQueries({ queryKey: ["sale-payments", { saleId }], refetchType: "active" });
-
+      qc.invalidateQueries({ queryKey: ["transactions"], refetchType: "active" });
       return res;
     } catch (e: any) {
       setError(e?.response?.data?.detail ?? e?.message ?? "Error creando pago");

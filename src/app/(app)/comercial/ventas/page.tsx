@@ -22,6 +22,9 @@ import type { DateRange } from "react-day-picker";
 import DateRangePicker from "@/components/ui/DateRangePicker/DateRangePicker";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 
+// >>> NUEVO: hook de realtime <<<
+import { useSalesRealtime } from "@/hooks/realtime/useSalesRealtime";
+
 const FRAME_BG = "color-mix(in srgb, var(--tg-bg) 90%, #fff 3%)";
 const OUTER_BG = "color-mix(in srgb, var(--tg-bg) 55%, #000 45%)";
 const INNER_BG = "color-mix(in srgb, var(--tg-bg) 95%, #fff 2%)";
@@ -48,19 +51,12 @@ const money = new Intl.NumberFormat("es-CO", {
     maximumFractionDigits: 0,
 });
 const clip = (s?: string | null, n = 24) =>
-    (s ?? "—").length > n
-        ? (s as string).slice(0, n).trimEnd() + "…"
-        : (s ?? "—");
+    (s ?? "—").length > n ? (s as string).slice(0, n).trimEnd() + "…" : (s ?? "—");
 
 const SKELETON_COUNT = 8;
 
 function Dot({ color }: { color: string }) {
-    return (
-        <span
-            className="inline-block h-3 w-3 rounded-full"
-            style={{ backgroundColor: color }}
-        />
-    );
+    return <span className="inline-block h-3 w-3 rounded-full" style={{ backgroundColor: color }} />;
 }
 
 const GRID_COLS = "30px 220px 1fr 150px 170px 170px 208px";
@@ -98,51 +94,26 @@ function SaleRow({
     const status = (v.status || "").toLowerCase();
 
     const isCanceled = status.includes("cancel"); // "Venta cancelada"
-    const isCredit =
-        status.includes("credito") || status.includes("crédito");
+    const isCredit = status.includes("credito") || status.includes("crédito");
     const hasBalance = (v.remaining_balance ?? 0) > 0;
 
-    // Punto de estado:
-    // - Cancelada: rojo
-    // - Crédito o saldo pendiente: naranja
-    // - Contado pagada (sin saldo y no cancelada): verde (primary)
-    const dotColor = isCanceled
-        ? "#7a1010"
-        : hasBalance || isCredit
-            ? "#d97706"
-            : "var(--tg-primary)";
-
-    // Solo se puede abonar si no está cancelada y tiene saldo
+    const dotColor = isCanceled ? "#7a1010" : hasBalance || isCredit ? "#d97706" : "var(--tg-primary)";
     const canPay = !isCanceled && hasBalance;
 
     return (
-        <div
-            className="relative rounded-xl border shadow-sm"
-            style={{ background: OUTER_BG, borderColor: BORDER }}
-        >
+        <div className="relative rounded-xl border shadow-sm" style={{ background: OUTER_BG, borderColor: BORDER }}>
             {/* Desktop */}
-            <div
-                className="hidden sm:block mx-1.5 my-2 rounded-md px-3 py-2.5"
-                style={{ background: INNER_BG }}
-            >
-                <div
-                    className="grid items-center gap-3"
-                    style={{ gridTemplateColumns: GRID_COLS }}
-                >
+            <div className="hidden sm:block mx-1.5 my-2 rounded-md px-3 py-2.5" style={{ background: INNER_BG }}>
+                <div className="grid items-center gap-3" style={{ gridTemplateColumns: GRID_COLS }}>
                     <div className="grid place-items-center">
                         <Dot color={dotColor} />
                     </div>
 
                     <div className="flex items-center gap-2 min-w-0">
-                        <div
-                            className={`${pill} font-extrabold tracking-wide`}
-                            style={{ background: PILL_BG, borderColor: BORDER }}
-                        >
+                        <div className={`${pill} font-extrabold tracking-wide`} style={{ background: PILL_BG, borderColor: BORDER }}>
                             {v.id}
                         </div>
-                        <div className="text-[13px] text-white/90 truncate">
-                            {clip(v.customer, 42)}
-                        </div>
+                        <div className="text-[13px] text-white/90 truncate">{clip(v.customer, 42)}</div>
                     </div>
 
                     <div
@@ -153,34 +124,20 @@ function SaleRow({
                         {clip(v.bank, 24)}
                     </div>
 
-                    <div
-                        className={`${pill} font-semibold text-right`}
-                        style={{ background: PILL_BG, borderColor: BORDER }}
-                    >
+                    <div className={`${pill} font-semibold text-right`} style={{ background: PILL_BG, borderColor: BORDER }}>
                         {money.format(v.total)}
                     </div>
 
-                    <div
-                        className={`${pill} font-semibold text-right`}
-                        style={{ background: PILL_BG, borderColor: BORDER }}
-                    >
+                    <div className={`${pill} font-semibold text-right`} style={{ background: PILL_BG, borderColor: BORDER }}>
                         {money.format(v.remaining_balance)}
                     </div>
 
-                    <div
-                        className={`${pill} text-center`}
-                        style={{ background: PILL_BG, borderColor: BORDER }}
-                    >
+                    <div className={`${pill} text-center`} style={{ background: PILL_BG, borderColor: BORDER }}>
                         {format(new Date(v.created_at), "dd MMM yyyy", { locale: es })}
                     </div>
 
                     <div className="flex items-center justify-end gap-2">
-                        <button
-                            className={actionBtn}
-                            style={{ background: ACTION_BG }}
-                            aria-label="ver"
-                            onClick={() => onView(v)}
-                        >
+                        <button className={actionBtn} style={{ background: ACTION_BG }} aria-label="ver" onClick={() => onView(v)}>
                             <MaterialIcon name="visibility" size={18} />
                         </button>
 
@@ -194,10 +151,7 @@ function SaleRow({
                         </button>
 
                         <button
-                            className={`${actionBtn} ${canPay
-                                ? "text-[var(--tg-primary)]"
-                                : "text-tg-muted opacity-50 cursor-not-allowed"
-                                }`}
+                            className={`${actionBtn} ${canPay ? "text-[var(--tg-primary)]" : "text-tg-muted opacity-50 cursor-not-allowed"}`}
                             style={{ background: canPay ? ACTION_BG : MUTED_BG }}
                             aria-label="abonar"
                             onClick={() => {
@@ -214,66 +168,39 @@ function SaleRow({
                             aria-label="eliminar"
                             onClick={() => onDelete(v)}
                         >
-                            <MaterialIcon
-                                name="delete"
-                                size={16}
-                                className="text-[#ff4d4f]"
-                            />
+                            <MaterialIcon name="delete" size={16} className="text-[#ff4d4f]" />
                         </button>
                     </div>
                 </div>
             </div>
 
             {/* Móvil */}
-            <div
-                className="sm:hidden mx-2.5 my-3 rounded-md px-3 py-2 min-h-[84px]"
-                style={{ background: INNER_BG }}
-            >
+            <div className="sm:hidden mx-2.5 my-3 rounded-md px-3 py-2 min-h-[84px]" style={{ background: INNER_BG }}>
                 <div className="flex items-start gap-2">
                     <Dot color={dotColor} />
 
                     <div className="min-w-0 flex-1">
                         <div className="flex items-baseline gap-2 min-w-0">
-                            <span
-                                className={`${pill} !h-6 !min-w-[64px] !text-[12px]`}
-                                style={{ background: PILL_BG, borderColor: BORDER }}
-                            >
+                            <span className={`${pill} !h-6 !min-w-[64px] !text-[12px]`} style={{ background: PILL_BG, borderColor: BORDER }}>
                                 {v.id}
                             </span>
-                            <span className="text-sm font-extrabold tracking-wide truncate">
-                                {v.customer}
-                            </span>
+                            <span className="text-sm font-extrabold tracking-wide truncate">{v.customer}</span>
                         </div>
 
                         <div className="mt-1 grid grid-cols-3 gap-2">
-                            <div
-                                className="rounded-md border px-2 py-1 text-center text-[12px]"
-                                style={{ background: PILL_BG, borderColor: BORDER }}
-                            >
+                            <div className="rounded-md border px-2 py-1 text-center text-[12px]" style={{ background: PILL_BG, borderColor: BORDER }}>
                                 <div className="uppercase opacity-70">Método</div>
-                                <div className="font-medium whitespace-nowrap overflow-hidden text-ellipsis">
-                                    {clip(v.bank, 16)}
-                                </div>
+                                <div className="font-medium whitespace-nowrap overflow-hidden text-ellipsis">{clip(v.bank, 16)}</div>
                             </div>
 
-                            <div
-                                className="rounded-md border px-2 py-1 text-center text-[12px]"
-                                style={{ background: PILL_BG, borderColor: BORDER }}
-                            >
+                            <div className="rounded-md border px-2 py-1 text-center text-[12px]" style={{ background: PILL_BG, borderColor: BORDER }}>
                                 <div className="uppercase opacity-70">Total</div>
-                                <div className="font-semibold">
-                                    {money.format(v.total)}
-                                </div>
+                                <div className="font-semibold">{money.format(v.total)}</div>
                             </div>
 
-                            <div
-                                className="rounded-md border px-2 py-1 text-center text-[12px]"
-                                style={{ background: PILL_BG, borderColor: BORDER }}
-                            >
+                            <div className="rounded-md border px-2 py-1 text-center text-[12px]" style={{ background: PILL_BG, borderColor: BORDER }}>
                                 <div className="uppercase opacity-70">Saldo</div>
-                                <div className="font-semibold">
-                                    {money.format(v.remaining_balance)}
-                                </div>
+                                <div className="font-semibold">{money.format(v.remaining_balance)}</div>
                             </div>
                         </div>
 
@@ -285,33 +212,20 @@ function SaleRow({
                     </div>
 
                     <div className="ml-2 flex items-center gap-2 shrink-0">
-                        <button
-                            className={actionBtn}
-                            style={{ background: ACTION_BG }}
-                            aria-label="ver"
-                            onClick={() => onView(v)}
-                        >
+                        <button className={actionBtn} style={{ background: ACTION_BG }} aria-label="ver" onClick={() => onView(v)}>
                             <MaterialIcon name="visibility" size={18} />
                         </button>
 
-                        <button
-                            className={actionBtn}
-                            style={{ background: ACTION_BG }}
-                            aria-label="factura"
-                            onClick={() => onPreview(v.id)}
-                        >
+                        <button className={actionBtn} style={{ background: ACTION_BG }} aria-label="factura" onClick={() => onPreview(v.id)}>
                             <MaterialIcon name="download" size={18} />
                         </button>
 
                         <button
-                            className={`${actionBtn} ${canPay
-                                ? "text-[var(--tg-primary)]"
-                                : "text-tg-muted opacity-50 cursor-not-allowed"
-                                }`}
-                            style={{ background: canPay ? ACTION_BG : MUTED_BG }}
+                            className={`${actionBtn} ${hasBalance && !isCanceled ? "text-[var(--tg-primary)]" : "text-tg-muted opacity-50 cursor-not-allowed"}`}
+                            style={{ background: hasBalance && !isCanceled ? ACTION_BG : MUTED_BG }}
                             aria-label="abonar"
                             onClick={() => {
-                                if (!canPay) return;
+                                if (!(hasBalance && !isCanceled)) return;
                                 onPay(v);
                             }}
                         >
@@ -324,11 +238,7 @@ function SaleRow({
                             aria-label="eliminar"
                             onClick={() => onDelete(v)}
                         >
-                            <MaterialIcon
-                                name="delete"
-                                size={16}
-                                className="text-[#ff4d4f]"
-                            />
+                            <MaterialIcon name="delete" size={16} className="text-[#ff4d4f]" />
                         </button>
                     </div>
                 </div>
@@ -337,8 +247,10 @@ function SaleRow({
     );
 }
 
-
 export default function VentasPage() {
+    // >>> NUEVO: montar listener global de ventas
+    useSalesRealtime();
+
     const router = useRouter();
     const { success, error } = useNotifications();
     const { options: estadoOptions } = useVentaEstados();
@@ -367,9 +279,7 @@ export default function VentasPage() {
             try {
                 const data = await listBanks();
                 if (!alive) return;
-                const unique = Array.from(
-                    new Set((data ?? []).map((b: { name: string }) => b.name))
-                ).sort();
+                const unique = Array.from(new Set((data ?? []).map((b: { name: string }) => b.name))).sort();
                 setBancos(unique);
             } catch {
                 if (alive) setBancos([]);
@@ -380,14 +290,9 @@ export default function VentasPage() {
         };
     }, []);
 
-    const handleSearch = (value: string) =>
-        setFilters((f) => ({ ...f, q: value }));
-
-    const handleEstado = (value: string) =>
-        setFilters((f) => ({ ...f, estado: value || undefined }));
-
-    const handleBanco = (value: string) =>
-        setFilters((f) => ({ ...f, banco: value || undefined }));
+    const handleSearch = (value: string) => setFilters((f) => ({ ...f, q: value }));
+    const handleEstado = (value: string) => setFilters((f) => ({ ...f, estado: value || undefined }));
+    const handleBanco = (value: string) => setFilters((f) => ({ ...f, banco: value || undefined }));
 
     const handleRange = (r?: DateRange) => {
         setRange(r);
@@ -395,12 +300,8 @@ export default function VentasPage() {
             setFilters((f) => ({ ...f, from: undefined, to: undefined }));
             return;
         }
-        const from = r.from
-            ? r.from.toISOString().slice(0, 10)
-            : undefined;
-        const to = r.to
-            ? r.to.toISOString().slice(0, 10)
-            : from;
+        const from = r.from ? r.from.toISOString().slice(0, 10) : undefined;
+        const to = r.to ? r.to.toISOString().slice(0, 10) : from;
         setFilters((f) => ({ ...f, from, to }));
     };
 
@@ -417,22 +318,13 @@ export default function VentasPage() {
         setPage(target);
     };
 
-    const fromRow = useMemo(
-        () => (total === 0 ? 0 : (page - 1) * pageSize + 1),
-        [page, pageSize, total]
-    );
-    const toRow = useMemo(
-        () => Math.min(page * pageSize, total || 0),
-        [page, pageSize, total]
-    );
+    const fromRow = useMemo(() => (total === 0 ? 0 : (page - 1) * pageSize + 1), [page, pageSize, total]);
+    const toRow = useMemo(() => Math.min(page * pageSize, total || 0), [page, pageSize, total]);
 
     const [start, end] = useMemo(() => {
         const win = 5;
         if (totalPages <= win) return [1, totalPages] as const;
-        const s = Math.max(
-            1,
-            Math.min(page - 2, totalPages - (win - 1))
-        );
+        const s = Math.max(1, Math.min(page - 2, totalPages - (win - 1)));
         return [s, s + (win - 1)] as const;
     }, [page, totalPages]);
 
@@ -447,9 +339,7 @@ export default function VentasPage() {
     const [ventaDel, setVentaDel] = useState<Sale | null>(null);
 
     const [openPreview, setOpenPreview] = useState(false);
-    const [previewVentaId, setPreviewVentaId] = useState<number | null>(
-        null
-    );
+    const [previewVentaId, setPreviewVentaId] = useState<number | null>(null);
 
     async function handlePaid(ventaId: number) {
         const currentPage = page;
@@ -464,10 +354,7 @@ export default function VentasPage() {
     const frameVars: CSSProperties = { ["--content-x" as any]: "8px" };
 
     return (
-        <div
-            className="app-shell__frame overflow-hidden"
-            style={frameVars}
-        >
+        <div className="app-shell__frame overflow-hidden" style={frameVars}>
             {/* Toolbar DESKTOP */}
             <div className="hidden sm:flex mb-3 items-center justify-between gap-3">
                 <label className="relative flex h-10 w-full max-w-[440px]">
@@ -504,10 +391,7 @@ export default function VentasPage() {
                         className="h-10 min-w-[180px] rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0"
                         aria-label="Filtro por banco"
                     >
-
-                        <option value="">
-                            {filters.banco ? "Banco" : "Método pago"}
-                        </option>
+                        <option value="">{filters.banco ? "Banco" : "Método pago"}</option>
                         {bancos.map((nombre) => (
                             <option key={nombre} value={nombre}>
                                 {nombre}
@@ -584,9 +468,7 @@ export default function VentasPage() {
                         }}
                         className="h-10 w-full rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0"
                     >
-                        <option value="">
-                            {filters.banco ? "Banco" : "Método pago"}
-                        </option>
+                        <option value="">{filters.banco ? "Banco" : "Método pago"}</option>
                         {bancos.map((nombre) => (
                             <option key={nombre} value={nombre}>
                                 {nombre}
@@ -628,50 +510,42 @@ export default function VentasPage() {
                 </button>
             </div>
 
-            <div
-                className="rounded-xl border flex-1 min-h-0 flex flex-col overflow-hidden mb-1"
-                style={{ background: FRAME_BG, borderColor: BORDER }}
-            >
+            <div className="rounded-xl border flex-1 min-h-0 flex flex-col overflow-hidden mb-1" style={{ background: FRAME_BG, borderColor: BORDER }}>
                 <div className="px-3 pt-3">
                     <HeaderRow />
                 </div>
 
                 <div className="flex-1 min-h-0 overflow-auto px-3 pb-1 space-y-4 sm:space-y-3.5">
-                    {loading
-                        ? Array.from({ length: SKELETON_COUNT }).map((_, i) => (
-                            <div
-                                key={`sk-${i}`}
-                                className="h-[60px] rounded-xl border bg-black/10 animate-pulse"
+                    {loading ? (
+                        Array.from({ length: SKELETON_COUNT }).map((_, i) => (
+                            <div key={`sk-${i}`} className="h-[60px] rounded-xl border bg-black/10 animate-pulse" />
+                        ))
+                    ) : items.length === 0 ? (
+                        <div className="h-full grid place-items-center text-tg-muted text-sm">Sin registros</div>
+                    ) : (
+                        items.map((r) => (
+                            <SaleRow
+                                key={r.id}
+                                v={r}
+                                onView={(row) => {
+                                    setVentaSel(row);
+                                    setOpenView(true);
+                                }}
+                                onPay={(row) => {
+                                    setVentaPay(row);
+                                    setOpenPay(true);
+                                }}
+                                onPreview={(id) => {
+                                    setPreviewVentaId(id);
+                                    setOpenPreview(true);
+                                }}
+                                onDelete={(row) => {
+                                    setVentaDel(row);
+                                    setOpenDelete(true);
+                                }}
                             />
                         ))
-                        : items.length === 0
-                            ? (
-                                <div className="h-full grid place-items-center text-tg-muted text-sm">
-                                    Sin registros
-                                </div>
-                            )
-                            : items.map((r) => (
-                                <SaleRow
-                                    key={r.id}
-                                    v={r}
-                                    onView={(row) => {
-                                        setVentaSel(row);
-                                        setOpenView(true);
-                                    }}
-                                    onPay={(row) => {
-                                        setVentaPay(row);
-                                        setOpenPay(true);
-                                    }}
-                                    onPreview={(id) => {
-                                        setPreviewVentaId(id);
-                                        setOpenPreview(true);
-                                    }}
-                                    onDelete={(row) => {
-                                        setVentaDel(row);
-                                        setOpenDelete(true);
-                                    }}
-                                />
-                            ))}
+                    )}
                 </div>
 
                 <div className="shrink-0 px-3 pt-1 pb-2 flex flex-wrap gap-3 items-center justify-between">
@@ -702,18 +576,15 @@ export default function VentasPage() {
                             <MaterialIcon name="chevron_left" size={16} />
                         </button>
 
-                        {Array.from(
-                            { length: end - start + 1 },
-                            (_, i) => start + i
-                        ).map((p) => {
+                        {Array.from({ length: end - start + 1 }, (_, i) => start + i).map((p) => {
                             const active = p === page;
                             return (
                                 <button
                                     key={p}
                                     onClick={() => handlePageChange(p)}
                                     className={`h-9 min-w-9 px-3 rounded border ${active
-                                        ? "bg-tg-primary text-white border-transparent"
-                                        : "bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] text-white/90 border-white/10"
+                                            ? "bg-tg-primary text-white border-transparent"
+                                            : "bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] text-white/90 border-white/10"
                                         } font-semibold`}
                                     aria-current={active ? "page" : undefined}
                                 >
@@ -744,14 +615,8 @@ export default function VentasPage() {
                 </div>
             </div>
 
-            {/* Modales (sin cambios estructurales, usan reload actualizado) */}
-            {openView && (
-                <VentaView
-                    open={openView}
-                    onClose={() => setOpenView(false)}
-                    venta={ventaSel}
-                />
-            )}
+            {/* Modales */}
+            {openView && <VentaView open={openView} onClose={() => setOpenView(false)} venta={ventaSel} />}
 
             {openPay && (
                 <PagoVentaModal
@@ -765,11 +630,7 @@ export default function VentasPage() {
             )}
 
             {openPreview && (
-                <FacturaPreviewModal
-                    open={openPreview}
-                    onClose={() => setOpenPreview(false)}
-                    ventaId={previewVentaId}
-                />
+                <FacturaPreviewModal open={openPreview} onClose={() => setOpenPreview(false)} ventaId={previewVentaId} />
             )}
 
             {openDelete && (
@@ -781,36 +642,19 @@ export default function VentasPage() {
                         if (e.key === "Escape") setOpenDelete(false);
                     }}
                     onClick={(e) => {
-                        if (e.target === e.currentTarget && !deleting)
-                            setOpenDelete(false);
+                        if (e.target === e.currentTarget && !deleting) setOpenDelete(false);
                     }}
                 >
-                    <div
-                        className="w-[420px] rounded-lg border bg-[var(--panel-bg)] shadow-xl"
-                        style={{ borderColor: BORDER }}
-                    >
-                        <div
-                            className="px-4 py-3 border-b flex items-center gap-2"
-                            style={{ borderColor: BORDER }}
-                        >
+                    <div className="w-[420px] rounded-lg border bg-[var(--panel-bg)] shadow-xl" style={{ borderColor: BORDER }}>
+                        <div className="px-4 py-3 border-b flex items-center gap-2" style={{ borderColor: BORDER }}>
                             <MaterialIcon name="warning" size={18} />
-                            <h3 className="text-base font-semibold">
-                                Confirmar eliminación
-                            </h3>
+                            <h3 className="text-base font-semibold">Confirmar eliminación</h3>
                         </div>
                         <div className="px-4 py-4 text-sm">
-                            ¿Seguro que deseas eliminar la venta #{ventaDel?.id}? Esta
-                            acción no se puede deshacer.
+                            ¿Seguro que deseas eliminar la venta #{ventaDel?.id}? Esta acción no se puede deshacer.
                         </div>
-                        <div
-                            className="px-4 py-3 border-t flex justify-end gap-2"
-                            style={{ borderColor: BORDER }}
-                        >
-                            <button
-                                onClick={() => setOpenDelete(false)}
-                                className="h-9 rounded-md px-3 text-sm hover:bg-black/10"
-                                disabled={deleting}
-                            >
+                        <div className="px-4 py-3 border-t flex justify-end gap-2" style={{ borderColor: BORDER }}>
+                            <button onClick={() => setOpenDelete(false)} className="h-9 rounded-md px-3 text-sm hover:bg-black/10" disabled={deleting}>
                                 Cancelar
                             </button>
                             <button
@@ -820,12 +664,8 @@ export default function VentasPage() {
                                         await deleteVenta(ventaDel.id);
                                         setOpenDelete(false);
                                         success("Venta eliminada");
-                                        await reload();
                                     } catch (e: any) {
-                                        error(
-                                            e?.response?.data?.detail ??
-                                            "Error eliminando venta"
-                                        );
+                                        error(e?.response?.data?.detail ?? "Error eliminando venta");
                                     }
                                 }}
                                 className="h-9 rounded-md px-3 text-sm font-medium text-white disabled:opacity-60"

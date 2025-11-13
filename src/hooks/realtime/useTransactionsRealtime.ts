@@ -62,7 +62,6 @@ function stripBySaleId(
     let changed = false;
 
     const pages = data.pages.map(p => {
-        // Ojo: aquí lo lógico es comparar contra sale_id
         const items = (p.items ?? []).filter(
             x => Number((x as any).sale_id) !== saleId
         );
@@ -134,7 +133,9 @@ export default function useTransactionsRealtime() {
 
                             const pages = d.pages.map(p => {
                                 const items = (p.items ?? []).map(x =>
-                                    x.id === payload.id ? ((touched = true), { ...x, ...payload }) : x
+                                    x.id === payload.id
+                                        ? ((touched = true), { ...x, ...payload })
+                                        : x
                                 );
                                 return { ...p, items };
                             });
@@ -172,7 +173,7 @@ export default function useTransactionsRealtime() {
             }
 
             if (
-                resource === "sale_payment" &&
+                (resource === "sale_payment" || resource === "purchase_payment") &&
                 (action === "created" || action === "deleted")
             ) {
                 invalidateTx("all");

@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { MaterialIcon } from "@/components/ui/material-icon";
 
 import { usePurchases } from "@/hooks/compras/usePurchases";
-import { useDeleteCompra } from "@/hooks/compras/useDeleteCompra";
+import { useDeletePurchase } from "@/hooks/compras/useDeletePurchase";
 import { useCompraEstados } from "@/hooks/estados/useEstados";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 
@@ -419,7 +419,7 @@ export default function ComprasPage() {
     const [purchaseForUpload, setPurchaseForUpload] =
         useState<Purchase | null>(null);
 
-    const { deleteCompra, loading: deleting } = useDeleteCompra();
+    const { deleteCompra, loading: deleting } = useDeletePurchase();
     const [openDelete, setOpenDelete] = useState(false);
     const [compraDel, setCompraDel] = useState<Purchase | null>(null);
 

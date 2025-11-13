@@ -14,7 +14,7 @@ import Divider from "@mui/material/Divider";
 
 import type { Purchase } from "@/types/purchase";
 import { getPurchaseById } from "@/services/sales/purchase.api";
-import { useCompraDetalles } from "@/hooks/compras/useCompraDetalles";
+import { usePurchaseItems } from "@/hooks/compras/usePurchaseDetails";
 import type { PurchaseDetailItem } from "@/types/purchase";
 
 type Props = {
@@ -55,7 +55,7 @@ export default function CompraView({ open, onClose, compra: compraProp, compraId
         };
     }, [compra, compraId, open]);
 
-    const { items, loading: loadingDetalles } = useCompraDetalles(compra?.id, { enabled: open && !!compra?.id });
+    const { items, loading: loadingDetalles } = usePurchaseItems(compra?.id, { enabled: open && !!compra?.id });
 
     const isCredito = useMemo(
         () => (compra?.status ?? "").toLowerCase().includes("credito") || (compra?.balance ?? 0) > 0,

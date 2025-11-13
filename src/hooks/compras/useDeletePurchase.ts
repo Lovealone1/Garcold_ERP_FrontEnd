@@ -80,7 +80,7 @@ function stripTransactionsByPurchaseId(
     } as InfiniteData<TxPage>;
 }
 
-export function useDeleteCompra() {
+export function useDeletePurchase() {
     const qc = useQueryClient();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);

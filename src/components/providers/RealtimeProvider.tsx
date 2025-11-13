@@ -21,15 +21,13 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
             if (!token || closed) return;
 
             const url = `${WS_URL}?token=${encodeURIComponent(token)}`;
-
             ws = new WebSocket(url);
 
             ws.onmessage = async (event) => {
-
                 let msg: any;
                 try {
                     msg = JSON.parse(event.data);
-                } catch (e) {
+                } catch {
                     return;
                 }
 
@@ -91,8 +89,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
                                         Array.isArray(q.queryKey) && q.queryKey[0] === "sales",
                                 });
                             }
-
-                        } catch (e) {
+                        } catch {
                             qc.invalidateQueries({
                                 predicate: (q) =>
                                     Array.isArray(q.queryKey) && q.queryKey[0] === "sales",
@@ -151,10 +148,70 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
                     return;
                 }
 
+                if (finalResource === "sale_payment") {
+                    if (
+                        finalAction === "created" ||
+                        finalAction === "deleted" ||
+                        finalAction === "updated"
+                    ) {
+                        const saleId = Number(payload?.sale_id);
+
+                        qc.invalidateQueries({
+                            predicate: ({ queryKey }) =>
+                                Array.isArray(queryKey) && queryKey[0] === "sales",
+                            refetchType: "active",
+                        });
+
+                        if (!Number.isNaN(saleId)) {
+                            qc.invalidateQueries({
+                                queryKey: ["sale-payments", { saleId }],
+                                refetchType: "active",
+                            });
+                        }
+
+                        qc.invalidateQueries({
+                            predicate: ({ queryKey }) =>
+                                Array.isArray(queryKey) && queryKey[0] === "transactions",
+                            refetchType: "active",
+                        });
+                    }
+
+                    return;
+                }
+
+                if (finalResource === "purchase_payment") {
+                    if (
+                        finalAction === "created" ||
+                        finalAction === "deleted" ||
+                        finalAction === "updated"
+                    ) {
+                        const purchaseId = Number(payload?.purchase_id);
+
+                        qc.invalidateQueries({
+                            predicate: ({ queryKey }) =>
+                                Array.isArray(queryKey) && queryKey[0] === "purchases",
+                            refetchType: "active",
+                        });
+
+                        if (!Number.isNaN(purchaseId)) {
+                            qc.invalidateQueries({
+                                queryKey: ["purchase-payments", { purchaseId }],
+                                refetchType: "active",
+                            });
+                        }
+
+                        qc.invalidateQueries({
+                            predicate: ({ queryKey }) =>
+                                Array.isArray(queryKey) && queryKey[0] === "transactions",
+                            refetchType: "active",
+                        });
+                    }
+
+                    return;
+                }
             };
 
-
-            ws.onclose = (ev) => {
+            ws.onclose = () => {
                 if (!closed) {
                     setTimeout(() => {
                         connect();

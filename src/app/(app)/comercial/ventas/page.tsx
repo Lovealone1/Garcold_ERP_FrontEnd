@@ -248,7 +248,6 @@ function SaleRow({
 }
 
 export default function VentasPage() {
-    // >>> NUEVO: montar listener global de ventas
     useSalesRealtime();
 
     const router = useRouter();

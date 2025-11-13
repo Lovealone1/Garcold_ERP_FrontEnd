@@ -1,4 +1,3 @@
-// RealtimeProvider.tsx
 "use client";
 
 import { useEffect } from "react";
@@ -22,120 +21,142 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
             if (!token || closed) return;
 
             const url = `${WS_URL}?token=${encodeURIComponent(token)}`;
-            console.log("[RT] connecting to", url);
 
             ws = new WebSocket(url);
 
-            ws.onopen = () => {
-                console.log("[RT] websocket open");
-            };
-
             ws.onmessage = async (event) => {
-                console.log("[RT] raw message:", event.data);
 
                 let msg: any;
                 try {
                     msg = JSON.parse(event.data);
                 } catch (e) {
-                    console.log("[RT] invalid json", e);
                     return;
                 }
 
                 const { resource, action, type, payload } = msg;
-                console.log("[RT] parsed message:", msg);
 
                 const finalResource =
                     resource || (typeof type === "string" ? type.split(".")[0] : undefined);
                 const finalAction =
                     action || (typeof type === "string" ? type.split(".")[1] : undefined);
 
-                // Solo nos importa sale.created / updated / deleted
-                if (finalResource !== "sale") return;
+                if (!finalResource || !finalAction) return;
 
-                // ==== CREATE: meter nueva venta en página 1 inmediatamente ====
-                if (finalAction === "created" && payload?.id) {
-                    const saleId = payload.id;
+                if (finalResource === "sale") {
+                    if (finalAction === "created" && payload?.id) {
+                        const saleId = payload.id;
 
-                    try {
-                        const newSale = await getSaleById(saleId);
+                        try {
+                            const newSale = await getSaleById(saleId);
 
-                        let touched = false;
+                            let touched = false;
 
-                        qc.setQueriesData<InfiniteData<SalePage>>(
-                            {
-                                predicate: (q) =>
-                                    Array.isArray(q.queryKey) && q.queryKey[0] === "sales",
-                            },
-                            (old) => {
-                                if (!old) return old;
+                            qc.setQueriesData<InfiniteData<SalePage>>(
+                                {
+                                    predicate: (q) =>
+                                        Array.isArray(q.queryKey) && q.queryKey[0] === "sales",
+                                },
+                                (old) => {
+                                    if (!old) return old;
 
-                                const [first, ...rest] = old.pages;
-                                if (!first) return old;
+                                    const [first, ...rest] = old.pages;
+                                    if (!first) return old;
 
-                                const pageSize = first.page_size ?? 8;
+                                    const pageSize = first.page_size ?? 8;
 
-                                // Evitar duplicado si ya vino por otro lado
-                                const existing =
-                                    first.items?.filter((s) => s.id !== newSale.id) ?? [];
+                                    const existing =
+                                        first.items?.filter((s) => s.id !== newSale.id) ?? [];
 
-                                const updatedFirst: SalePage = {
-                                    ...first,
-                                    items: [newSale, ...existing].slice(0, pageSize),
-                                    // opcional, ajusta total si tu backend lo usa
-                                    total:
-                                        typeof first.total === "number"
-                                            ? first.total + 1
-                                            : first.total,
-                                };
+                                    const updatedFirst: SalePage = {
+                                        ...first,
+                                        items: [newSale, ...existing].slice(0, pageSize),
+                                        total:
+                                            typeof first.total === "number"
+                                                ? first.total + 1
+                                                : first.total,
+                                    };
 
-                                touched = true;
+                                    touched = true;
 
-                                return {
-                                    ...old,
-                                    pages: [updatedFirst, ...rest],
-                                };
+                                    return {
+                                        ...old,
+                                        pages: [updatedFirst, ...rest],
+                                    };
+                                }
+                            );
+
+                            if (!touched) {
+                                qc.invalidateQueries({
+                                    predicate: (q) =>
+                                        Array.isArray(q.queryKey) && q.queryKey[0] === "sales",
+                                });
                             }
-                        );
 
-                        // Si no había cache de sales, forzamos fetch normal
-                        if (!touched) {
+                        } catch (e) {
                             qc.invalidateQueries({
                                 predicate: (q) =>
                                     Array.isArray(q.queryKey) && q.queryKey[0] === "sales",
-                                // aquí puedes dejar que TanStack haga el fetch
                             });
                         }
 
-                        console.log("[RT] sale.created applied to first page");
-                    } catch (e) {
-                        console.log("[RT] failed to hydrate new sale, fallback invalidate", e);
+                        return;
+                    }
+
+                    if (finalAction === "updated" || finalAction === "deleted") {
                         qc.invalidateQueries({
                             predicate: (q) =>
                                 Array.isArray(q.queryKey) && q.queryKey[0] === "sales",
+                            refetchType: "active",
                         });
                     }
 
                     return;
                 }
 
-                // ==== UPDATE / DELETE: para ahora, invalidamos y listo ====
-                if (finalAction === "updated" || finalAction === "deleted") {
-                    qc.invalidateQueries({
-                        predicate: (q) =>
-                            Array.isArray(q.queryKey) && q.queryKey[0] === "sales",
-                    });
+                if (finalResource === "purchase") {
+                    if (
+                        finalAction === "created" ||
+                        finalAction === "updated" ||
+                        finalAction === "deleted"
+                    ) {
+                        qc.invalidateQueries({
+                            predicate: ({ queryKey }) =>
+                                Array.isArray(queryKey) && queryKey[0] === "purchases",
+                            refetchType: "active",
+                        });
+
+                        qc.invalidateQueries({
+                            predicate: ({ queryKey }) =>
+                                Array.isArray(queryKey) && queryKey[0] === "transactions",
+                            refetchType: "active",
+                        });
+                    }
+
+                    return;
                 }
+
+                if (finalResource === "transaction") {
+                    if (
+                        finalAction === "created" ||
+                        finalAction === "updated" ||
+                        finalAction === "deleted"
+                    ) {
+                        qc.invalidateQueries({
+                            predicate: ({ queryKey }) =>
+                                Array.isArray(queryKey) && queryKey[0] === "transactions",
+                            refetchType: "active",
+                        });
+                    }
+
+                    return;
+                }
+
             };
 
-            ws.onerror = (err) => {
-                console.log("[RT] websocket error", err);
-            };
 
             ws.onclose = (ev) => {
-                console.log("[RT] websocket closed", ev.code, ev.reason);
                 if (!closed) {
                     setTimeout(() => {
-                        console.log("[RT] reconnecting...");
                         connect();
                     }, 2000);
                 }

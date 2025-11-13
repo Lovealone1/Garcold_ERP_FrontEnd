@@ -7,7 +7,7 @@ import { es } from "date-fns/locale";
 import { useRouter } from "next/navigation";
 import { MaterialIcon } from "@/components/ui/material-icon";
 
-import { usePurchases } from "@/hooks/compras/useCompras";
+import { usePurchases } from "@/hooks/compras/usePurchases";
 import { useDeleteCompra } from "@/hooks/compras/useDeleteCompra";
 import { useCompraEstados } from "@/hooks/estados/useEstados";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
@@ -22,7 +22,7 @@ import PurchaseReceiptModal from "@/features/compras/PurchaseReceiptModal";
 import type { Purchase } from "@/types/purchase";
 import type { DateRange } from "react-day-picker";
 import DateRangePicker from "@/components/ui/DateRangePicker/DateRangePicker";
-
+import { usePurchasesRealtime } from "@/hooks/realtime/usePurchasesRealtime";
 /* -------- Tokens visuales (alineado con Ventas) -------- */
 const FRAME_BG = "color-mix(in srgb, var(--tg-bg) 90%, #fff 3%)";
 const OUTER_BG = "color-mix(in srgb, var(--tg-bg) 55%, #000 45%)";
@@ -307,6 +307,7 @@ function PurchaseRow({
 type FrameVars = CSSProperties & { ["--content-x"]?: string };
 
 export default function ComprasPage() {
+    usePurchasesRealtime();
     const router = useRouter();
     const { success, error } = useNotifications();
     const { options: estadoOptions } = useCompraEstados();

@@ -3,44 +3,54 @@ import { useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRealtime } from "./useRealtime";
 
-function isPaymentCreated(m: unknown): m is {
-    resource: "sale_payment"; action: "created"; payload: { id: number | string; sale_id: number | string };
-} {
-    if (!m || typeof m !== "object") return false;
-    const r = m as Record<string, unknown>;
-    if (r.resource !== "sale_payment" || r.action !== "created") return false;
-    const p = r.payload as unknown;
-    return !!p && typeof p === "object" && "sale_id" in (p as Record<string, unknown>);
-}
-
-function isPaymentDeleted(m: unknown): m is {
-    resource: "sale_payment"; action: "deleted"; payload: { id: number | string; sale_id: number | string };
-} {
-    if (!m || typeof m !== "object") return false;
-    const r = m as Record<string, unknown>;
-    if (r.resource !== "sale_payment" || r.action !== "deleted") return false;
-    const p = r.payload as unknown;
-    return !!p && typeof p === "object" && "sale_id" in (p as Record<string, unknown>);
-}
+type RTMessage = {
+    resource?: string;
+    action?: string;
+    type?: string;
+    payload?: {
+        id?: number | string;
+        sale_id?: number | string;
+        [k: string]: unknown;
+    };
+};
 
 export function usePaymentsRealtime() {
     const qc = useQueryClient();
 
-    const onMsg = useCallback((m: unknown) => {
-        if (isPaymentCreated(m) || isPaymentDeleted(m)) {
-            const saleId = Number((m.payload as any).sale_id);
+    const onMsg = useCallback(
+        (raw: unknown) => {
+            if (!raw || typeof raw !== "object") return;
 
-            qc.invalidateQueries({ queryKey: ["sales"], refetchType: "active" });
+            const msg = raw as RTMessage;
+            const resource = msg.resource ?? msg.type?.split(".")[0];
+            const action = msg.action ?? msg.type?.split(".")[1];
+
+            if (resource !== "sale_payment") return;
+            if (action !== "created" && action !== "deleted") return;
+
+            const saleId = Number(msg.payload?.sale_id);
+
+            qc.invalidateQueries({
+                predicate: ({ queryKey }) =>
+                    Array.isArray(queryKey) && queryKey[0] === "sales",
+                refetchType: "active",
+            });
 
             if (!Number.isNaN(saleId)) {
                 qc.invalidateQueries({
                     queryKey: ["sale-payments", { saleId }],
                     refetchType: "active",
                 });
-            qc.invalidateQueries({ queryKey: ["transactions"], refetchType: "active" });
             }
-        }
-    }, [qc]);
+
+            qc.invalidateQueries({
+                predicate: ({ queryKey }) =>
+                    Array.isArray(queryKey) && queryKey[0] === "transactions",
+                refetchType: "active",
+            });
+        },
+        [qc],
+    );
 
     useRealtime(onMsg);
 }

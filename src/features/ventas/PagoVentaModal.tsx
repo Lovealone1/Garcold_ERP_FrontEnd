@@ -81,9 +81,9 @@ export default function PagoVentaModal({ open, onClose, venta, onPaid }: Props) 
         }
     }
 
-    async function handleDelete(pagoId: number) {
+    async function handleDelete(pagoId: number, saleId: number, amount: number) {
         try {
-            await remove(pagoId);
+            await remove(pagoId, saleId, amount);
             success("Pago eliminado");
             await reload();
             await refreshVenta();
@@ -207,7 +207,7 @@ export default function PagoVentaModal({ open, onClose, venta, onPaid }: Props) 
                                                 <span>
                                                     <IconButton
                                                         size="small"
-                                                        onClick={() => handleDelete(p.id)}
+                                                        onClick={() => handleDelete(p.id, p.sale_id, p.amount_paid)}
                                                         disabled={deleting}
                                                         sx={{ color: "var(--tg-primary)", borderRadius: "9999px", "&:hover": { backgroundColor: "color-mix(in srgb, var(--tg-primary) 22%, transparent)" } }}
                                                     >

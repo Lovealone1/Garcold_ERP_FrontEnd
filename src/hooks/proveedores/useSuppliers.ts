@@ -1,34 +1,62 @@
 "use client";
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { useInfiniteQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
+
+import { useEffect, useMemo, useState, useCallback } from "react";
+import {
+  useInfiniteQuery,
+  useQueryClient,
+  type InfiniteData,
+} from "@tanstack/react-query";
 import { listSuppliers } from "@/services/sales/supplier.api";
 import type { Supplier, SupplierPage } from "@/types/supplier";
 
 type Filters = { q?: string; cities?: string[] };
 
-export function useSuppliers(pageSize = 10) {
+export function useSuppliers(pageSize = 8) {
   const qc = useQueryClient();
 
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<Filters>({ q: "" });
 
   const key = useMemo(
-    () => ["suppliers", { q: filters.q || "", pageSize }] as const,
-    [filters.q, pageSize]
+    () =>
+      [
+        "suppliers",
+        {
+          pageSize,
+        },
+      ] as const,
+    [pageSize]
   );
 
-  const query = useInfiniteQuery<SupplierPage, Error, InfiniteData<SupplierPage>, typeof key, number>({
+  const query = useInfiniteQuery<
+    SupplierPage,
+    Error,
+    InfiniteData<SupplierPage>,
+    typeof key,
+    number
+  >({
     queryKey: key,
     initialPageParam: 1,
     queryFn: async ({ pageParam = 1, signal, queryKey }) => {
       const [, f] = queryKey;
-      return listSuppliers(pageParam, { signal, q: f.q, page_size: f.pageSize });
+      return listSuppliers(pageParam, {
+        signal,
+        page_size: f.pageSize,
+      });
     },
     getNextPageParam: (last) => {
       const cur = last.page ?? 1;
       if (last.has_next === true) return cur + 1;
-      if (typeof last.total_pages === "number" && cur < last.total_pages) return cur + 1;
-      if (Array.isArray(last.items) && last.items.length < (last.page_size ?? pageSize)) return undefined;
+      if (typeof last.total_pages === "number" && cur < last.total_pages) {
+        return cur + 1;
+      }
+      if (
+        Array.isArray(last.items) &&
+        last.page_size &&
+        last.items.length === last.page_size
+      ) {
+        return cur + 1;
+      }
       return undefined;
     },
     refetchOnWindowFocus: false,
@@ -37,26 +65,88 @@ export function useSuppliers(pageSize = 10) {
     gcTime: 1000 * 60 * 60 * 24 * 3,
   });
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const pump = async () => {
+      if (query.isLoading || query.isFetchingNextPage) return;
+      if (!query.hasNextPage) return;
+
+      while (!cancelled && query.hasNextPage) {
+        const res = await query.fetchNextPage({ cancelRefetch: true });
+        if (cancelled) return;
+
+        const pages = res.data?.pages ?? query.data?.pages;
+        if (!pages || pages.length === 0) break;
+
+        const last = pages[pages.length - 1];
+        const canContinue =
+          last?.has_next === true ||
+          (typeof last?.total_pages === "number" &&
+            pages.length < last.total_pages) ||
+          (Array.isArray(last?.items) &&
+            last.page_size &&
+            last.items.length === last.page_size);
+
+        if (!canContinue) break;
+      }
+    };
+
+    void pump();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    query.hasNextPage,
+    query.isLoading,
+    query.isFetchingNextPage,
+    key,
+    query.fetchNextPage,
+  ]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filters.q, filters.cities]);
+
+  const pages = query.data?.pages ?? [];
+  const serverTotal = pages[0]?.total;
+  const serverPageSize = pages[0]?.page_size ?? pageSize;
+  const serverTotalPages =
+    typeof serverTotal === "number"
+      ? Math.max(1, Math.ceil(serverTotal / serverPageSize))
+      : undefined;
+
   const allServer: Supplier[] = useMemo(
-    () => (query.data?.pages ?? []).flatMap((p) => p.items),
-    [query.data]
+    () => pages.flatMap((p) => p.items ?? []),
+    [pages]
   );
 
   const v = (filters.q ?? "").trim().toLowerCase();
   const filteredExceptCity = useMemo(() => {
     if (!v) return allServer;
-    return allServer.filter((c) =>
-      c.name.toLowerCase().includes(v) ||
-      (c.tax_id ?? "").toLowerCase().includes(v) ||
-      (c.email ?? "").toLowerCase().includes(v) ||
-      (c.phone ?? "").toLowerCase().includes(v)
-    );
+    return allServer.filter((c) => {
+      const name = c.name?.toLowerCase() ?? "";
+      const taxId = (c.tax_id ?? "").toLowerCase();
+      const email = (c.email ?? "").toLowerCase();
+      const phone = (c.phone ?? "").toLowerCase();
+      return (
+        name.includes(v) ||
+        taxId.includes(v) ||
+        email.includes(v) ||
+        phone.includes(v)
+      );
+    });
   }, [allServer, v]);
 
   const options = useMemo(() => {
-    const cities = Array.from(new Set(filteredExceptCity.map((c) => c.city).filter(Boolean)))
-      .map(String)
-      .sort();
+    const cities = Array.from(
+      new Set(
+        filteredExceptCity
+          .map((c) => c.city)
+          .filter((x): x is string => Boolean(x))
+      )
+    ).sort();
     return { cities };
   }, [filteredExceptCity]);
 
@@ -66,94 +156,65 @@ export function useSuppliers(pageSize = 10) {
     return filteredExceptCity.filter((c) => set.has(String(c.city)));
   }, [filteredExceptCity, filters.cities]);
 
-  const serverTotal = query.data?.pages?.[0]?.total;
-  const effectivePageSize = pageSize;
-  const serverTotalPages =
-    typeof serverTotal === "number"
-      ? Math.max(1, Math.ceil(serverTotal / (query.data?.pages?.[0]?.page_size ?? effectivePageSize)))
-      : undefined;
-
   const totalClient = filtered.length;
-  const localTotalPages = Math.max(1, Math.ceil(totalClient / effectivePageSize));
+  const localTotalPages = Math.max(
+    1,
+    Math.ceil(totalClient / serverPageSize)
+  );
   const totalPages = serverTotalPages ?? localTotalPages;
 
-  const safePage = Math.min(page, totalPages);
-  const items = useMemo(() => {
-    const start = (safePage - 1) * effectivePageSize;
-    return filtered.slice(start, start + effectivePageSize);
-  }, [filtered, safePage, effectivePageSize]);
+  const safePage = Math.min(page, totalPages || 1);
 
-  const loadedCount = allServer.length;
-  const need = page * effectivePageSize;
-  const hasMoreServer = !!serverTotal ? loadedCount < serverTotal : !!query.hasNextPage;
+  const items = useMemo(() => {
+    const start = (safePage - 1) * serverPageSize;
+    return filtered.slice(start, start + serverPageSize);
+  }, [filtered, safePage, serverPageSize]);
+
+  const loadedCount = pages.reduce(
+    (a, p) => a + (p.items?.length ?? 0),
+    0
+  );
+  const hasMoreServer = !!serverTotal
+    ? loadedCount < serverTotal
+    : !!query.hasNextPage;
   const isFetchingMore = query.isFetchingNextPage;
 
-  useEffect(() => {
-    if (loadedCount < need && hasMoreServer && !isFetchingMore) {
-      query.fetchNextPage({ cancelRefetch: true }).catch(() => { });
+  const loadMore = () => {
+    if (hasMoreServer && !isFetchingMore) {
+      return query.fetchNextPage({ cancelRefetch: true });
     }
-  }, [need, loadedCount, hasMoreServer, isFetchingMore, query]);
+    return Promise.resolve();
+  };
 
-  const warmTokenRef = useRef(0);
-  useEffect(() => {
-    const first = query.data?.pages?.[0];
-    if (!first) return;
-    warmTokenRef.current += 1;
-    const myToken = warmTokenRef.current;
-
-    const expectedPages =
-      typeof first.total_pages === "number"
-        ? first.total_pages
-        : typeof first.total === "number"
-          ? Math.max(1, Math.ceil(first.total / (first.page_size ?? effectivePageSize)))
-          : undefined;
-
-    let stopped = false;
-
-    (async () => {
-      const hardCap = expectedPages ?? 200;
-      for (; ;) {
-        if (stopped) break;
-        if (myToken !== warmTokenRef.current) break;
-
-        const pagesLoaded = (qc.getQueryData<InfiniteData<SupplierPage>>(key)?.pages?.length ?? 0);
-        const canContinue =
-          (expectedPages ? pagesLoaded < expectedPages : !!query.hasNextPage) &&
-          hasMoreServer &&
-          !isFetchingMore;
-
-        if (!canContinue) break;
-
-        await query.fetchNextPage({ cancelRefetch: true }).catch(() => { });
-        await new Promise((r) => setTimeout(r, 80));
-        if (pagesLoaded >= hardCap) break;
-      }
-    })();
-
-    return () => { stopped = true; };
-  }, [filters.q, effectivePageSize, query.data?.pages?.length]);
-
-  useEffect(() => { setPage(1); }, [filters]);
-
-  const reload = () => qc.invalidateQueries({ queryKey: key });
-
-  const upsertOne = useCallback((patch: Partial<Supplier> & { id: number }) => {
-    qc.setQueryData<InfiniteData<SupplierPage, number>>(key, (data) => {
-      if (!data) return data as any;
-      const nextPages = data.pages.map((pg) => {
-        const items = pg.items.map((it) => (it.id === patch.id ? { ...it, ...patch } : it));
-        return { ...pg, items };
-      });
-      return { ...data, pages: nextPages };
+  const reload = () =>
+    qc.invalidateQueries({
+      queryKey: ["suppliers"],
+      refetchType: "active",
     });
-  }, [qc, key]);
+
+  const upsertOne = useCallback(
+    (patch: Partial<Supplier> & { id: number }) => {
+      qc.setQueryData<InfiniteData<SupplierPage>>(key, (data) => {
+        if (!data) return data;
+        const nextPages = data.pages.map((pg) => {
+          const items = pg.items.map((it) =>
+            it.id === patch.id ? { ...it, ...patch } : it
+          );
+          return { ...pg, items };
+        });
+        return { ...data, pages: nextPages };
+      });
+    },
+    [qc, key]
+  );
 
   return {
-    loading: query.isLoading || (query.isFetching && !query.isFetched),
+    loading:
+      query.isLoading || (query.isFetching && !query.isFetched),
     items,
     page: safePage,
     setPage,
-    pageSize: effectivePageSize,
+    pageSize: serverPageSize,
     total: serverTotal ?? totalClient,
     totalPages,
     hasPrev: safePage > 1,
@@ -163,5 +224,9 @@ export function useSuppliers(pageSize = 10) {
     options,
     reload,
     upsertOne,
+    hasMoreServer,
+    isFetchingMore,
+    loadMore,
+    error: query.isError ? query.error?.message ?? "Error" : null,
   };
 }

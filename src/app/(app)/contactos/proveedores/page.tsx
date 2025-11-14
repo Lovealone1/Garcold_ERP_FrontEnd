@@ -6,17 +6,19 @@ import { MaterialIcon } from "@/components/ui/material-icon";
 import ProveedorForm from "@/features/proveedores/ProveedorForm";
 import ProveedorView from "@/features/proveedores/ProveedorView";
 import { useSuppliers } from "@/hooks/proveedores/useSuppliers";
-import { useSupplier } from "@/hooks/proveedores/useProveedor";
-import { createSupplier, updateSupplier, deleteSupplier } from "@/services/sales/supplier.api";
+import { useSupplier } from "@/hooks/proveedores/useSupplier";
 import type { Supplier, SupplierCreate, SupplierUpdate } from "@/types/supplier";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 import { useImport } from "@/hooks/io/useImport";
 import { useExport } from "@/hooks/io/useExport";
+import { useMediaQuery } from "@/hooks/ui/useMediaQuery";
+import { useCreateSupplier } from "@/hooks/proveedores/useCreateSupplier";
+import { useUpdateSupplier } from "@/hooks/proveedores/useUpdateSupplier";
+import { useDeleteSupplier } from "@/hooks/proveedores/useDeleteSupplier";
+import { useSuppliersRealtime } from "@/hooks/realtime/useSuppliersRealtime";
 import ImportDialog from "@/features/io/ImportDialog";
 import ExportDialog from "@/features/io/ExportDialog";
-import { useMediaQuery } from "@/hooks/ui/useMediaQuery";
 
-/* Tokens visuales */
 const FRAME_BG = "color-mix(in srgb, var(--tg-bg) 90%, #fff 3%)";
 const OUTER_BG = "color-mix(in srgb, var(--tg-bg) 55%, #000 45%)";
 const INNER_BG = "color-mix(in srgb, var(--tg-bg) 95%, #fff 2%)";
@@ -24,33 +26,28 @@ const PILL_BG = "color-mix(in srgb, var(--tg-card-bg) 60%, #000 40%)";
 const ACTION_BG = "color-mix(in srgb, var(--tg-primary) 28%, transparent)";
 const BORDER = "var(--tg-border)";
 
-/* Base compacta */
 const pill =
   "min-w-[90px] h-8 px-2.5 rounded-md grid place-items-center text-[13px] text-white/90 border";
 const actionBtn =
   "h-8 w-8 grid place-items-center rounded-full text-[var(--tg-primary)] hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary";
 
-/* Utilidad */
 const clip = (s?: string | null, n = 22) =>
   (s ?? "—").length > n ? (s as string).slice(0, n).trimEnd() + "…" : (s ?? "—");
 
-/* Per-page por montaje: móvil 5, desktop 8 */
 function getInitialPerPage() {
   if (typeof window === "undefined") return 8;
   return window.matchMedia("(max-width: 639px)").matches ? 5 : 8;
 }
 
-/* Indicador */
 function Dot({ color }: { color: string }) {
   return <span className="inline-block h-3 w-3 rounded-full" style={{ backgroundColor: color }} />;
 }
 
-/* Header desktop */
 function HeaderRow() {
   return (
     <div
       className="hidden sm:grid items-center gap-3 mb-2 font-extrabold mx-2"
-      style={{ gridTemplateColumns: "30px 240px 1fr 200px 200px 180px" }}
+      style={{ gridTemplateColumns: "130px 145px 1fr 90px 310px 140px" }}
     >
       <span />
       <span className="text-white">Nombre</span>
@@ -62,7 +59,6 @@ function HeaderRow() {
   );
 }
 
-/* Card/Fila */
 function SupplierRow({
   s,
   onView,
@@ -76,7 +72,6 @@ function SupplierRow({
 }) {
   return (
     <div className="relative rounded-xl border shadow-sm" style={{ background: OUTER_BG, borderColor: BORDER }}>
-      {/* Desktop */}
       <div className="hidden sm:block mx-1.5 my-2 rounded-md px-3 py-2.5" style={{ background: INNER_BG }}>
         <div className="grid items-center gap-3" style={{ gridTemplateColumns: "30px 240px 1fr 200px 200px 180px" }}>
           <div className="grid place-items-center">
@@ -127,7 +122,6 @@ function SupplierRow({
         </div>
       </div>
 
-      {/* Móvil */}
       <div className="sm:hidden mx-2.5 my-3 rounded-md px-3 py-2 min-h-[84px]" style={{ background: INNER_BG }}>
         <div className="flex items-start gap-2">
           <Dot color="var(--tg-primary)" />
@@ -176,9 +170,7 @@ function SupplierRow({
   );
 }
 
-/* Página */
 export default function ProveedoresPage() {
-  // perPage fijo por montaje: móvil 5
   const [perPage] = useState<number>(getInitialPerPage);
   const isNarrow = useMediaQuery("(max-width: 639px)");
 
@@ -196,31 +188,29 @@ export default function ProveedoresPage() {
     setFilters,
     options,
     reload,
-    upsertOne,
-  } = useSuppliers(perPage); // << importante: respetar perPage
+  } = useSuppliers(perPage);
 
   const { success, error } = useNotifications();
 
-  // Crear
-  const [openCreate, setOpenCreate] = useState(false);
-  const [creating, setCreating] = useState(false);
+  const { create, loading: creating } = useCreateSupplier();
+  const { update, loading: updating } = useUpdateSupplier();
+  const { deleteSupplier: removeSupplier, loading: deleting } = useDeleteSupplier();
 
-  // Ver
+  useSuppliersRealtime();
+
+  const [openCreate, setOpenCreate] = useState(false);
+
   const [viewId, setViewId] = useState<number | null>(null);
   const [openView, setOpenView] = useState(false);
   const { supplier: viewSupplier, loading: viewLoading } = useSupplier(viewId);
 
-  // Editar
   const [editId, setEditId] = useState<number | null>(null);
   const [openEdit, setOpenEdit] = useState(false);
   const { supplier: editSupplier, loading: editLoading } = useSupplier(editId);
 
-  // Eliminar
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [openDelete, setOpenDelete] = useState(false);
-  const [deleting, setDeleting] = useState(false);
 
-  // IO
   const [openImport, setOpenImport] = useState(false);
   const [openExport, setOpenExport] = useState(false);
   const imp = useImport();
@@ -228,9 +218,10 @@ export default function ProveedoresPage() {
 
   const frameVars: CSSProperties = { ["--content-x" as any]: "8px" };
 
-  // cerrar dropdown de ciudades al cambiar ancho
   const [citiesOpen, setCitiesOpen] = useState(false);
-  useEffect(() => { setCitiesOpen(false); }, [isNarrow]);
+  useEffect(() => {
+    setCitiesOpen(false);
+  }, [isNarrow]);
 
   const from = useMemo(() => (total === 0 ? 0 : (page - 1) * pageSize + 1), [page, pageSize, total]);
   const to = useMemo(() => Math.min(page * pageSize, total), [page, pageSize, total]);
@@ -242,50 +233,34 @@ export default function ProveedoresPage() {
     return [s, s + (win - 1)] as const;
   }, [page, totalPages]);
 
-  // Crear
   async function handleCreateSubmit(data: SupplierCreate) {
-    setCreating(true);
     try {
-      await createSupplier(data);
+      await create(data);
       setOpenCreate(false);
       setPage(1);
-      reload?.();
-      success("Proveedor creado");
-    } catch (e: any) {
-      error(e?.response?.data?.detail ?? "Error creando proveedor");
-    } finally {
-      setCreating(false);
+    } catch {
+      return;
     }
   }
 
-  // Editar
   async function handleEditSubmit(data: SupplierUpdate) {
     if (!editId) return;
     try {
-      await updateSupplier(editId, data);
+      await update(editId, data);
       setOpenEdit(false);
-      upsertOne({ id: editId, ...data });
-      reload?.();
-      success("Proveedor actualizado");
-    } catch (e: any) {
-      error(e?.response?.data?.detail ?? "Error actualizando proveedor");
+    } catch {
+      return;
     }
   }
 
-  // Eliminar
   async function handleConfirmDelete() {
     if (!deleteId) return;
-    setDeleting(true);
     try {
-      await deleteSupplier(deleteId);
+      await removeSupplier(deleteId);
       setOpenDelete(false);
       setDeleteId(null);
-      reload?.();
-      success("Proveedor eliminado");
-    } catch (e: any) {
-      error(e?.response?.data?.detail ?? "Error eliminando proveedor");
-    } finally {
-      setDeleting(false);
+    } catch {
+      return;
     }
   }
 
@@ -293,7 +268,6 @@ export default function ProveedoresPage() {
     setFilters({ q: "", cities: undefined });
   }
 
-  // Ciudades multiselect
   const selectedCities = filters.cities ?? [];
   const allCities = options.cities ?? [];
   const allSelected = selectedCities.length > 0 && selectedCities.length === allCities.length;
@@ -311,7 +285,6 @@ export default function ProveedoresPage() {
 
   return (
     <div className="app-shell__frame overflow-hidden" style={frameVars}>
-      {/* Toolbar desktop */}
       <div className="hidden sm:flex mb-3 items-center justify-between gap-3">
         <label className="relative flex h-10 w-full max-w-[440px]">
           <span className="absolute inset-y-0 left-3 flex items-center text-tg-muted pointer-events-none">
@@ -337,7 +310,6 @@ export default function ProveedoresPage() {
         </label>
 
         <div className="flex items-center gap-2">
-          {/* Ciudades */}
           <div className="relative w-[220px]">
             <button
               type="button"
@@ -383,7 +355,6 @@ export default function ProveedoresPage() {
         </div>
       </div>
 
-      {/* Toolbar móvil */}
       <div className="sm:hidden mb-3 space-y-2">
         <label className="relative flex h-10 w-full">
           <span className="absolute inset-y-0 left-3 flex items-center text-tg-muted pointer-events-none">
@@ -454,7 +425,6 @@ export default function ProveedoresPage() {
         </div>
       </div>
 
-      {/* Marco y lista */}
       <div className="rounded-xl border flex-1 min-h-0 flex flex-col overflow-hidden mb-1" style={{ background: FRAME_BG, borderColor: BORDER }}>
         <div className="px-3 pt-3">
           <HeaderRow />
@@ -466,19 +436,29 @@ export default function ProveedoresPage() {
               <div key={`sk-${i}`} className="h-[60px] rounded-xl border bg-black/10 animate-pulse" />
             ))
             : rows.length === 0
-              ? <div className="h-full grid place-items-center text-tg-muted text-sm">Sin registros</div>
+              ? (
+                <div className="h-full grid place-items-center text-tg-muted text-sm">Sin registros</div>
+              )
               : rows.map((r) => (
                 <SupplierRow
                   key={r.id}
                   s={r}
-                  onView={(id) => { setViewId(id); setOpenView(true); }}
-                  onEdit={(id) => { setEditId(id); setOpenEdit(true); }}
-                  onDelete={(id) => { setDeleteId(id); setOpenDelete(true); }}
+                  onView={(id) => {
+                    setViewId(id);
+                    setOpenView(true);
+                  }}
+                  onEdit={(id) => {
+                    setEditId(id);
+                    setOpenEdit(true);
+                  }}
+                  onDelete={(id) => {
+                    setDeleteId(id);
+                    setOpenDelete(true);
+                  }}
                 />
               ))}
         </div>
 
-        {/* Paginación + IO */}
         <div className="shrink-0 px-3 pt-1 pb-2 flex flex-wrap gap-3 items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
@@ -488,19 +468,35 @@ export default function ProveedoresPage() {
               </select>
             </div>
 
-            <button type="button" onClick={() => setOpenImport(true)} className="h-9 rounded-md border border-tg bg-[var(--panel-bg)] px-3 text-sm text-tg-muted inline-flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setOpenImport(true)}
+              className="h-9 rounded-md border border-tg bg-[var(--panel-bg)] px-3 text-sm text-tg-muted inline-flex items-center gap-2"
+            >
               <MaterialIcon name="file_upload" size={16} /> Importar
             </button>
-            <button type="button" onClick={() => setOpenExport(true)} className="h-9 rounded-md border border-tg bg-[var(--panel-bg)] px-3 text-sm text-tg-muted inline-flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setOpenExport(true)}
+              className="h-9 rounded-md border border-tg bg-[var(--panel-bg)] px-3 text-sm text-tg-muted inline-flex items-center gap-2"
+            >
               <MaterialIcon name="file_download" size={16} /> Exportar
             </button>
           </div>
 
           <nav className="flex items-center gap-1">
-            <button disabled={!hasPrev} onClick={() => setPage(1)} className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
+            <button
+              disabled={!hasPrev}
+              onClick={() => setPage(1)}
+              className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40"
+            >
               <MaterialIcon name="first_page" size={16} />
             </button>
-            <button disabled={!hasPrev} onClick={() => setPage(page - 1)} className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
+            <button
+              disabled={!hasPrev}
+              onClick={() => setPage(page - 1)}
+              className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40"
+            >
               <MaterialIcon name="chevron_left" size={16} />
             </button>
 
@@ -510,7 +506,10 @@ export default function ProveedoresPage() {
                 <button
                   key={p}
                   onClick={() => setPage(p)}
-                  className={`h-9 min-w-9 px-3 rounded border ${active ? "bg-tg-primary text-white border-transparent" : "bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] text-white/90 border-white/10"} font-semibold`}
+                  className={`h-9 min-w-9 px-3 rounded border ${active
+                    ? "bg-tg-primary text-white border-transparent"
+                    : "bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] text-white/90 border-white/10"
+                    } font-semibold`}
                   aria-current={active ? "page" : undefined}
                 >
                   {p}
@@ -518,10 +517,18 @@ export default function ProveedoresPage() {
               );
             })}
 
-            <button disabled={!hasNext} onClick={() => setPage(page + 1)} className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
+            <button
+              disabled={!hasNext}
+              onClick={() => setPage(page + 1)}
+              className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40"
+            >
               <MaterialIcon name="chevron_right" size={16} />
             </button>
-            <button disabled={!hasNext} onClick={() => setPage(totalPages)} className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
+            <button
+              disabled={!hasNext}
+              onClick={() => setPage(totalPages)}
+              className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40"
+            >
               <MaterialIcon name="last_page" size={16} />
             </button>
 
@@ -532,10 +539,12 @@ export default function ProveedoresPage() {
         </div>
       </div>
 
-      {/* IO dialogs */}
       <ImportDialog
         open={openImport}
-        onClose={() => { imp.reset(); setOpenImport(false); }}
+        onClose={() => {
+          imp.reset();
+          setOpenImport(false);
+        }}
         onRun={async (opts) => {
           try {
             await imp.importFile({ ...opts, entity: "suppliers" });
@@ -554,7 +563,10 @@ export default function ProveedoresPage() {
 
       <ExportDialog
         open={openExport}
-        onClose={() => { exp.reset(); setOpenExport(false); }}
+        onClose={() => {
+          exp.reset();
+          setOpenExport(false);
+        }}
         onDownload={async (_e, fmt, filename) => {
           try {
             await exp.download("suppliers", fmt, filename);
@@ -570,7 +582,6 @@ export default function ProveedoresPage() {
         defaultName="suppliers"
       />
 
-      {/* Crear */}
       {openCreate && (
         <ProveedorForm
           intent="create"
@@ -581,7 +592,6 @@ export default function ProveedoresPage() {
         />
       )}
 
-      {/* Ver */}
       {openView && (
         <ProveedorView
           open={openView}
@@ -591,14 +601,13 @@ export default function ProveedoresPage() {
         />
       )}
 
-      {/* Editar */}
       {openEdit && (
         <ProveedorForm
           intent="edit"
           open={openEdit}
           onClose={() => setOpenEdit(false)}
           onSubmit={handleEditSubmit}
-          loading={editLoading}
+          loading={editLoading || updating}
           defaults={
             editSupplier
               ? {
@@ -614,14 +623,17 @@ export default function ProveedoresPage() {
         />
       )}
 
-      {/* Eliminar */}
       {openDelete && (
         <div
           role="dialog"
           aria-modal="true"
           className="fixed inset-0 z-50 grid place-items-center bg-black/50"
-          onKeyDown={(e) => { if (e.key === "Escape") setOpenDelete(false); }}
-          onClick={(e) => { if (e.target === e.currentTarget && !deleting) setOpenDelete(false); }}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setOpenDelete(false);
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !deleting) setOpenDelete(false);
+          }}
         >
           <div className="w-[420px] rounded-lg border bg-[var(--panel-bg)] shadow-xl" style={{ borderColor: BORDER }}>
             <div className="px-4 py-3 border-b flex items-center gap-2" style={{ borderColor: BORDER }}>
@@ -630,8 +642,15 @@ export default function ProveedoresPage() {
             </div>
             <div className="px-4 py-4 text-sm">¿Seguro que deseas eliminar este proveedor? Esta acción no se puede deshacer.</div>
             <div className="px-4 py-3 border-t flex justify-end gap-2" style={{ borderColor: BORDER }}>
-              <button onClick={() => setOpenDelete(false)} className="h-9 rounded-md px-3 text-sm hover:bg-black/10" disabled={deleting}>Cancelar</button>
-              <button onClick={handleConfirmDelete} className="h-9 rounded-md px-3 text-sm font-medium text-white disabled:opacity-60" style={{ background: "#7a1010" }} disabled={deleting}>
+              <button onClick={() => setOpenDelete(false)} className="h-9 rounded-md px-3 text-sm hover:bg-black/10" disabled={deleting}>
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="h-9 rounded-md px-3 text-sm font-medium text-white disabled:opacity-60"
+                style={{ background: "#7a1010" }}
+                disabled={deleting}
+              >
                 {deleting ? "Eliminando..." : "Eliminar"}
               </button>
             </div>

@@ -1,3 +1,4 @@
+// src/components/providers/RealtimeProvider.tsx
 "use client";
 
 import { useEffect } from "react";
@@ -203,6 +204,22 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
                         qc.invalidateQueries({
                             predicate: ({ queryKey }) =>
                                 Array.isArray(queryKey) && queryKey[0] === "transactions",
+                            refetchType: "active",
+                        });
+                    }
+
+                    return;
+                }
+
+                if (finalResource === "supplier") {
+                    if (
+                        finalAction === "created" ||
+                        finalAction === "updated" ||
+                        finalAction === "deleted"
+                    ) {
+                        qc.invalidateQueries({
+                            predicate: ({ queryKey }) =>
+                                Array.isArray(queryKey) && queryKey[0] === "suppliers",
                             refetchType: "active",
                         });
                     }

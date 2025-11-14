@@ -8,7 +8,6 @@ import ClienteView from "@/features/clientes/ClienteView";
 import PagoClienteModal from "@/features/clientes/PagoClienteSimpleModal";
 import { useCustomers } from "@/hooks/clientes/useCustomers";
 import { useCustomer } from "@/hooks/clientes/useCustomer";
-import { createCustomer, updateCustomer, deleteCustomer } from "@/services/sales/customer.api";
 import type { Customer, CustomerCreate, CustomerUpdate } from "@/types/customer";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 import { useImport } from "@/hooks/io/useImport";
@@ -16,8 +15,11 @@ import { useExport } from "@/hooks/io/useExport";
 import ImportDialog from "@/features/io/ImportDialog";
 import ExportDialog from "@/features/io/ExportDialog";
 import { useMediaQuery } from "@/hooks/ui/useMediaQuery";
+import { useCustomersRealtime } from "@/hooks/realtime/useCustomersRealtime";
+import { useCreateCustomer } from "@/hooks/clientes/useCreateCustomer";
+import { useUpdateCustomer } from "@/hooks/clientes/useUpdateCustomer";
+import { useDeleteCustomer } from "@/hooks/clientes/useDeleteCustomer";
 
-/* Tokens visuales */
 const FRAME_BG = "color-mix(in srgb, var(--tg-bg) 90%, #fff 3%)";
 const OUTER_BG = "color-mix(in srgb, var(--tg-bg) 55%, #000 45%)";
 const INNER_BG = "color-mix(in srgb, var(--tg-bg) 95%, #fff 2%)";
@@ -26,28 +28,23 @@ const ACTION_BG = "color-mix(in srgb, var(--tg-primary) 28%, transparent)";
 const MUTED_BG = "color-mix(in srgb, var(--tg-muted) 28%, transparent)";
 const BORDER = "var(--tg-border)";
 
-/* Base compacta */
 const pill =
   "min-w-[90px] h-8 px-2.5 rounded-md grid place-items-center text-[13px] text-white/90 border";
 const actionBtn =
   "h-8 w-8 grid place-items-center rounded-full hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary";
 
-/* Utilidad: recortar con “…” */
 const clip = (s?: string | null, n = 22) =>
   (s ?? "—").length > n ? (s as string).slice(0, n).trimEnd() + "…" : (s ?? "—");
 
-/* Per-page inicial estable por montaje */
 function getInitialPerPage() {
   if (typeof window === "undefined") return 8;
   return window.matchMedia("(max-width: 639px)").matches ? 5 : 8;
 }
 
-/* Indicador */
 function Dot({ color }: { color: string }) {
   return <span className="inline-block h-3 w-3 rounded-full" style={{ backgroundColor: color }} />;
 }
 
-/* Header desktop */
 function HeaderRow() {
   return (
     <div
@@ -65,7 +62,6 @@ function HeaderRow() {
   );
 }
 
-/* Card/Fila */
 function CustomerRow({
   c,
   onView,
@@ -80,7 +76,11 @@ function CustomerRow({
   onPay: (cust: Customer) => void;
 }) {
   const saldo = c.balance ?? 0;
-  const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
+  const money = new Intl.NumberFormat("es-CO", {
+    style: "currency",
+    currency: "COP",
+    maximumFractionDigits: 0,
+  });
   const dotColor = saldo > 0 ? "#d4b000" : "var(--tg-primary)";
   const canPay = saldo > 0;
 
@@ -88,7 +88,10 @@ function CustomerRow({
     <div className="relative rounded-xl border shadow-sm" style={{ background: OUTER_BG, borderColor: BORDER }}>
       {/* Desktop */}
       <div className="hidden sm:block mx-1.5 my-2 rounded-md px-3 py-2.5" style={{ background: INNER_BG }}>
-        <div className="grid items-center gap-3" style={{ gridTemplateColumns: "30px 220px 1fr 150px 200px 170px 208px" }}>
+        <div
+          className="grid items-center gap-3"
+          style={{ gridTemplateColumns: "30px 220px 1fr 150px 200px 170px 208px" }}
+        >
           <div className="grid place-items-center">
             <Dot color={dotColor} />
           </div>
@@ -139,9 +142,9 @@ function CustomerRow({
               <MaterialIcon name="edit" size={18} />
             </button>
 
-            {/* Pago siempre visible; muted si no hay saldo */}
             <button
-              className={`${actionBtn} ${canPay ? "text-[var(--tg-primary)]" : "text-tg-muted opacity-50 cursor-not-allowed"}`}
+              className={`${actionBtn} ${canPay ? "text-[var(--tg-primary)]" : "text-tg-muted opacity-50 cursor-not-allowed"
+                }`}
               style={{ background: canPay ? ACTION_BG : MUTED_BG }}
               aria-label="abonar"
               onClick={() => canPay && onPay(c)}
@@ -176,22 +179,35 @@ function CustomerRow({
               {c.email || "—"} • {c.phone || "—"}
             </div>
             <div className="mt-1 grid grid-cols-3 gap-2">
-              <div className="rounded-md border px-2 py-1 text-center text-[12px]" style={{ background: PILL_BG, borderColor: BORDER }}>
+              <div
+                className="rounded-md border px-2 py-1 text-center text-[12px]"
+                style={{ background: PILL_BG, borderColor: BORDER }}
+              >
                 <div className="uppercase opacity-70">CC/NIT</div>
                 <div className="font-medium whitespace-nowrap overflow-hidden text-ellipsis" title={c.tax_id || "—"}>
                   {clip(c.tax_id ?? "", 16)}
                 </div>
               </div>
-              <div className="rounded-md border px-2 py-1 text-center text-[12px]" style={{ background: PILL_BG, borderColor: BORDER }}>
+              <div
+                className="rounded-md border px-2 py-1 text-center text-[12px]"
+                style={{ background: PILL_BG, borderColor: BORDER }}
+              >
                 <div className="uppercase opacity-70">Ciudad</div>
                 <div className="font-medium whitespace-nowrap overflow-hidden text-ellipsis" title={c.city || "—"}>
                   {clip(c.city, 18)}
                 </div>
               </div>
-              <div className="rounded-md border px-2 py-1 text-center text-[12px]" style={{ background: PILL_BG, borderColor: BORDER }}>
+              <div
+                className="rounded-md border px-2 py-1 text-center text-[12px]"
+                style={{ background: PILL_BG, borderColor: BORDER }}
+              >
                 <div className="uppercase opacity-70">Saldo</div>
                 <div className="font-semibold">
-                  {new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(saldo)}
+                  {new Intl.NumberFormat("es-CO", {
+                    style: "currency",
+                    currency: "COP",
+                    maximumFractionDigits: 0,
+                  }).format(saldo)}
                 </div>
               </div>
             </div>
@@ -215,9 +231,9 @@ function CustomerRow({
               <MaterialIcon name="edit" size={18} />
             </button>
 
-            {/* Pago siempre visible; muted si no hay saldo */}
             <button
-              className={`${actionBtn} ${canPay ? "text-[var(--tg-primary)]" : "text-tg-muted opacity-50 cursor-not-allowed"}`}
+              className={`${actionBtn} ${canPay ? "text-[var(--tg-primary)]" : "text-tg-muted opacity-50 cursor-not-allowed"
+                }`}
               style={{ background: ACTION_BG }}
               aria-label="abonar"
               onClick={() => canPay && onPay(c)}
@@ -242,9 +258,7 @@ function CustomerRow({
   );
 }
 
-/* Página */
 export default function ClientesPage() {
-  // perPage fijo por montaje. En móvil queda en 5.
   const [perPage] = useState<number>(getInitialPerPage);
   const isNarrow = useMediaQuery("(max-width: 639px)");
 
@@ -265,22 +279,27 @@ export default function ClientesPage() {
     upsertOne,
   } = useCustomers(perPage);
 
+  useCustomersRealtime();
+
   const { success, error: err } = useNotifications();
 
+  const [editId, setEditId] = useState<number | null>(null);
+
+  const { create: createCustomerFn, loading: creating } = useCreateCustomer();
+  const { update: updateCustomerFn } = useUpdateCustomer(editId);
+  const { deleteCustomer: deleteCustomerFn, loading: deleting } = useDeleteCustomer();
+
   const [openCreate, setOpenCreate] = useState(false);
-  const [creating, setCreating] = useState(false);
 
   const [viewId, setViewId] = useState<number | null>(null);
   const [openView, setOpenView] = useState(false);
   const { customer: viewCustomer, loading: viewLoading } = useCustomer(viewId);
 
-  const [editId, setEditId] = useState<number | null>(null);
   const [openEdit, setOpenEdit] = useState(false);
   const { customer: editCustomer, loading: editLoading } = useCustomer(editId);
 
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [openDelete, setOpenDelete] = useState(false);
-  const [deleting, setDeleting] = useState(false);
 
   const [openPay, setOpenPay] = useState(false);
   const [payCustomer, setPayCustomer] = useState<Customer | null>(null);
@@ -292,13 +311,15 @@ export default function ClientesPage() {
 
   const frameVars: CSSProperties = { ["--content-x" as any]: "8px" };
 
-  // si el ancho cambia, cierra el dropdown para evitar estados inconsistentes
   const [citiesOpen, setCitiesOpen] = useState(false);
   useEffect(() => {
     setCitiesOpen(false);
   }, [isNarrow]);
 
-  const from = useMemo(() => (total === 0 ? 0 : (page - 1) * pageSize + 1), [page, pageSize, total]);
+  const from = useMemo(
+    () => (total === 0 ? 0 : (page - 1) * pageSize + 1),
+    [page, pageSize, total],
+  );
   const to = useMemo(() => Math.min(page * pageSize, total), [page, pageSize, total]);
 
   const [start, end] = useMemo(() => {
@@ -309,49 +330,47 @@ export default function ClientesPage() {
   }, [page, totalPages]);
 
   async function handleCreateSubmit(data: CustomerCreate) {
-    setCreating(true);
     try {
-      await createCustomer(data);
+      await createCustomerFn(data);
       setOpenCreate(false);
       setPage(1);
       reload?.();
       success("Cliente creado");
     } catch (e: any) {
-      err(e?.response?.data?.detail ?? "Error creando cliente");
-    } finally {
-      setCreating(false);
+      err(e?.response?.data?.detail ?? e?.message ?? "Error creando cliente");
     }
   }
+
   async function handleEditSubmit(data: CustomerUpdate) {
     if (!editId) return;
     try {
-      await updateCustomer(editId, data);
+      await updateCustomerFn(data);
       setOpenEdit(false);
       upsertOne({ id: editId, ...data });
       reload?.();
       success("Cliente actualizado");
     } catch (e: any) {
-      err(e?.response?.data?.detail ?? "Error actualizando cliente");
+      err(e?.response?.data?.detail ?? e?.message ?? "Error actualizando cliente");
     }
   }
+
   async function handleConfirmDelete() {
     if (!deleteId) return;
-    setDeleting(true);
     try {
-      await deleteCustomer(deleteId);
+      await deleteCustomerFn(deleteId);
       setOpenDelete(false);
       setDeleteId(null);
       reload?.();
       success("Cliente eliminado");
     } catch (e: any) {
-      err(e?.response?.data?.detail ?? "Error eliminando cliente");
-    } finally {
-      setDeleting(false);
+      err(e?.response?.data?.detail ?? e?.message ?? "Error eliminando cliente");
     }
   }
+
   function handleClearFilters() {
     setFilters({ q: "", cities: undefined, pendingBalance: undefined });
   }
+
   async function handlePaymentDone(customerId: number, paid: number) {
     const row = rows.find((r) => r.id === customerId);
     if (row) upsertOne?.({ ...row, balance: Math.max(0, row.balance - paid) });
@@ -363,7 +382,12 @@ export default function ClientesPage() {
   const allCities = options.cities ?? [];
   const allSelected = selectedCities.length > 0 && selectedCities.length === allCities.length;
   const citiesLabel =
-    selectedCities.length === 0 ? "Ciudad" : allSelected ? "Todas" : `${selectedCities.length} seleccionadas`;
+    selectedCities.length === 0
+      ? "Ciudad"
+      : allSelected
+        ? "Todas"
+        : `${selectedCities.length} seleccionadas`;
+
   const toggleCity = (city: string) =>
     setFilters((f) => {
       const s = new Set(f.cities ?? []);
@@ -371,6 +395,7 @@ export default function ClientesPage() {
       const arr = Array.from(s);
       return { ...f, cities: arr.length ? arr : undefined };
     });
+
   const toggleAllCities = () =>
     setFilters((f) => (allSelected ? { ...f, cities: undefined } : { ...f, cities: [...allCities] }));
 
@@ -426,7 +451,12 @@ export default function ClientesPage() {
                     return (
                       <li key={ci}>
                         <label className="flex items-center gap-2 text-sm cursor-pointer px-1 py-1 rounded hover:bg.black/10 dark:hover:bg.white/10">
-                          <input type="checkbox" className="accent-current" checked={checked} onChange={() => toggleCity(ci)} />
+                          <input
+                            type="checkbox"
+                            className="accent-current"
+                            checked={checked}
+                            onChange={() => toggleCity(ci)}
+                          />
                           <span>{ci}</span>
                         </label>
                       </li>
@@ -499,7 +529,6 @@ export default function ClientesPage() {
         </button>
 
         <div className="grid grid-cols-2 gap-2">
-          {/* Ciudad compacto */}
           <div className="relative">
             <button
               type="button"
@@ -523,7 +552,12 @@ export default function ClientesPage() {
                     return (
                       <li key={ci}>
                         <label className="flex items-center gap-2 text-sm cursor-pointer px-1 py-1 rounded hover:bg.black/10 dark:hover:bg.white/10">
-                          <input type="checkbox" className="accent-current" checked={checked} onChange={() => toggleCity(ci)} />
+                          <input
+                            type="checkbox"
+                            className="accent-current"
+                            checked={checked}
+                            onChange={() => toggleCity(ci)}
+                          />
                           <span>{ci}</span>
                         </label>
                       </li>
@@ -552,7 +586,10 @@ export default function ClientesPage() {
       </div>
 
       {/* Marco y lista */}
-      <div className="rounded-xl border flex-1 min-h-0 flex flex-col overflow-hidden mb-1" style={{ background: FRAME_BG, borderColor: BORDER }}>
+      <div
+        className="rounded-xl border flex-1 min-h-0 flex flex-col overflow-hidden mb-1"
+        style={{ background: FRAME_BG, borderColor: BORDER }}
+      >
         <div className="px-3 pt-3">
           <HeaderRow />
         </div>
@@ -563,17 +600,33 @@ export default function ClientesPage() {
               <div key={`sk-${i}`} className="h-[60px] rounded-xl border bg-black/10 animate-pulse" />
             ))
             : rows.length === 0
-              ? <div className="h-full grid place-items-center text-tg-muted text-sm">Sin registros</div>
-              : rows.map((r) => (
-                <CustomerRow
-                  key={r.id}
-                  c={r}
-                  onView={(id) => { setViewId(id); setOpenView(true); }}
-                  onEdit={(id) => { setEditId(id); setOpenEdit(true); }}
-                  onDelete={(id) => { setDeleteId(id); setOpenDelete(true); }}
-                  onPay={(cust) => { setPayCustomer(cust); setOpenPay(true); }}
-                />
-              ))}
+              ? (
+                <div className="h-full grid place-items-center text-tg-muted text-sm">Sin registros</div>
+              )
+              : (
+                rows.map((r) => (
+                  <CustomerRow
+                    key={r.id}
+                    c={r}
+                    onView={(id) => {
+                      setViewId(id);
+                      setOpenView(true);
+                    }}
+                    onEdit={(id) => {
+                      setEditId(id);
+                      setOpenEdit(true);
+                    }}
+                    onDelete={(id) => {
+                      setDeleteId(id);
+                      setOpenDelete(true);
+                    }}
+                    onPay={(cust) => {
+                      setPayCustomer(cust);
+                      setOpenPay(true);
+                    }}
+                  />
+                ))
+              )}
         </div>
 
         {/* Paginación + IO */}
@@ -581,24 +634,44 @@ export default function ClientesPage() {
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="flex items-center gap-2">
               <span className="text-sm">Líneas por página</span>
-              <select value={pageSize} disabled className="h-9 rounded-md border border-tg bg-[var(--panel-bg)] px-2 text-sm text-tg-muted">
+              <select
+                value={pageSize}
+                disabled
+                className="h-9 rounded-md border border-tg bg-[var(--panel-bg)] px-2 text-sm text-tg-muted"
+              >
                 <option value={pageSize}>{pageSize}</option>
               </select>
             </div>
 
-            <button type="button" onClick={() => setOpenImport(true)} className="h-9 rounded-md border border-tg bg-[var(--panel-bg)] px-3 text-sm text-tg-muted inline-flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setOpenImport(true)}
+              className="h-9 rounded-md border border-tg bg-[var(--panel-bg)] px-3 text-sm text-tg-muted inline-flex items-center gap-2"
+            >
               <MaterialIcon name="file_upload" size={16} /> Importar
             </button>
-            <button type="button" onClick={() => setOpenExport(true)} className="h-9 rounded-md border border-tg bg-[var(--panel-bg)] px-3 text-sm text-tg-muted inline-flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setOpenExport(true)}
+              className="h-9 rounded-md border border-tg bg-[var(--panel-bg)] px-3 text-sm text-tg-muted inline-flex items-center gap-2"
+            >
               <MaterialIcon name="file_download" size={16} /> Exportar
             </button>
           </div>
 
           <nav className="flex items-center gap-1">
-            <button disabled={!hasPrev} onClick={() => setPage(1)} className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
+            <button
+              disabled={!hasPrev}
+              onClick={() => setPage(1)}
+              className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40"
+            >
               <MaterialIcon name="first_page" size={16} />
             </button>
-            <button disabled={!hasPrev} onClick={() => setPage(page - 1)} className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
+            <button
+              disabled={!hasPrev}
+              onClick={() => setPage(page - 1)}
+              className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40"
+            >
               <MaterialIcon name="chevron_left" size={16} />
             </button>
 
@@ -608,7 +681,10 @@ export default function ClientesPage() {
                 <button
                   key={p}
                   onClick={() => setPage(p)}
-                  className={`h-9 min-w-9 px-3 rounded border ${active ? "bg-tg-primary text-white border-transparent" : "bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] text-white/90 border-white/10"} font-semibold`}
+                  className={`h-9 min-w-9 px-3 rounded border ${active
+                      ? "bg-tg-primary text-white border-transparent"
+                      : "bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] text-white/90 border-white/10"
+                    } font-semibold`}
                   aria-current={active ? "page" : undefined}
                 >
                   {p}
@@ -616,10 +692,18 @@ export default function ClientesPage() {
               );
             })}
 
-            <button disabled={!hasNext} onClick={() => setPage(page + 1)} className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
+            <button
+              disabled={!hasNext}
+              onClick={() => setPage(page + 1)}
+              className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40"
+            >
               <MaterialIcon name="chevron_right" size={16} />
             </button>
-            <button disabled={!hasNext} onClick={() => setPage(totalPages)} className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
+            <button
+              disabled={!hasNext}
+              onClick={() => setPage(totalPages)}
+              className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40"
+            >
               <MaterialIcon name="last_page" size={16} />
             </button>
 
@@ -633,8 +717,19 @@ export default function ClientesPage() {
       {/* Diálogos IO */}
       <ImportDialog
         open={openImport}
-        onClose={() => { imp.reset(); setOpenImport(false); }}
-        onRun={async (opts) => { try { await imp.importFile({ ...opts, entity: "customers" }); success("Importación completada"); reload?.(); } catch (e: any) { err(e?.message ?? "Error al importar"); } }}
+        onClose={() => {
+          imp.reset();
+          setOpenImport(false);
+        }}
+        onRun={async (opts) => {
+          try {
+            await imp.importFile({ ...opts, entity: "customers" });
+            success("Importación completada");
+            reload?.();
+          } catch (e: any) {
+            err(e?.message ?? "Error al importar");
+          }
+        }}
         loading={imp.loading}
         error={imp.error?.message ?? null}
         fixedEntity="customers"
@@ -642,8 +737,17 @@ export default function ClientesPage() {
       />
       <ExportDialog
         open={openExport}
-        onClose={() => { exp.reset(); setOpenExport(false); }}
-        onDownload={async (_e, fmt, filename) => { try { await exp.download("customers", fmt, filename); } catch (e: any) { err(e?.message ?? "Error al exportar"); } }}
+        onClose={() => {
+          exp.reset();
+          setOpenExport(false);
+        }}
+        onDownload={async (_e, fmt, filename) => {
+          try {
+            await exp.download("customers", fmt, filename);
+          } catch (e: any) {
+            err(e?.message ?? "Error al exportar");
+          }
+        }}
         loading={exp.loading}
         error={exp.error?.message ?? null}
         entities={["customers", "products", "suppliers"]}
@@ -652,9 +756,24 @@ export default function ClientesPage() {
         defaultName="customers"
       />
 
-      {openCreate && <ClienteForm intent="create" open={openCreate} onClose={() => setOpenCreate(false)} onSubmit={handleCreateSubmit} loading={creating} />}
+      {openCreate && (
+        <ClienteForm
+          intent="create"
+          open={openCreate}
+          onClose={() => setOpenCreate(false)}
+          onSubmit={handleCreateSubmit}
+          loading={creating}
+        />
+      )}
 
-      {openView && <ClienteView open={openView} onClose={() => setOpenView(false)} cliente={viewCustomer} loading={viewLoading} />}
+      {openView && (
+        <ClienteView
+          open={openView}
+          onClose={() => setOpenView(false)}
+          cliente={viewCustomer}
+          loading={viewLoading}
+        />
+      )}
 
       {openEdit && (
         <ClienteForm
@@ -683,18 +802,35 @@ export default function ClientesPage() {
           role="dialog"
           aria-modal="true"
           className="fixed inset-0 z-50 grid place-items-center bg-black/50"
-          onKeyDown={(e) => { if (e.key === "Escape") setOpenDelete(false); }}
-          onClick={(e) => { if (e.target === e.currentTarget && !deleting) setOpenDelete(false); }}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setOpenDelete(false);
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !deleting) setOpenDelete(false);
+          }}
         >
           <div className="w-[420px] rounded-lg border bg-[var(--panel-bg)] shadow-xl" style={{ borderColor: BORDER }}>
             <div className="px-4 py-3 border-b flex items-center gap-2" style={{ borderColor: BORDER }}>
               <MaterialIcon name="warning" size={18} />
               <h3 className="text-base font-semibold">Confirmar eliminación</h3>
             </div>
-            <div className="px-4 py-4 text-sm">¿Seguro que deseas eliminar este cliente? Esta acción no se puede deshacer.</div>
+            <div className="px-4 py-4 text-sm">
+              ¿Seguro que deseas eliminar este cliente? Esta acción no se puede deshacer.
+            </div>
             <div className="px-4 py-3 border-t flex justify-end gap-2" style={{ borderColor: BORDER }}>
-              <button onClick={() => setOpenDelete(false)} className="h-9 rounded-md px-3 text-sm hover:bg-black/10" disabled={deleting}>Cancelar</button>
-              <button onClick={handleConfirmDelete} className="h-9 rounded-md px-3 text-sm font-medium text-white disabled:opacity-60" style={{ background: "#7a1010" }} disabled={deleting}>
+              <button
+                onClick={() => setOpenDelete(false)}
+                className="h-9 rounded-md px-3 text-sm hover:bg-black/10"
+                disabled={deleting}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="h-9 rounded-md px-3 text-sm font-medium text-white disabled:opacity-60"
+                style={{ background: "#7a1010" }}
+                disabled={deleting}
+              >
                 {deleting ? "Eliminando..." : "Eliminar"}
               </button>
             </div>
@@ -708,7 +844,10 @@ export default function ClientesPage() {
           customerId={payCustomer?.id ?? null}
           customerName={payCustomer?.name}
           customerBalance={payCustomer?.balance ?? 0}
-          onClose={() => { setOpenPay(false); setPayCustomer(null); }}
+          onClose={() => {
+            setOpenPay(false);
+            setPayCustomer(null);
+          }}
           onSuccess={handlePaymentDone}
         />
       )}

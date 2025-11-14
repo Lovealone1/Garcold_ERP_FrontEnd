@@ -1,5 +1,7 @@
 "use client";
+
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { createCustomerSimplePayment } from "@/services/sales/customer.api";
 import type { CustomerStandalonePaymentIn } from "@/types/customer";
 
@@ -20,9 +22,12 @@ export function useCustomerSimplePayment(
     customerId: number,
     opts?: Options
 ): UseCustomerSimplePayment {
+    const qc = useQueryClient();
+
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<unknown | null>(null);
     const [success, setSuccess] = useState(false);
+
     const mounted = useRef(true);
     const timer = useRef<number | null>(null);
 
@@ -43,23 +48,52 @@ export function useCustomerSimplePayment(
     const run = useCallback(
         async (payload: CustomerStandalonePaymentIn): Promise<boolean> => {
             if (loading) return false;
+
             setLoading(true);
             setError(null);
             setSuccess(false);
 
             try {
-                const ok = await createCustomerSimplePayment(customerId, payload); 
+                const ok = await createCustomerSimplePayment(customerId, payload);
+
                 if (!mounted.current) return false;
 
                 setSuccess(ok);
+
+                if (ok) {
+                    qc.invalidateQueries({
+                        queryKey: ["customers"],
+                        refetchType: "active",
+                    });
+
+                    qc.invalidateQueries({
+                        predicate: ({ queryKey }) =>
+                            Array.isArray(queryKey) && queryKey[0] === "transactions",
+                        refetchType: "active",
+                    });
+
+                    qc.invalidateQueries({
+                        predicate: ({ queryKey }) =>
+                            Array.isArray(queryKey) && queryKey[0] === "banks",
+                        refetchType: "active",
+                    });
+
+                    qc.invalidateQueries({
+                        queryKey: ["customer", { id: customerId }],
+                        refetchType: "active",
+                    });
+                }
+
                 if (ok && opts?.autoResetMs && opts.autoResetMs > 0) {
                     timer.current = window.setTimeout(() => {
                         if (mounted.current) reset();
                     }, opts.autoResetMs) as any;
                 }
+
                 return ok;
             } catch (err) {
                 if (!mounted.current) return false;
+
                 setError(err);
                 opts?.onError?.(err);
                 return false;
@@ -67,7 +101,7 @@ export function useCustomerSimplePayment(
                 if (mounted.current) setLoading(false);
             }
         },
-        [customerId, loading, opts, reset]
+        [customerId, loading, opts, reset, qc]
     );
 
     return { run, loading, error, success, reset };

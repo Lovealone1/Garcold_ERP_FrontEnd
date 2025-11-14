@@ -1,4 +1,3 @@
-// app/(ventas)/proveedores/page.tsx
 "use client";
 
 import { useMemo, useState, useEffect, CSSProperties } from "react";

@@ -1,4 +1,3 @@
-// src/components/providers/RealtimeProvider.tsx
 "use client";
 
 import { useEffect } from "react";
@@ -220,6 +219,64 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
                         qc.invalidateQueries({
                             predicate: ({ queryKey }) =>
                                 Array.isArray(queryKey) && queryKey[0] === "suppliers",
+                            refetchType: "active",
+                        });
+                    }
+
+                    return;
+                }
+
+                if (finalResource === "customer") {
+                    if (
+                        finalAction === "created" ||
+                        finalAction === "updated" ||
+                        finalAction === "deleted"
+                    ) {
+                        const customerId = Number(payload?.id);
+
+                        qc.invalidateQueries({
+                            predicate: ({ queryKey }) =>
+                                Array.isArray(queryKey) && queryKey[0] === "customers",
+                            refetchType: "active",
+                        });
+
+                        if (!Number.isNaN(customerId)) {
+                            qc.invalidateQueries({
+                                queryKey: ["customer", { id: customerId }],
+                                refetchType: "active",
+                            });
+                        }
+                    }
+
+                    return;
+                }
+
+                if (finalResource === "customer_payment") {
+                    if (finalAction === "created") {
+                        const customerId = Number(payload?.customer_id);
+
+                        qc.invalidateQueries({
+                            predicate: ({ queryKey }) =>
+                                Array.isArray(queryKey) && queryKey[0] === "customers",
+                            refetchType: "active",
+                        });
+
+                        if (!Number.isNaN(customerId)) {
+                            qc.invalidateQueries({
+                                queryKey: ["customer", { id: customerId }],
+                                refetchType: "active",
+                            });
+                        }
+
+                        qc.invalidateQueries({
+                            predicate: ({ queryKey }) =>
+                                Array.isArray(queryKey) && queryKey[0] === "transactions",
+                            refetchType: "active",
+                        });
+
+                        qc.invalidateQueries({
+                            predicate: ({ queryKey }) =>
+                                Array.isArray(queryKey) && queryKey[0] === "banks",
                             refetchType: "active",
                         });
                     }

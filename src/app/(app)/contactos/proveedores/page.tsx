@@ -566,19 +566,23 @@ export default function ProveedoresPage() {
           exp.reset();
           setOpenExport(false);
         }}
-        onDownload={async (_e, fmt, filename) => {
-          try {
-            await exp.download("suppliers", fmt, filename);
-          } catch (e: any) {
-            error(e?.message ?? "Error al exportar");
+        onDownload={async (_entity, fmt, filename) => {
+          const ok = await exp.download("suppliers", fmt, filename);
+          if (ok) {
+            success("Exportación generada");
+            exp.reset();
+            setOpenExport(false);
+          } else {
+            error(exp.error?.message ?? "Error al exportar");
           }
+          return ok;
         }}
         loading={exp.loading}
         error={exp.error?.message ?? null}
         entities={["customers", "products", "suppliers"]}
-        fixedEntity="suppliers"
-        title="Exportar proveedores"
-        defaultName="suppliers"
+        fixedEntity="products"
+        title="Exportar productos"
+        defaultName="products"
       />
 
       {openCreate && (

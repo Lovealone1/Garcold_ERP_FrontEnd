@@ -63,10 +63,21 @@ export function useDeleteVenta() {
       );
 
       // Refetch 1→n en background para TODAS las variantes de claves
-      qc.invalidateQueries({ queryKey: ["sales"], refetchType: "active" });
+      qc.invalidateQueries({
+        queryKey: ["sales"],
+        refetchType: "all",
+      });
 
       qc.invalidateQueries({
-        // importante: usa predicate por si tus claves incluyen filtros/params
+        queryKey: ["products"],
+        refetchType: "active",
+      });
+
+      qc.invalidateQueries({
+        queryKey: ["all-products"],
+        refetchType: "active",
+      });
+      qc.invalidateQueries({
         predicate: ({ queryKey }) => Array.isArray(queryKey) && queryKey[0] === "transactions",
         refetchType: "active",
       });

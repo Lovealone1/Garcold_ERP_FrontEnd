@@ -69,7 +69,7 @@ function stripTransactionsByPurchaseId(
     if (!removed) return data;
 
     const first = pages[0];
-    const total = Math.max(0, (first.total ?? 0) - 1); 
+    const total = Math.max(0, (first.total ?? 0) - 1);
     const pageSize = first.page_size || 1;
     const total_pages = Math.max(1, Math.ceil(total / pageSize));
 
@@ -101,6 +101,16 @@ export function useDeletePurchase() {
                 { queryKey: ["transactions"] },
                 (curr) => stripTransactionsByPurchaseId(curr, id)
             );
+
+            qc.invalidateQueries({
+                queryKey: ["sales"],
+                refetchType: "all",
+            });
+
+            qc.invalidateQueries({
+                queryKey: ["transactions"],
+                refetchType: "active"
+            });
 
             qc.invalidateQueries({ queryKey: ["purchases"], refetchType: "active" });
 

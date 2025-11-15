@@ -43,6 +43,16 @@ export function useCreatePurchase(opts: Options = {}) {
           refetchType: "active",
         });
 
+        qc.invalidateQueries({
+          queryKey: ["sales"],
+          refetchType: "all",
+        });
+
+        qc.invalidateQueries({
+          queryKey: ["transactions"],
+          refetchType: "active"
+        });
+
         opts.onSuccess?.(p);
         return p;
       } catch (e: any) {

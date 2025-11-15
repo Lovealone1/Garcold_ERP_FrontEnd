@@ -49,15 +49,15 @@ function HeaderRow() {
   return (
     <div
       className="hidden sm:grid items-center gap-3 mb-2 font-extrabold mx-2"
-      style={{ gridTemplateColumns: "30px 220px 1fr 150px 200px 170px 208px" }}
+      style={{ gridTemplateColumns: "120px 140px 1fr 120px 230px 130px 180px 50px" }}
     >
       <span />
       <span className="text-white">Nombre</span>
       <span className="text-white">Contacto</span>
       <span className="text-white text-center">CC/NIT</span>
       <span className="text-white text-center">Ciudad</span>
-      <span className="text-white text-right">Saldo</span>
-      <span className="text-white text-center">Acciones</span>
+      <span className="text-white text-center">Saldo</span>
+      <span className="text-white text-right">Acciones</span>
     </div>
   );
 }
@@ -682,8 +682,8 @@ export default function ClientesPage() {
                   key={p}
                   onClick={() => setPage(p)}
                   className={`h-9 min-w-9 px-3 rounded border ${active
-                      ? "bg-tg-primary text-white border-transparent"
-                      : "bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] text-white/90 border-white/10"
+                    ? "bg-tg-primary text-white border-transparent"
+                    : "bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] text-white/90 border-white/10"
                     } font-semibold`}
                   aria-current={active ? "page" : undefined}
                 >
@@ -741,19 +741,23 @@ export default function ClientesPage() {
           exp.reset();
           setOpenExport(false);
         }}
-        onDownload={async (_e, fmt, filename) => {
-          try {
-            await exp.download("customers", fmt, filename);
-          } catch (e: any) {
-            err(e?.message ?? "Error al exportar");
+        onDownload={async (_entity, fmt, filename) => {
+          const ok = await exp.download("customers", fmt, filename);
+          if (ok) {
+            success("Exportación generada");
+            exp.reset();
+            setOpenExport(false);
+          } else {
+            err(exp.error?.message ?? "Error al exportar");
           }
+          return ok;
         }}
         loading={exp.loading}
         error={exp.error?.message ?? null}
         entities={["customers", "products", "suppliers"]}
-        fixedEntity="customers"
-        title="Exportar clientes"
-        defaultName="customers"
+        fixedEntity="products"
+        title="Exportar productos"
+        defaultName="products"
       />
 
       {openCreate && (

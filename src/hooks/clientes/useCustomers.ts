@@ -215,6 +215,9 @@ export function useCustomers(pageSize = 8) {
 
   const upsertOne = useCallback(
     (patch: Partial<Customer> & { id: number }) => {
+      // el cliente que modifica/crea siempre salta a página 1
+      setPage(1);
+
       qc.setQueryData<InfiniteData<CustomerPage>>(key, (data) => {
         if (!data) return data;
 

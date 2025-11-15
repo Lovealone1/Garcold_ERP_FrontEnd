@@ -466,8 +466,21 @@ export default function ProductosPage() {
       />
       <ExportDialog
         open={openExport}
-        onClose={() => { exp.reset(); setOpenExport(false); }}
-        onDownload={async (_e, fmt, filename) => { try { await exp.download("products", fmt, filename); success("Exportación generada"); } catch (e: any) { err(e?.message ?? "Error al exportar"); } }}
+        onClose={() => {
+          exp.reset();
+          setOpenExport(false);
+        }}
+        onDownload={async (_entity, fmt, filename) => {
+          const ok = await exp.download("products", fmt, filename);
+          if (ok) {
+            success("Exportación generada");
+            exp.reset();
+            setOpenExport(false);
+          } else {
+            err(exp.error?.message ?? "Error al exportar");
+          }
+          return ok;
+        }}
         loading={exp.loading}
         error={exp.error?.message ?? null}
         entities={["customers", "products", "suppliers"]}

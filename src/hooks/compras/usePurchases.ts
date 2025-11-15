@@ -27,15 +27,10 @@ export function usePurchases(initialFilters: Filters = {}, pageSize = 8) {
       [
         "purchases",
         {
-          q: filters.q || "",
-          status: filters.status || "",
-          bank: filters.bank || "",
-          from: filters.from || "",
-          to: filters.to || "",
           pageSize,
         },
       ] as const,
-    [filters.q, filters.status, filters.bank, filters.from, filters.to, pageSize]
+    [pageSize]
   );
 
   const query = useInfiniteQuery<
@@ -52,11 +47,6 @@ export function usePurchases(initialFilters: Filters = {}, pageSize = 8) {
       return listPurchases(pageParam, {
         signal,
         page_size: f.pageSize,
-        q: f.q || undefined,
-        status: f.status || undefined,
-        bank: f.bank || undefined,
-        from: f.from || undefined,
-        to: f.to || undefined,
       });
     },
     getNextPageParam: (last) => {
@@ -78,7 +68,6 @@ export function usePurchases(initialFilters: Filters = {}, pageSize = 8) {
     gcTime: 1000 * 60 * 60 * 24 * 3,
   });
 
-  // Autoprefetch en background: drena mientras haya siguientes páginas
   useEffect(() => {
     let cancelled = false;
 
@@ -107,18 +96,11 @@ export function usePurchases(initialFilters: Filters = {}, pageSize = 8) {
     };
 
     void pump();
-
     return () => {
       cancelled = true;
     };
-  }, [
-    query.hasNextPage,
-    query.isLoading,
-    query.isFetchingNextPage,
-    key,
-  ]);
+  }, [query.hasNextPage, query.isLoading, query.isFetchingNextPage, key]);
 
-  // reset página en cambios de filtro
   useEffect(() => {
     setPage(1);
   }, [filters.q, filters.status, filters.bank, filters.from, filters.to]);
@@ -137,7 +119,47 @@ export function usePurchases(initialFilters: Filters = {}, pageSize = 8) {
     [pages]
   );
 
-  const totalClient = all.length;
+  const filtered: Purchase[] = useMemo(() => {
+    return all.filter((p) => {
+      if (filters.q) {
+        const q = filters.q.toLowerCase().trim();
+        const target = `${p.id} ${p.supplier ?? ""} ${p.bank ?? ""}`.toLowerCase();
+        if (!target.includes(q)) return false;
+      }
+
+      if (filters.status && String(p.status) !== String(filters.status)) {
+        return false;
+      }
+
+      if (filters.bank && String(p.bank) !== String(filters.bank)) {
+        return false;
+      }
+
+      if (filters.from) {
+        const d = new Date(p.purchase_date);
+        const from = new Date(filters.from);
+        const tD = d.getTime();
+        const tFrom = from.getTime();
+        if (!Number.isNaN(tD) && !Number.isNaN(tFrom) && tD < tFrom) {
+          return false;
+        }
+      }
+
+      if (filters.to) {
+        const d = new Date(p.purchase_date);
+        const to = new Date(filters.to);
+        const tD = d.getTime();
+        const tTo = to.getTime();
+        if (!Number.isNaN(tD) && !Number.isNaN(tTo) && tD > tTo) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [all, filters]);
+
+  const totalClient = filtered.length;
   const localTotalPages = Math.max(1, Math.ceil(totalClient / pageSize));
   const uiTotalPages = serverTotalPages ?? localTotalPages;
 
@@ -145,14 +167,19 @@ export function usePurchases(initialFilters: Filters = {}, pageSize = 8) {
 
   const items = useMemo(
     () =>
-      all.slice(
+      filtered.slice(
         (safePage - 1) * pageSize,
         (safePage - 1) * pageSize + pageSize
       ),
-    [all, safePage, pageSize]
+    [filtered, safePage, pageSize]
   );
 
-  const reload = () => qc.invalidateQueries({ queryKey: key });
+  const reload = () =>
+    qc.invalidateQueries({
+      predicate: ({ queryKey }) =>
+        Array.isArray(queryKey) && queryKey[0] === "purchases",
+      refetchType: "active",
+    });
 
   const loadedCount = pages.reduce(
     (a, p) => a + (p.items?.length ?? 0),

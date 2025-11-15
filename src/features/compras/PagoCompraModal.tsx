@@ -13,16 +13,16 @@ import Tooltip from "@mui/material/Tooltip";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import Grid from "@mui/material/Grid";
 
-import { usePagosCompra } from "@/hooks/compras/usePagosCompra";
-import { useCreatePagoCompra } from "@/hooks/compras/useCreatePagoCompra";
-import { useDeletePagoCompra } from "@/hooks/compras/useDeletePagoCompra";
+import { usePurchasePayments } from "@/hooks/compras/usePurchasePayments";
+import { useCreatePagoCompra } from "@/hooks/compras/useCreatePurchasePayment";
+import { useDeletePagoCompra } from "@/hooks/compras/useDeletePurchasePayment";
 
 import { listBanks } from "@/services/sales/bank.api";
 import { getPurchaseById } from "@/services/sales/purchase.api";
 
 import type { Bank } from "@/types/bank";
 import type { Purchase } from "@/types/purchase";
-
+import { PurchasePayment } from "@/types/purchase";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 
 const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
@@ -40,7 +40,7 @@ export default function PagoCompraModal({ open, onClose, compra, onPaid }: Props
     const [compraInfo, setCompraInfo] = useState<Purchase | null>(compra ?? null);
     useEffect(() => { setCompraInfo(compra ?? null); }, [compra, open]);
 
-    const { items, loading, reload } = usePagosCompra(compraId);
+    const { items, loading, reload } = usePurchasePayments(compraId);
     const { create, loading: creating } = useCreatePagoCompra();
     const { remove, loading: deleting } = useDeletePagoCompra();
     const { success, error } = useNotifications();
@@ -85,9 +85,14 @@ export default function PagoCompraModal({ open, onClose, compra, onPaid }: Props
         }
     }
 
-    async function handleDelete(pagoId: number) {
+    async function handleDelete(pago: PurchasePayment) {
         try {
-            await remove(pagoId);
+            await remove(
+                pago.id,
+                Number(pago.purchase_id),
+                Number(pago.balance) || 0
+            );
+
             success("Pago eliminado");
             await reload();
             await refreshCompra();
@@ -211,7 +216,7 @@ export default function PagoCompraModal({ open, onClose, compra, onPaid }: Props
                                                 <span>
                                                     <IconButton
                                                         size="small"
-                                                        onClick={() => handleDelete(p.id)}
+                                                        onClick={() => handleDelete(p)}
                                                         disabled={deleting}
                                                         sx={{ color: "var(--tg-primary)", borderRadius: "9999px", "&:hover": { backgroundColor: "color-mix(in srgb, var(--tg-primary) 22%, transparent)" } }}
                                                     >

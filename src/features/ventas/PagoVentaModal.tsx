@@ -82,12 +82,14 @@ export default function PagoVentaModal({ open, onClose, venta, onPaid }: Props) 
     }
 
     async function handleDelete(pagoId: number) {
+        if (!ventaId) return; // por seguridad
+
         try {
-            await remove(pagoId);
+            await remove(pagoId, ventaId);
             success("Pago eliminado");
             await reload();
             await refreshVenta();
-            if (ventaId) onPaid?.(ventaId);
+            onPaid?.(ventaId);
         } catch (e: any) {
             error(e?.response?.data?.detail ?? "No fue posible eliminar el pago");
         }

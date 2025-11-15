@@ -19,7 +19,7 @@ import { useSupplierOptions, type SupplierOption } from "@/hooks/proveedores/use
 import { useCompraEstados } from "@/hooks/estados/useEstados";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 import { useRouter } from "next/navigation";
-import { useCreateCompra } from "@/hooks/compras/useCreateCompra";
+import { useCreatePurchase } from "@/hooks/compras/useCreatePurchase";
 import { useBancos } from "@/hooks/bancos/useBancos";
 
 import type { ProductDTO } from "@/types/product";
@@ -233,7 +233,7 @@ export default function CompraCrearPage() {
 
     const qc = useQueryClient();
     
-    const { create: createCompra, loading: creating } = useCreateCompra({
+    const { create: createCompra, loading: creating } = useCreatePurchase({
         onSuccess: async () => {
             await Promise.all([
                 qc.invalidateQueries({ queryKey: ["products"] }),       

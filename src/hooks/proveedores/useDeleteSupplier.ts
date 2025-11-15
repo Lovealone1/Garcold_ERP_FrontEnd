@@ -1,11 +1,12 @@
+// src/hooks/proveedores/useDeleteSupplier.ts
 "use client";
 
 import { useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { deleteProduct } from "@/services/sales/product.api";
+import { deleteSupplier } from "@/services/sales/supplier.api";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 
-export function useDeleteProducto() {
+export function useDeleteSupplier() {
   const qc = useQueryClient();
   const { success, error: notifyError } = useNotifications();
 
@@ -18,23 +19,22 @@ export function useDeleteProducto() {
       setError(null);
 
       try {
-        const res = await deleteProduct(id);
+        const res = await deleteSupplier(id, { nocacheToken: Date.now() });
+
+        success("Proveedor eliminado correctamente");
 
         qc.invalidateQueries({
-          queryKey: ["products"],
-          refetchType: "active",
+          queryKey: ["suppliers"],
+          refetchType: "all",
         });
 
-        qc.invalidateQueries({
-          queryKey: ["all-products"],
-          refetchType: "active",
-        });
-
-        success("Producto eliminado correctamente");
         return res;
       } catch (e: any) {
         const msg =
-          e?.response?.data?.detail ?? "Error eliminando producto";
+          e?.response?.data?.detail ??
+          e?.message ??
+          "No fue posible eliminar el proveedor";
+
         setError(e);
         notifyError(msg);
         throw e;
@@ -45,5 +45,10 @@ export function useDeleteProducto() {
     [qc, success, notifyError]
   );
 
-  return { deleteProducto: handleDelete, loading, error };
+  const reset = () => {
+    setError(null);
+    setLoading(false);
+  };
+
+  return { deleteSupplier: handleDelete, loading, error, reset };
 }

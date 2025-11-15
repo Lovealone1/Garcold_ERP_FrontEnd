@@ -49,7 +49,12 @@ export function useCreateVenta(opts: Options = {}) {
                     queryKey: ["all-products"],
                     refetchType: "active",
                 });
-                
+
+                qc.invalidateQueries({
+                    queryKey: ["profits"],
+                    refetchType: "active",
+                });
+
                 opts.onSuccess?.(v);
                 return v;
             } catch (e: any) {

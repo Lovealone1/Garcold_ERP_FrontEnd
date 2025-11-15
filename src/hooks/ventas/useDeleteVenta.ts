@@ -82,6 +82,11 @@ export function useDeleteVenta() {
         refetchType: "active",
       });
 
+      qc.invalidateQueries({
+          queryKey: ["profits"],
+          refetchType: "active",
+        });
+
     } catch (e: any) {
       const msg = e?.response?.data?.detail ?? e?.message ?? "Error eliminando venta";
       setError(msg);

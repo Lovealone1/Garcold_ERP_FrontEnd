@@ -283,6 +283,28 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
 
                     return;
                 }
+
+                if (finalResource === "product") {
+                    if (
+                        finalAction === "created" ||
+                        finalAction === "updated" ||
+                        finalAction === "deleted"
+                    ) {
+                        qc.invalidateQueries({
+                            predicate: ({ queryKey }) =>
+                                Array.isArray(queryKey) && queryKey[0] === "products",
+                            refetchType: "active",
+                        });
+
+                        qc.invalidateQueries({
+                            predicate: ({ queryKey }) =>
+                                Array.isArray(queryKey) && queryKey[0] === "all-products",
+                            refetchType: "active",
+                        });
+                    }
+
+                    return;
+                }
             };
 
             ws.onclose = () => {

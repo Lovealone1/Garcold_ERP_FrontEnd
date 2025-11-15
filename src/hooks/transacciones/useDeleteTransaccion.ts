@@ -1,4 +1,3 @@
-// useDeleteTransaction.ts
 "use client";
 import { useState } from "react";
 import { useQueryClient, type InfiniteData } from "@tanstack/react-query";
@@ -14,7 +13,10 @@ type Page = {
   has_next?: boolean;
 };
 
-function removeTxFromInfinite(data: InfiniteData<Page> | undefined, id: number) {
+function removeTxFromInfinite(
+  data: InfiniteData<Page> | undefined,
+  id: number
+) {
   if (!data) return data;
 
   let removed = false;
@@ -49,19 +51,29 @@ export function useDeleteTransaction() {
     try {
       const res = await deleteTransaction(transactionId);
 
-      // 1) Limpia el item localmente
       qc.setQueriesData<InfiniteData<Page>>(
         { queryKey: ["transactions"] },
         (curr) => removeTxFromInfinite(curr, transactionId)
       );
 
-      // 2) Colapsa la cache a la primera página
       qc.setQueriesData<InfiniteData<Page>>(
         { queryKey: ["transactions"] },
-        (curr) => (curr && curr.pages?.length ? { pages: [curr.pages[0]], pageParams: [1] } as InfiniteData<Page> : curr)
+        (curr) =>
+          curr && curr.pages?.length
+            ? ({ pages: [curr.pages[0]], pageParams: [1] } as InfiniteData<Page>)
+            : curr
       );
 
-      await qc.refetchQueries({ queryKey: ["transactions"], type: "active" });
+      qc.invalidateQueries({
+        queryKey: ["transactions"],
+        refetchType: "active",
+      });
+
+      qc.invalidateQueries({
+        predicate: ({ queryKey }) =>
+          Array.isArray(queryKey) && queryKey[0] === "customers",
+        refetchType: "active",
+      });
 
       return res.message ?? "Transacción eliminada";
     } catch (e: any) {

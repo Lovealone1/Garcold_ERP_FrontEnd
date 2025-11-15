@@ -19,7 +19,8 @@ export function useAllProfits(initialForce?: number) {
         queryFn: async ({ signal, queryKey }) => {
             const [, , meta] = queryKey;
             const nocacheToken =
-                typeof (meta as any)?.force === "number" && (meta as any).force > 0
+                typeof (meta as any)?.force === "number" &&
+                    (meta as any).force > 0
                     ? Date.now()
                     : undefined;
             return fetchAllProfits({ signal, nocacheToken });
@@ -31,13 +32,23 @@ export function useAllProfits(initialForce?: number) {
     });
 
     const items = query.data ?? [];
+
     const totalProfit = useMemo(
         () => items.reduce((a, r) => a + (r.profit ?? 0), 0),
         [items]
     );
 
     const reload = () => setForceTs(Date.now());
-    const invalidate = () => qc.invalidateQueries({ queryKey: ["profits", "all"] });
+
+    const invalidate = () =>
+        qc.invalidateQueries({
+            queryKey: ["profits"],
+            refetchType: "active",
+        });
+
+    const primeFromPages = (allProfits: Profit[]) => {
+        qc.setQueryData<Profit[]>(["profits", "all", { force: 0 }], allProfits);
+    };
 
     return {
         items,
@@ -46,5 +57,6 @@ export function useAllProfits(initialForce?: number) {
         error: query.isError ? (query.error as Error).message : null,
         reload,
         invalidate,
+        primeFromPages,
     };
 }

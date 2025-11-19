@@ -250,11 +250,11 @@ export default function ProductosPage() {
     setCreating(true);
     try {
       const created = await createProduct(payload);
-      insertOptimistic(created);   // UI instantánea
-      await invalidateAll();       // coherencia con el servidor
+      insertOptimistic(created);
       success("Producto creado");
       setOpenCreate(false);
       setPage(1);
+      void invalidateAll();
     } catch (e: any) {
       err(e?.response?.data?.detail ?? "Error creando producto");
     } finally {
@@ -266,15 +266,16 @@ export default function ProductosPage() {
     if (!editId) return;
     try {
       const updated = await updateProduct(editId, payload);
-      const { id: _ignore, ...rest } = updated;        // <- descarta id del server
-      patchOptimistic({ id: editId, ...rest });        // <- id estable
-      await invalidateAll();
+      const { id: _ignore, ...rest } = updated;
+      patchOptimistic({ id: editId, ...rest });
       success("Producto actualizado");
       setOpenEdit(false);
+      void invalidateAll();
     } catch (e: any) {
       err(e?.response?.data?.detail ?? "Error actualizando producto");
     }
   }
+
 
   async function handleConfirmDelete() {
     if (!deleteId) return;

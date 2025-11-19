@@ -5,6 +5,7 @@ import type {
     ProductCreate,
     ProductUpdate,
     SaleProductsDTO,
+    TopProductQty
 } from "@/types/product";
 
 type Q = { q?: string }; 
@@ -130,11 +131,6 @@ export async function toggleProductActive(
     return data as ProductDTO;
 }
 
-export type TopProductQty = {
-    product_id: number;
-    product: string;
-    total_quantity: number;
-};
 export async function topProductsByQuantity(
     args: { date_from: string; date_to: string; limit?: number },
     opts?: Opts

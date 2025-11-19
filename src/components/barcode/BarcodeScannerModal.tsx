@@ -11,6 +11,7 @@ type Props = {
     open: boolean;
     onDetected: (code: string, format?: string) => void;
     onClose: () => void;
+    closeOnDetect?: boolean;
 };
 
 const hints = new Map();
@@ -24,7 +25,12 @@ hints.set(DecodeHintType.POSSIBLE_FORMATS, [
 ]);
 hints.set(DecodeHintType.TRY_HARDER, true);
 
-export function BarcodeScannerModal({ open, onDetected, onClose }: Props) {
+export function BarcodeScannerModal({
+    open,
+    onDetected,
+    onClose,
+    closeOnDetect = true,
+}: Props) {
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const [error, setError] = useState<string | null>(null);
 
@@ -58,22 +64,27 @@ export function BarcodeScannerModal({ open, onDetected, onClose }: Props) {
                     videoRef.current as HTMLVideoElement,
                     (result, _err, c) => {
                         if (!active) return;
-                        if (result) {
+                        if (!result) return;
+
+                        const text = result.getText();
+                        if (!text) return;
+
+                        const raw = (result as any).getBarcodeFormat?.();
+                        let formatName: string | undefined;
+
+                        if (typeof raw === "number") {
+                            formatName = (BarcodeFormat as any)[raw];
+                        } else if (typeof raw === "string") {
+                            formatName = raw;
+                        }
+
+                        onDetected(text, formatName);
+
+                        if (closeOnDetect) {
                             active = false;
-                            c.stop();
+                            c?.stop();
                             stopStream();
-
-                            const raw = (result as any).getBarcodeFormat?.();
-                            let formatName: string | undefined;
-
-                            if (typeof raw === "number") {
-                                formatName = (BarcodeFormat as any)[raw];
-                            } else if (typeof raw === "string") {
-                                formatName = raw;
-                            }
-
-                            onDetected(result.getText(), formatName);
-                            onClose(); 
+                            onClose();
                         }
                     }
                 );
@@ -90,7 +101,7 @@ export function BarcodeScannerModal({ open, onDetected, onClose }: Props) {
             }
             stopStream();
         };
-    }, [open, onDetected, onClose]);
+    }, [open, onDetected, onClose, closeOnDetect]);
 
     if (!open) return null;
 

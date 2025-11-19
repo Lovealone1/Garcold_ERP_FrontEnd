@@ -116,8 +116,7 @@ export function useVentas(initialFilters: Filters = {}, pageSize = 8) {
     return all.filter((s) => {
       if (filters.q) {
         const q = filters.q.toLowerCase().trim();
-        const target = `${s.id} ${s.customer ?? ""} ${s.bank ?? ""} ${s.status ?? ""
-          }`.toLowerCase();
+        const target = `${s.id} ${s.customer ?? ""} ${s.bank ?? ""} ${s.status ?? ""}`.toLowerCase();
 
         if (!target.includes(q)) return false;
       }
@@ -133,27 +132,23 @@ export function useVentas(initialFilters: Filters = {}, pageSize = 8) {
       if (filters.from) {
         const saleDate = new Date(s.created_at);
         const from = new Date(filters.from);
-        const tSale = saleDate.getTime();
-        const tFrom = from.getTime();
-        if (!Number.isNaN(tSale) && !Number.isNaN(tFrom) && tSale < tFrom) {
-          return false;
-        }
+        if (saleDate.getTime() < from.getTime()) return false;
       }
 
       if (filters.to) {
         const saleDate = new Date(s.created_at);
         const to = new Date(filters.to);
-        const tSale = saleDate.getTime();
-        const tTo = to.getTime();
-        if (!Number.isNaN(tSale) && !Number.isNaN(tTo) && tSale > tTo) {
-          return false;
-        }
+        if (saleDate.getTime() > to.getTime()) return false;
       }
 
       return true;
     });
   }, [all, filters]);
 
+  const totalFiltrado = useMemo(
+    () => filtered.reduce((acc, s) => acc + (s.total ?? 0), 0),
+    [filtered]
+  );
 
   const totalClient = filtered.length;
   const localTotalPages = Math.max(1, Math.ceil(totalClient / pageSize));
@@ -213,5 +208,7 @@ export function useVentas(initialFilters: Filters = {}, pageSize = 8) {
     setFilters,
     serverTotal,
     serverTotalPages: uiTotalPages,
+    filtered,
+    totalFiltrado,
   };
 }

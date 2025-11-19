@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect, useCallback, CSSProperties } from "react";
+import { useMemo, useState, useEffect, CSSProperties } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useRouter } from "next/navigation";
@@ -13,7 +13,6 @@ import FacturaPreviewModal from "@/features/factura/FacturaPreviewModal";
 import { useVentas } from "@/hooks/ventas/useVentas";
 import { useDeleteVenta } from "@/hooks/ventas/useDeleteVenta";
 import { useVentaEstados } from "@/hooks/estados/useEstados";
-
 import { getSaleById } from "@/services/sales/sale.api";
 import { listBanks } from "@/services/sales/bank.api";
 
@@ -22,7 +21,6 @@ import type { DateRange } from "react-day-picker";
 import DateRangePicker from "@/components/ui/DateRangePicker/DateRangePicker";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 
-// >>> NUEVO: hook de realtime <<<
 import { useSalesRealtime } from "@/hooks/realtime/useSalesRealtime";
 
 const FRAME_BG = "color-mix(in srgb, var(--tg-bg) 90%, #fff 3%)";
@@ -32,35 +30,35 @@ const PILL_BG = "color-mix(in srgb, var(--tg-card-bg) 60%, #000 40%)";
 const ACTION_BG = "color-mix(in srgb, var(--tg-primary) 28%, transparent)";
 const BORDER = "var(--tg-border)";
 const MUTED_BG = "color-mix(in srgb, var(--tg-muted) 28%, transparent)";
+
 const pill =
     "min-w-[90px] h-8 px-2.5 rounded-md grid place-items-center text-[13px] text-white/90 border";
+
 const actionBtn =
-    "h-8 w-8 grid place-items-center rounded-full text-[var(--tg-primary)] hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary";
+    "h-8 w-8 grid place-items-center rounded-full text-[var(--tg-primary)] hover:opacity-90 focus:outline-none";
 
 const DPR_MOBILE =
     "[&_input]:h-10 [&_input]:w-full [&_input]:rounded-l-md [&_input]:border [&_input]:border-tg " +
     "[&_input]:bg-tg-card [&_input]:px-3 [&_input]:text-[14px] [&_input]:text-tg-card " +
     "[&_button]:h-10 [&_button]:w-10 [&_button]:rounded-r-md [&_button]:p-0 " +
     "[&_button]:border [&_button]:border-l-0 [&_button]:border-tg [&_button]:bg-tg-card " +
-    "[&_button_svg]:!m-0 " +
-    "inline-flex w-full";
+    "[&_button_svg]:!m-0 inline-flex w-full";
 
 const money = new Intl.NumberFormat("es-CO", {
     style: "currency",
     currency: "COP",
     maximumFractionDigits: 0,
 });
-const clip = (s?: string | null, n = 24) =>
-    (s ?? "—").length > n ? (s as string).slice(0, n).trimEnd() + "…" : (s ?? "—");
 
-const SKELETON_COUNT = 8;
+const clip = (s?: string | null, n = 24) =>
+    (s ?? "—").length > n ? `${(s as string).slice(0, n)}…` : s ?? "—";
+
+const GRID_COLS = "30px 220px 1fr 150px 170px 170px 208px";
+const HEADER_COLS = "160px 220px 1fr 160px 170px 240px 40px";
 
 function Dot({ color }: { color: string }) {
     return <span className="inline-block h-3 w-3 rounded-full" style={{ backgroundColor: color }} />;
 }
-
-const GRID_COLS = "30px 220px 1fr 150px 170px 170px 208px";
-const HEADER_COLS = "160px 220px 1fr 160px 170px 240px 40px";
 
 function HeaderRow() {
     return (
@@ -78,6 +76,9 @@ function HeaderRow() {
     );
 }
 
+/* ===========================================================
+                     ROW DE VENTA
+=========================================================== */
 function SaleRow({
     v,
     onView,
@@ -92,8 +93,7 @@ function SaleRow({
     onDelete: (row: Sale) => void;
 }) {
     const status = (v.status || "").toLowerCase();
-
-    const isCanceled = status.includes("cancel"); // "Venta cancelada"
+    const isCanceled = status.includes("cancel");
     const isCredit = status.includes("credito") || status.includes("crédito");
     const hasBalance = (v.remaining_balance ?? 0) > 0;
 
@@ -110,16 +110,15 @@ function SaleRow({
                     </div>
 
                     <div className="flex items-center gap-2 min-w-0">
-                        <div className={`${pill} font-extrabold tracking-wide`} style={{ background: PILL_BG, borderColor: BORDER }}>
+                        <div className={`${pill} font-extrabold`} style={{ background: PILL_BG, borderColor: BORDER }}>
                             {v.id}
                         </div>
                         <div className="text-[13px] text-white/90 truncate">{clip(v.customer, 42)}</div>
                     </div>
 
                     <div
-                        className={`${pill} max-w-[260px] min-w-[200px] whitespace-nowrap overflow-hidden text-ellipsis`}
+                        className={`${pill} max-w-[260px] min-w-[200px] truncate`}
                         style={{ background: PILL_BG, borderColor: BORDER }}
-                        title={v.bank || "—"}
                     >
                         {clip(v.bank, 24)}
                     </div>
@@ -137,27 +136,18 @@ function SaleRow({
                     </div>
 
                     <div className="flex items-center justify-end gap-2">
-                        <button className={actionBtn} style={{ background: ACTION_BG }} aria-label="ver" onClick={() => onView(v)}>
+                        <button className={actionBtn} style={{ background: ACTION_BG }} onClick={() => onView(v)}>
                             <MaterialIcon name="visibility" size={18} />
                         </button>
 
-                        <button
-                            className={actionBtn}
-                            style={{ background: ACTION_BG }}
-                            aria-label="factura"
-                            onClick={() => onPreview(v.id)}
-                        >
+                        <button className={actionBtn} style={{ background: ACTION_BG }} onClick={() => onPreview(v.id)}>
                             <MaterialIcon name="download" size={18} />
                         </button>
 
                         <button
-                            className={`${actionBtn} ${canPay ? "text-[var(--tg-primary)]" : "text-tg-muted opacity-50 cursor-not-allowed"}`}
+                            className={`${actionBtn} ${canPay ? "" : "opacity-50 cursor-not-allowed text-tg-muted"}`}
                             style={{ background: canPay ? ACTION_BG : MUTED_BG }}
-                            aria-label="abonar"
-                            onClick={() => {
-                                if (!canPay) return;
-                                onPay(v);
-                            }}
+                            onClick={() => canPay && onPay(v)}
                         >
                             <MaterialIcon name="payments" size={18} />
                         </button>
@@ -165,7 +155,6 @@ function SaleRow({
                         <button
                             className="h-8 w-8 grid place-items-center rounded-full"
                             style={{ background: "#7a1010" }}
-                            aria-label="eliminar"
                             onClick={() => onDelete(v)}
                         >
                             <MaterialIcon name="delete" size={16} className="text-[#ff4d4f]" />
@@ -174,60 +163,57 @@ function SaleRow({
                 </div>
             </div>
 
-            {/* Móvil */}
+            {/* Mobile */}
             <div className="sm:hidden mx-2.5 my-3 rounded-md px-3 py-2 min-h-[84px]" style={{ background: INNER_BG }}>
                 <div className="flex items-start gap-2">
                     <Dot color={dotColor} />
 
                     <div className="min-w-0 flex-1">
                         <div className="flex items-baseline gap-2 min-w-0">
-                            <span className={`${pill} !h-6 !min-w-[64px] !text-[12px]`} style={{ background: PILL_BG, borderColor: BORDER }}>
+                            <span
+                                className={`${pill} !h-6 !min-w-[64px] !text-[12px]`}
+                                style={{ background: PILL_BG, borderColor: BORDER }}
+                            >
                                 {v.id}
                             </span>
-                            <span className="text-sm font-extrabold tracking-wide truncate">{v.customer}</span>
+                            <span className="text-sm font-extrabold truncate">{v.customer}</span>
                         </div>
 
                         <div className="mt-1 grid grid-cols-3 gap-2">
-                            <div className="rounded-md border px-2 py-1 text-center text-[12px]" style={{ background: PILL_BG, borderColor: BORDER }}>
-                                <div className="uppercase opacity-70">Método</div>
-                                <div className="font-medium whitespace-nowrap overflow-hidden text-ellipsis">{clip(v.bank, 16)}</div>
+                            <div className={`${pill} !h-auto px-2 py-1 text-center`} style={{ background: PILL_BG, borderColor: BORDER }}>
+                                <div className="uppercase opacity-70 text-[11px]">Método</div>
+                                <div className="font-medium truncate">{clip(v.bank, 16)}</div>
                             </div>
 
-                            <div className="rounded-md border px-2 py-1 text-center text-[12px]" style={{ background: PILL_BG, borderColor: BORDER }}>
-                                <div className="uppercase opacity-70">Total</div>
+                            <div className={`${pill} !h-auto px-2 py-1 text-center`} style={{ background: PILL_BG, borderColor: BORDER }}>
+                                <div className="uppercase opacity-70 text-[11px]">Total</div>
                                 <div className="font-semibold">{money.format(v.total)}</div>
                             </div>
 
-                            <div className="rounded-md border px-2 py-1 text-center text-[12px]" style={{ background: PILL_BG, borderColor: BORDER }}>
-                                <div className="uppercase opacity-70">Saldo</div>
+                            <div className={`${pill} !h-auto px-2 py-1 text-center`} style={{ background: PILL_BG, borderColor: BORDER }}>
+                                <div className="uppercase opacity-70 text-[11px]">Saldo</div>
                                 <div className="font-semibold">{money.format(v.remaining_balance)}</div>
                             </div>
                         </div>
 
                         <div className="mt-1 text-[12px] opacity-80">
-                            {format(new Date(v.created_at), "dd MMM yyyy", {
-                                locale: es,
-                            })}
+                            {format(new Date(v.created_at), "dd MMM yyyy", { locale: es })}
                         </div>
                     </div>
 
                     <div className="ml-2 flex items-center gap-2 shrink-0">
-                        <button className={actionBtn} style={{ background: ACTION_BG }} aria-label="ver" onClick={() => onView(v)}>
+                        <button className={actionBtn} style={{ background: ACTION_BG }} onClick={() => onView(v)}>
                             <MaterialIcon name="visibility" size={18} />
                         </button>
 
-                        <button className={actionBtn} style={{ background: ACTION_BG }} aria-label="factura" onClick={() => onPreview(v.id)}>
+                        <button className={actionBtn} style={{ background: ACTION_BG }} onClick={() => onPreview(v.id)}>
                             <MaterialIcon name="download" size={18} />
                         </button>
 
                         <button
-                            className={`${actionBtn} ${hasBalance && !isCanceled ? "text-[var(--tg-primary)]" : "text-tg-muted opacity-50 cursor-not-allowed"}`}
+                            className={`${actionBtn} ${hasBalance && !isCanceled ? "" : "opacity-50 cursor-not-allowed text-tg-muted"}`}
                             style={{ background: hasBalance && !isCanceled ? ACTION_BG : MUTED_BG }}
-                            aria-label="abonar"
-                            onClick={() => {
-                                if (!(hasBalance && !isCanceled)) return;
-                                onPay(v);
-                            }}
+                            onClick={() => hasBalance && !isCanceled && onPay(v)}
                         >
                             <MaterialIcon name="payments" size={18} />
                         </button>
@@ -235,7 +221,6 @@ function SaleRow({
                         <button
                             className="h-8 w-8 grid place-items-center rounded-full"
                             style={{ background: "#7a1010" }}
-                            aria-label="eliminar"
                             onClick={() => onDelete(v)}
                         >
                             <MaterialIcon name="delete" size={16} className="text-[#ff4d4f]" />
@@ -246,6 +231,10 @@ function SaleRow({
         </div>
     );
 }
+
+/* ===========================================================
+                     PÁGINA PRINCIPAL
+=========================================================== */
 
 export default function VentasPage() {
     useSalesRealtime();
@@ -267,6 +256,7 @@ export default function VentasPage() {
         hasMoreServer,
         filters,
         setFilters,
+        totalFiltrado,
     } = useVentas({}, 8);
 
     const [range, setRange] = useState<DateRange | undefined>();
@@ -278,8 +268,7 @@ export default function VentasPage() {
             try {
                 const data = await listBanks();
                 if (!alive) return;
-                const unique = Array.from(new Set((data ?? []).map((b: { name: string }) => b.name))).sort();
-                setBancos(unique);
+                setBancos([...new Set(data?.map((b: any) => b.name))].sort());
             } catch {
                 if (alive) setBancos([]);
             }
@@ -289,9 +278,9 @@ export default function VentasPage() {
         };
     }, []);
 
-    const handleSearch = (value: string) => setFilters((f) => ({ ...f, q: value }));
-    const handleEstado = (value: string) => setFilters((f) => ({ ...f, estado: value || undefined }));
-    const handleBanco = (value: string) => setFilters((f) => ({ ...f, banco: value || undefined }));
+    const handleSearch = (v: string) => setFilters((f) => ({ ...f, q: v }));
+    const handleEstado = (v: string) => setFilters((f) => ({ ...f, estado: v || undefined }));
+    const handleBanco = (v: string) => setFilters((f) => ({ ...f, banco: v || undefined }));
 
     const handleRange = (r?: DateRange) => {
         setRange(r);
@@ -299,21 +288,19 @@ export default function VentasPage() {
             setFilters((f) => ({ ...f, from: undefined, to: undefined }));
             return;
         }
-        const from = r.from ? r.from.toISOString().slice(0, 10) : undefined;
-        const to = r.to ? r.to.toISOString().slice(0, 10) : from;
+        const from = r.from?.toISOString().slice(0, 10);
+        const to = r.to?.toISOString().slice(0, 10) ?? from;
         setFilters((f) => ({ ...f, from, to }));
     };
 
-    const handleClearFilters = () => {
+    const clearFilters = () => {
         setRange(undefined);
         setFilters({});
     };
 
     const handlePageChange = async (target: number) => {
         if (target <= 0 || target > totalPages || target === page) return;
-        if (target > page && hasMoreServer) {
-            await loadMore();
-        }
+        if (target > page && hasMoreServer) await loadMore();
         setPage(target);
     };
 
@@ -354,27 +341,43 @@ export default function VentasPage() {
 
     return (
         <div className="app-shell__frame overflow-hidden" style={frameVars}>
-            {/* Toolbar DESKTOP */}
+            {/* DESKTOP TOOLBAR */}
             <div className="hidden sm:flex mb-3 items-center justify-between gap-3">
-                <label className="relative flex h-10 w-full max-w-[440px]">
-                    <span className="absolute inset-y-0 left-3 flex items-center text-tg-muted pointer-events-none">
-                        <MaterialIcon name="search" size={18} />
-                    </span>
-                    <input
-                        type="search"
-                        placeholder="Buscar venta por cliente, método o #..."
-                        className="h-10 w-full rounded-md border border-tg bg-tg-card text-tg-card pl-9 pr-3 focus:outline-none"
-                        value={filters.q ?? ""}
-                        onChange={(e) => handleSearch(e.target.value)}
-                    />
-                </label>
+                <div className="flex items-center gap-3 w-full max-w-[440px]">
+                    <label className="relative flex h-10 w-full">
+                        <span className="absolute inset-y-0 left-3 flex items-center text-tg-muted pointer-events-none">
+                            <MaterialIcon name="search" size={18} />
+                        </span>
+                        <input
+                            type="search"
+                            placeholder="Buscar venta por cliente, método o #..."
+                            className="h-10 w-full rounded-md border border-tg bg-tg-card text-tg-card pl-9 pr-3 focus:outline-none"
+                            value={filters.q ?? ""}
+                            onChange={(e) => handleSearch(e.target.value)}
+                        />
+                    </label>
+
+                    {/* TOTAL VENTAS – DESKTOP */}
+                    {loading ? (
+                        <span className="h-7 w-44 rounded-full border border-tg bg-black/10 animate-pulse" />
+                    ) : (
+                        <span
+                            className="inline-flex items-center h-8 px-3 rounded-full border border-tg bg-[color-mix(in_srgb,var(--panel-bg)_92%,transparent)] text-[13px] w-full justify-between"
+                            title="Total ventas filtradas"
+                        >
+                            <span className="opacity-70 whitespace-nowrap">Total ventas</span>
+                            <span className="font-semibold text-tg whitespace-nowrap">
+                                {money.format(totalFiltrado)}
+                            </span>
+                        </span>
+                    )}
+                </div>
 
                 <div className="flex items-center gap-2">
                     <select
                         value={filters.estado ?? ""}
                         onChange={(e) => handleEstado(e.target.value)}
-                        className="h-10 min-w-[160px] rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0"
-                        aria-label="Filtro por estado"
+                        className="h-10 min-w-[160px] rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted focus:outline-none"
                     >
                         <option value="">Estado</option>
                         {estadoOptions.map((nombre) => (
@@ -387,8 +390,7 @@ export default function VentasPage() {
                     <select
                         value={filters.banco ?? ""}
                         onChange={(e) => handleBanco(e.target.value)}
-                        className="h-10 min-w-[180px] rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0"
-                        aria-label="Filtro por banco"
+                        className="h-10 min-w-[180px] rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted focus:outline-none"
                     >
                         <option value="">{filters.banco ? "Banco" : "Método pago"}</option>
                         {bancos.map((nombre) => (
@@ -401,8 +403,7 @@ export default function VentasPage() {
                     <DateRangePicker value={range} onChange={handleRange} />
 
                     <button
-                        type="button"
-                        onClick={handleClearFilters}
+                        onClick={clearFilters}
                         className="h-10 rounded-md px-3 text-sm border border-tg bg-[var(--panel-bg)]"
                     >
                         Limpiar filtros
@@ -411,10 +412,7 @@ export default function VentasPage() {
                     <button
                         onClick={() => router.push("/comercial/ventas/crear")}
                         className="h-10 rounded-md px-4 text-sm font-extrabold shadow-sm inline-flex items-center gap-2"
-                        style={{
-                            background: "var(--tg-primary)",
-                            color: "#fff",
-                        }}
+                        style={{ background: "var(--tg-primary)", color: "#fff" }}
                     >
                         <MaterialIcon name="add_circle" size={18} />
                         Nueva venta
@@ -422,7 +420,7 @@ export default function VentasPage() {
                 </div>
             </div>
 
-            {/* Toolbar MÓVIL */}
+            {/* MOBILE TOOLBAR */}
             <div className="sm:hidden mb-3 space-y-2">
                 {/* Search */}
                 <label className="relative flex h-10 w-full">
@@ -441,7 +439,13 @@ export default function VentasPage() {
                     />
                 </label>
 
-                {/* Estado / Banco */}
+                {/* TOTAL MOBILE */}
+                <span className="inline-flex items-center h-8 px-3 rounded-full border border-tg bg-[color-mix(in_srgb,var(--panel-bg)_92%,transparent)] text-[13px] w-full justify-between">
+                    <span className="opacity-70">Total ventas</span>
+                    <span className="font-semibold text-tg">{money.format(totalFiltrado)}</span>
+                </span>
+
+                {/* Estado + Banco */}
                 <div className="grid grid-cols-2 gap-2">
                     <select
                         value={filters.estado ?? ""}
@@ -449,7 +453,7 @@ export default function VentasPage() {
                             handleEstado(e.target.value);
                             setPage(1);
                         }}
-                        className="h-10 w-full rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0"
+                        className="h-10 w-full rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted focus:outline-none"
                     >
                         <option value="">Estado</option>
                         {estadoOptions.map((nombre) => (
@@ -465,7 +469,7 @@ export default function VentasPage() {
                             handleBanco(e.target.value);
                             setPage(1);
                         }}
-                        className="h-10 w-full rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0"
+                        className="h-10 w-full rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted focus:outline-none"
                     >
                         <option value="">{filters.banco ? "Banco" : "Método pago"}</option>
                         {bancos.map((nombre) => (
@@ -476,7 +480,7 @@ export default function VentasPage() {
                     </select>
                 </div>
 
-                {/* Rango fechas + limpiar */}
+                {/* Fecha + Limpiar */}
                 <div className="grid grid-cols-[1fr_auto] gap-2">
                     <DateRangePicker
                         className={DPR_MOBILE}
@@ -486,10 +490,10 @@ export default function VentasPage() {
                             setPage(1);
                         }}
                     />
+
                     <button
-                        type="button"
                         onClick={() => {
-                            handleClearFilters();
+                            clearFilters();
                             setPage(1);
                         }}
                         className="h-10 rounded-md px-4 text-[14px] font-semibold border border-tg bg-[var(--panel-bg)]"
@@ -498,7 +502,6 @@ export default function VentasPage() {
                     </button>
                 </div>
 
-                {/* Nueva venta */}
                 <button
                     onClick={() => router.push("/comercial/ventas/crear")}
                     className="h-10 w-full rounded-md px-4 text-sm font-extrabold shadow-sm inline-flex items-center justify-center gap-2"
@@ -509,6 +512,7 @@ export default function VentasPage() {
                 </button>
             </div>
 
+            {/* LISTA */}
             <div className="rounded-xl border flex-1 min-h-0 flex flex-col overflow-hidden mb-1" style={{ background: FRAME_BG, borderColor: BORDER }}>
                 <div className="px-3 pt-3">
                     <HeaderRow />
@@ -516,7 +520,7 @@ export default function VentasPage() {
 
                 <div className="flex-1 min-h-0 overflow-auto px-3 pb-1 space-y-4 sm:space-y-3.5">
                     {loading ? (
-                        Array.from({ length: SKELETON_COUNT }).map((_, i) => (
+                        Array.from({ length: 8 }).map((_, i) => (
                             <div key={`sk-${i}`} className="h-[60px] rounded-xl border bg-black/10 animate-pulse" />
                         ))
                     ) : items.length === 0 ? (
@@ -547,13 +551,14 @@ export default function VentasPage() {
                     )}
                 </div>
 
+                {/* PAGINACIÓN */}
                 <div className="shrink-0 px-3 pt-1 pb-2 flex flex-wrap gap-3 items-center justify-between">
                     <div className="flex items-center gap-2">
                         <span className="text-sm">Líneas por página</span>
                         <select
                             value={pageSize}
                             disabled
-                            className="h-9 rounded-md border border-tg bg-[var(--panel-bg)] px-2 text-sm text-tg-muted focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0"
+                            className="h-9 rounded-md border border-tg bg-[var(--panel-bg)] px-2 text-sm text-tg-muted focus:outline-none"
                         >
                             <option value={pageSize}>{pageSize}</option>
                         </select>
@@ -567,6 +572,7 @@ export default function VentasPage() {
                         >
                             <MaterialIcon name="first_page" size={16} />
                         </button>
+
                         <button
                             disabled={page <= 1}
                             onClick={() => handlePageChange(page - 1)}
@@ -581,11 +587,10 @@ export default function VentasPage() {
                                 <button
                                     key={p}
                                     onClick={() => handlePageChange(p)}
-                                    className={`h-9 min-w-9 px-3 rounded border ${active
-                                            ? "bg-tg-primary text-white border-transparent"
-                                            : "bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] text-white/90 border-white/10"
-                                        } font-semibold`}
-                                    aria-current={active ? "page" : undefined}
+                                    className={`h-9 min-w-9 px-3 rounded border font-semibold ${active
+                                        ? "bg-tg-primary text-white border-transparent"
+                                        : "bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] text-white/90 border-white/10"
+                                        }`}
                                 >
                                     {p}
                                 </button>
@@ -599,6 +604,7 @@ export default function VentasPage() {
                         >
                             <MaterialIcon name="chevron_right" size={16} />
                         </button>
+
                         <button
                             disabled={page >= totalPages}
                             onClick={() => handlePageChange(totalPages)}
@@ -614,7 +620,7 @@ export default function VentasPage() {
                 </div>
             </div>
 
-            {/* Modales */}
+            {/* MODALS */}
             {openView && <VentaView open={openView} onClose={() => setOpenView(false)} venta={ventaSel} />}
 
             {openPay && (
@@ -622,14 +628,16 @@ export default function VentasPage() {
                     open={openPay}
                     onClose={() => setOpenPay(false)}
                     venta={ventaPay}
-                    onPaid={async () => {
-                        if (ventaPay?.id) await handlePaid(ventaPay.id);
-                    }}
+                    onPaid={async () => ventaPay?.id && (await handlePaid(ventaPay.id))}
                 />
             )}
 
             {openPreview && (
-                <FacturaPreviewModal open={openPreview} onClose={() => setOpenPreview(false)} ventaId={previewVentaId} />
+                <FacturaPreviewModal
+                    open={openPreview}
+                    onClose={() => setOpenPreview(false)}
+                    ventaId={previewVentaId}
+                />
             )}
 
             {openDelete && (
@@ -637,9 +645,6 @@ export default function VentasPage() {
                     role="dialog"
                     aria-modal="true"
                     className="fixed inset-0 z-50 grid place-items-center bg-black/50"
-                    onKeyDown={(e) => {
-                        if (e.key === "Escape") setOpenDelete(false);
-                    }}
                     onClick={(e) => {
                         if (e.target === e.currentTarget && !deleting) setOpenDelete(false);
                     }}
@@ -649,13 +654,20 @@ export default function VentasPage() {
                             <MaterialIcon name="warning" size={18} />
                             <h3 className="text-base font-semibold">Confirmar eliminación</h3>
                         </div>
+
                         <div className="px-4 py-4 text-sm">
                             ¿Seguro que deseas eliminar la venta #{ventaDel?.id}? Esta acción no se puede deshacer.
                         </div>
+
                         <div className="px-4 py-3 border-t flex justify-end gap-2" style={{ borderColor: BORDER }}>
-                            <button onClick={() => setOpenDelete(false)} className="h-9 rounded-md px-3 text-sm hover:bg-black/10" disabled={deleting}>
+                            <button
+                                onClick={() => setOpenDelete(false)}
+                                className="h-9 rounded-md px-3 text-sm hover:bg-black/10"
+                                disabled={deleting}
+                            >
                                 Cancelar
                             </button>
+
                             <button
                                 onClick={async () => {
                                     if (!ventaDel) return;

@@ -4,8 +4,10 @@ import type {
     ProductPageDTO,
     ProductCreate,
     ProductUpdate,
-    SaleProductsDTO,
+    SaleProductsDTO
 } from "@/types/product";
+
+import { TopProductQty } from "@/types/product";
 
 type Q = { q?: string }; 
 type Opts = { nocacheToken?: number; signal?: AbortSignal };
@@ -130,11 +132,6 @@ export async function toggleProductActive(
     return data as ProductDTO;
 }
 
-export type TopProductQty = {
-    product_id: number;
-    product: string;
-    total_quantity: number;
-};
 export async function topProductsByQuantity(
     args: { date_from: string; date_to: string; limit?: number },
     opts?: Opts

@@ -253,6 +253,7 @@ export default function ProductoForm(props: Props) {
   const doSubmit = async (e?: FormEvent) => {
     e?.preventDefault();
     setSubmitted(true);
+
     if (primaryDisabled) return;
 
     if (isAgregate && onConfirm) {
@@ -261,6 +262,7 @@ export default function ProductoForm(props: Props) {
           ? Number(form.sale_price || 0)
           : Number(form.purchase_price || 0);
       onConfirm({ precio_unitario: precio, cantidad: qty });
+      return;
     }
 
     if (onSubmit) {
@@ -284,7 +286,7 @@ export default function ProductoForm(props: Props) {
       <Box component="form" onSubmit={doSubmit}>
         <Stack gap={2.5}>
           <Grid container spacing={2}>
-            {/* Fila: referencia + descripción + barcode */}
+            {/* referencia + descripción + barcode */}
             <Grid size={{ xs: 12, sm: 3 }}>
               <Field
                 label="Referencia"
@@ -359,7 +361,7 @@ export default function ProductoForm(props: Props) {
               </Field>
             </Grid>
 
-            {/* Resto del formulario tal como lo tenías */}
+            {/* resto del formulario */}
             {isAgregate ? (
               <>
                 <Grid size={{ xs: 12, sm: 6 }}>
@@ -527,7 +529,7 @@ export default function ProductoForm(props: Props) {
         </Stack>
       </Box>
 
-      {/* Scanner modal */}
+      {/* Scanner modal (para productos se cierra al detectar) */}
       <BarcodeScannerModal
         open={scannerOpen}
         onDetected={handleScanDetected}

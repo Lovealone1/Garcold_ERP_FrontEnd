@@ -1,68 +1,97 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import type { ProductDTO } from "@/types/product";
 import { getProductByBarcode } from "@/services/sales/product.api";
+import type { ProductDTO } from "@/types/product";
 
 type State = {
+    product: ProductDTO | null;
     loading: boolean;
     error: string | null;
-    product: ProductDTO | null;
 };
 
 export function useProductByBarcode() {
     const [state, setState] = useState<State>({
+        product: null,
         loading: false,
         error: null,
-        product: null,
     });
+
+    const cacheRef = useRef<Map<string, ProductDTO | null>>(
+        new Map()
+    );
 
     const abortRef = useRef<AbortController | null>(null);
 
-    const lookup = useCallback(async (barcode: string) => {
-        if (!barcode) return null;
+    const lookup = useCallback(async (rawBarcode: string) => {
+        const barcode = rawBarcode.trim();
+        if (!barcode) {
+            setState((prev) => ({ ...prev, product: null, error: null }));
+            return null;
+        }
+
+        if (cacheRef.current.has(barcode)) {
+            const cached = cacheRef.current.get(barcode) ?? null;
+            setState((prev) => ({
+                ...prev,
+                product: cached,
+                loading: false,
+                error: null,
+            }));
+            return cached;
+        }
 
         if (abortRef.current) {
             abortRef.current.abort();
         }
-        const controller = new AbortController();
-        abortRef.current = controller;
+        const ac = new AbortController();
+        abortRef.current = ac;
 
-        setState((s) => ({ ...s, loading: true, error: null }));
+        setState((prev) => ({
+            ...prev,
+            loading: true,
+            error: null,
+        }));
 
         try {
             const product = await getProductByBarcode(barcode, {
-                signal: controller.signal,
-                nocacheToken: Date.now(), 
+                signal: ac.signal,
             });
 
-            setState({
+            cacheRef.current.set(barcode, product ?? null);
+
+            setState((prev) => ({
+                ...prev,
+                product: product ?? null,
                 loading: false,
                 error: null,
-                product, 
-            });
+            }));
 
-            return product;
+            return product ?? null;
         } catch (err: any) {
-            if (err.name === "CanceledError" || err.name === "AbortError") {
+            if (ac.signal.aborted) {
                 return null;
             }
 
-            setState({
+            setState((prev) => ({
+                ...prev,
                 loading: false,
-                error: "Error al buscar producto por código de barras",
-                product: null,
-            });
+                error:
+                    err?.message ??
+                    "No fue posible consultar el producto por código de barras",
+            }));
             throw err;
         }
     }, []);
 
     const reset = useCallback(() => {
-        setState({ loading: false, error: null, product: null });
+        setState({ product: null, loading: false, error: null });
     }, []);
 
     return {
-        ...state,
+        product: state.product,
+        loading: state.loading,
+        error: state.error,
         lookup, 
         reset,
     };

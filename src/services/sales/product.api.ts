@@ -4,9 +4,10 @@ import type {
     ProductPageDTO,
     ProductCreate,
     ProductUpdate,
-    SaleProductsDTO,
-    TopProductQty
+    SaleProductsDTO
 } from "@/types/product";
+
+import { TopProductQty } from "@/types/product";
 
 type Q = { q?: string }; 
 type Opts = { nocacheToken?: number; signal?: AbortSignal };

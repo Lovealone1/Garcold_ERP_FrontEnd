@@ -1,5 +1,11 @@
 import { PageDTO } from "./page";
 
+export type TopProductQty = {
+    product_id: number;
+    product: string;
+    total_quantity: number;
+};
+
 export interface ProductDTO {
   id: number;
   reference: string;

@@ -1,4 +1,3 @@
-// useCreatePurchase.ts
 "use client";
 
 import { useCallback, useState } from "react";
@@ -32,7 +31,6 @@ export function useCreatePurchase(opts: Options = {}) {
         setPurchase(p);
         success("Compra creada correctamente");
 
-        // MISMO patrón que ventas:
         qc.invalidateQueries({
           queryKey: ["purchases"],
           refetchType: "all",
@@ -51,6 +49,16 @@ export function useCreatePurchase(opts: Options = {}) {
         qc.invalidateQueries({
           queryKey: ["transactions"],
           refetchType: "active"
+        });
+
+        qc.invalidateQueries({
+          queryKey: ["products"],
+          refetchType: "active",
+        });
+
+        qc.invalidateQueries({
+          queryKey: ["all-products"],
+          refetchType: "active",
         });
 
         opts.onSuccess?.(p);

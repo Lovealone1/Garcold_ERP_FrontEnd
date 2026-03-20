@@ -391,11 +391,12 @@ export default function TransactionsPage() {
                         />
                     </label>
                     <button
-                        onClick={() => setOpenCreate(true)}
-                        className="h-9 px-3 rounded-md text-sm font-bold bg-tg-primary text-white flex items-center gap-1"
+                        onClick={clearFilters}
+                        className="h-9 px-3 rounded-md border border-tg bg-[var(--panel-bg)] text-sm flex items-center gap-1"
+                        title="Limpiar filtros"
                     >
-                        <MaterialIcon name="add_circle" size={16} />
-                        Nueva
+                        <MaterialIcon name="filter_alt_off" size={16} />
+                        <span className="hidden sm:inline">Limpiar</span>
                     </button>
                 </div>
 
@@ -422,6 +423,8 @@ export default function TransactionsPage() {
 
                     <DateRangePicker
                         className={datePickerSxMobile}
+
+
                         value={range}
                         onChange={(r) => { setRange(r); setPage(1); setFilters((f: any) => ({ ...f, dateRange: r })); }}
                     />
@@ -436,10 +439,11 @@ export default function TransactionsPage() {
                     </button>
                 )}
                 <button
-                    onClick={clearFilters}
-                    className="w-full h-9 rounded-md border border-tg bg-[var(--panel-bg)] text-sm"
+                    onClick={() => setOpenCreate(true)}
+                    className="w-full h-9 mt-1 rounded-md text-sm font-bold bg-tg-primary text-white flex items-center justify-center gap-1"
                 >
-                    Limpiar filtros
+                    <MaterialIcon name="add_circle" size={16} />
+                    Nueva transacción
                 </button>
             </div>
 

@@ -313,9 +313,9 @@ export default function TransactionsPage() {
                     <input
                         type="search"
                         placeholder="Buscar por banco, tipo o descripción…"
-                        className="h-10 w-full rounded-md border border-tg bg-tg-card text-tg-card pl-9 pr-3 focus:outline-none"
+                        className="h-10 w-full rounded-md border border-tg bg-tg-card pl-9 pr-3 focus:outline-none"
                         value={filters.q ?? ""}
-                        onChange={(e) => { setFilters((f) => ({ ...f, q: e.target.value })); setPage(1); }}
+                        onChange={(e) => { setFilters((f: any) => ({ ...f, q: e.target.value })); setPage(1); }}
                     />
                 </label>
 
@@ -330,12 +330,12 @@ export default function TransactionsPage() {
                     )}
                     <select
                         value={filters.bank ?? ""}
-                        onChange={(e) => { setFilters((f) => ({ ...f, bank: e.target.value })); setPage(1); }}
+                        onChange={(e) => { setFilters((f: any) => ({ ...f, bank: e.target.value })); setPage(1); }}
                         className={`h-10 min-w-[180px] rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted ${selectNoGlow}`}
                         style={selectNoGlowStyle}
                     >
                         <option value="">Banco</option>
-                        {bancos.map((b, i) => (
+                        {bancos.map((b: any, i: number) => (
                             <option key={`${b}-${i}`} value={b}>
                                 {b || "Sin nombre"}
                             </option>
@@ -344,17 +344,17 @@ export default function TransactionsPage() {
 
                     <select
                         value={filters.type ?? ""}
-                        onChange={(e) => { setFilters((f) => ({ ...f, type: e.target.value })); setPage(1); }}
+                        onChange={(e) => { setFilters((f: any) => ({ ...f, type: e.target.value })); setPage(1); }}
                         className={`h-10 min-w-[160px] rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted ${selectNoGlow}`}
                         style={selectNoGlowStyle}
                     >
                         <option value="">Tipo</option>
-                        {tipos.map((t) => (<option key={t} value={t}>{t}</option>))}
+                        {tipos.map((t: any) => (<option key={t} value={t}>{t}</option>))}
                     </select>
 
                     <select
                         value={filters.origin ?? "all"}
-                        onChange={(e) => { setFilters((f) => ({ ...f, origin: e.target.value as "all" | "auto" | "manual" })); setPage(1); }}
+                        onChange={(e) => { setFilters((f: any) => ({ ...f, origin: e.target.value as "all" | "auto" | "manual" })); setPage(1); }}
                         className={`h-10 min-w-[140px] rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted ${selectNoGlow}`}
                         style={selectNoGlowStyle}
                     >
@@ -395,9 +395,9 @@ export default function TransactionsPage() {
                         <input
                             type="search"
                             placeholder="Buscar…"
-                            className="h-9 w-full rounded-md border border-tg bg-tg-card text-tg-card pl-8 pr-2 text-[14px] focus:outline-none"
+                            className="h-9 w-full rounded-md border border-tg bg-tg-card pl-8 pr-2 text-[14px] focus:outline-none"
                             value={filters.q ?? ""}
-                            onChange={(e) => { setFilters(f => ({ ...f, q: e.target.value })); setPage(1); }}
+                            onChange={(e) => { setFilters((f: any) => ({ ...f, q: e.target.value })); setPage(1); }}
                         />
                     </label>
                     <button
@@ -412,22 +412,22 @@ export default function TransactionsPage() {
                 <div className="flex w-full gap-2">
                     <select
                         value={filters.bank ?? ""}
-                        onChange={(e) => { setFilters(f => ({ ...f, bank: e.target.value })); setPage(1); }}
+                        onChange={(e) => { setFilters((f: any) => ({ ...f, bank: e.target.value })); setPage(1); }}
                         className={`flex-1 h-9 rounded-md border border-tg bg-tg-card px-2 text-[13px] ${selectNoGlow}`}
                         style={selectNoGlowStyle}
                     >
                         <option value="">Banco</option>
-                        {options.banks.map(b => <option key={b} value={b}>{b}</option>)}
+                        {options.banks.map((b: any) => <option key={b} value={b}>{b}</option>)}
                     </select>
 
                     <select
                         value={filters.type ?? ""}
-                        onChange={(e) => { setFilters(f => ({ ...f, type: e.target.value })); setPage(1); }}
+                        onChange={(e) => { setFilters((f: any) => ({ ...f, type: e.target.value })); setPage(1); }}
                         className={`flex-1 h-9 rounded-md border border-tg bg-tg-card px-2 text-[13px] ${selectNoGlow}`}
                         style={selectNoGlowStyle}
                     >
                         <option value="">Tipo</option>
-                        {options.types.map(t => <option key={t} value={t}>{t}</option>)}
+                        {options.types.map((t: any) => <option key={t} value={t}>{t}</option>)}
                     </select>
 
                     <DateRangePicker

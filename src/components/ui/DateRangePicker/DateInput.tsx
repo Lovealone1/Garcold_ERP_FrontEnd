@@ -72,7 +72,7 @@ export default function DateInput({
 
     return (
         <div className={`relative ${className ?? ""}`}>
-            <div className="h-10 w-full rounded-md border border-tg bg-tg-card pl-3 pr-1 flex items-center focus-within:ring-2 focus-within:ring-[var(--tg-primary)]">
+            <div className="h-full min-h-10 w-full rounded-md border border-tg bg-tg-card pl-3 pr-1 flex items-center focus-within:ring-2 focus-within:ring-[var(--tg-primary)]">
                 <input
                     type="text"
                     value={text}
@@ -84,7 +84,7 @@ export default function DateInput({
                     }}
                     placeholder={placeholder}
                     disabled={disabled}
-                    className="flex-1 bg-transparent text-sm text-tg-card outline-none placeholder-[var(--tg-placeholder)]"
+                    className="flex-1 bg-transparent text-sm text-tg-card outline-none placeholder-[var(--tg-placeholder)] min-w-0"
                     aria-label="Fecha"
                 />
 
@@ -106,7 +106,7 @@ export default function DateInput({
                 <div
                     id={id}
                     role="dialog"
-                    className="absolute left-0 top-[44px] z-50 w-[330px] max-w-[90vw] rounded-xl border border-tg bg-[var(--panel-bg)] p-3 shadow-xl"
+                    className="absolute right-0 top-full mt-1 z-50 w-[330px] max-w-[90vw] rounded-xl border border-tg bg-[var(--panel-bg)] p-3 shadow-xl"
                     onMouseDown={(e) => e.preventDefault()}
                 >
                     <DayPicker

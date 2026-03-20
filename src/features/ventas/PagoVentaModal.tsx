@@ -20,6 +20,7 @@ import { getSaleById } from "@/services/sales/sale.api";
 import type { Bank } from "@/types/bank";
 import type { Sale } from "@/types/sale";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
+import DateInput from "@/components/ui/DateRangePicker/DateInput";
 
 const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 
@@ -102,13 +103,13 @@ export default function PagoVentaModal({ open, onClose, venta, onPaid }: Props) 
             onClose={onClose}
             fullWidth
             maxWidth="md"
-            slotProps={{ paper: { sx: { borderRadius: 2, border: "1px solid var(--panel-border)", bgcolor: "var(--tg-card-bg)", color: "var(--tg-card-fg)" } } }}
+            slotProps={{ paper: { sx: { borderRadius: 2, border: "1px solid var(--panel-border)", bgcolor: "var(--tg-card-bg)", color: "var(--tg-card-fg)", overflow: "visible" } } }}
         >
             <DialogTitle sx={{ fontWeight: 600, pb: 1.5 }}>
                 {ventaInfo ? `Pagos de la venta #${ventaInfo.id}` : "Pagos"}
             </DialogTitle>
 
-            <DialogContent dividers sx={{ borderColor: "var(--panel-border)" }}>
+            <DialogContent sx={{ borderColor: "var(--panel-border)", overflow: "visible" }}>
                 {ventaInfo && (
                     <div className="mb-4 rounded-lg border border-tg p-3">
                         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -157,12 +158,11 @@ export default function PagoVentaModal({ open, onClose, venta, onPaid }: Props) 
                                 />
                             </Grid>
                             <Grid size={{ xs: 12, md: 3 }}>
-                                <input
-                                    type="datetime-local"
-                                    className="h-11 w-full rounded-md border border-tg bg-tg-card px-3 text-sm focus:outline-none"
-                                    style={{ colorScheme: "var(--tg-color-scheme, dark)" }}
-                                    value={fecha}
-                                    onChange={(e) => setFecha(e.target.value)}
+                                <DateInput
+                                    className="h-11 w-full"
+                                    placeholder="dd/mm/aaaa"
+                                    value={fecha || undefined}
+                                    onChange={(v) => setFecha(v ?? "")}
                                 />
                             </Grid>
                             <Grid size={{ xs: 12, md: 2 }}>

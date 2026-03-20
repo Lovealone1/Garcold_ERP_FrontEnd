@@ -62,4 +62,5 @@ export interface SalePaymentCreate {
   sale_id: number;
   bank_id: number;
   amount: number;
+  created_at?: string;
 }

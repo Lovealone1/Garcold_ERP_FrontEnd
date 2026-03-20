@@ -5,9 +5,10 @@ import { useQuery, useInfiniteQuery, useQueryClient, type InfiniteData } from "@
 import type { TransactionView, TransactionPageDTO } from "@/types/transaction";
 import { listTransactions } from "@/services/sales/transaction.api";
 import { useRtVersion } from "@/lib/realtime/rtVersion";
+import { DateRange } from "react-day-picker";
 
 export type OriginFilter = "all" | "auto" | "manual";
-export interface TransactionFilters { q?: string; bank?: string; type?: string; origin?: OriginFilter; }
+export interface TransactionFilters { q?: string; bank?: string; type?: string; origin?: OriginFilter; dateRange?: DateRange; }
 type Page = TransactionPageDTO;
 
 // IMPORTANTE: filtros FUERA de la key y del fetch
@@ -19,7 +20,7 @@ export function useTransactions(initialPage = 1, pageSize = 8) {
     const qc = useQueryClient();
     const rtVersion = useRtVersion();
     const [page, setPage] = useState(initialPage);
-    const [filters, setFilters] = useState<TransactionFilters>({ q: "", bank: "", type: "", origin: "all" });
+    const [filters, setFilters] = useState<TransactionFilters>({ q: "", bank: "", type: "", origin: "all", dateRange: undefined });
 
     const fkey = useMemo(() => fetchKey(pageSize, rtVersion), [pageSize, rtVersion]);
 
@@ -103,6 +104,8 @@ export function useTransactions(initialPage = 1, pageSize = 8) {
     const bankNorm = (filters.bank ?? "").trim();
     const typeNorm = (filters.type ?? "").trim();
     const originF = (filters.origin ?? "all") as OriginFilter;
+    const fromTime = filters.dateRange?.from?.getTime();
+    const toTime = filters.dateRange?.to?.getTime();
 
     const filtered = useMemo(
         () => all.filter((r) => {
@@ -117,9 +120,15 @@ export function useTransactions(initialPage = 1, pageSize = 8) {
             const byType = !typeNorm || r.type_str === typeNorm;
             const byOrigin = originF === "all" || (originF === "auto" ? r.is_auto : !r.is_auto);
 
-            return byQ && byBank && byType && byOrigin;
+            let byDate = true;
+            if (fromTime && toTime) {
+                const d = new Date(r.created_at).getTime();
+                byDate = d >= fromTime && d <= toTime;
+            }
+
+            return byQ && byBank && byType && byOrigin && byDate;
         }),
-        [all, qNorm, bankNorm, typeNorm, originF]
+        [all, qNorm, bankNorm, typeNorm, originF, fromTime, toTime]
     );
 
     // Paginación SIEMPRE desde los datos filtrados (cliente)
@@ -175,5 +184,6 @@ export function useTransactions(initialPage = 1, pageSize = 8) {
         options,
         serverTotal,                // opcional
         serverTotalPages,           // opcional
+        allFiltered: filtered,
     };
 }

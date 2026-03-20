@@ -14,6 +14,8 @@ import CropFreeIcon from "@mui/icons-material/CropFree";
 
 import ProductoAgregate from "@/features/productos/ProductoForm";
 import DateInput from "@/components/ui/DateRangePicker/DateInput";
+import UnsavedChangesModal from "@/components/ui/modals/UnsavedChangesModal";
+import { useWarnIfUnsavedChanges } from "@/hooks/ui/useWarnIfUnsavedChanges";
 
 import { useProductosAll } from "@/hooks/productos/useProductosAll";
 import {
@@ -145,13 +147,17 @@ export default function CompraCrearPage() {
         [items, startIndex, endIndex],
     );
 
-    const hasDirty =
-        items.length > 0 ||
-        Boolean(proveedorSel) ||
-        Boolean(bancoSel) ||
-        Boolean(estadoSel) ||
-        queryProd.trim().length > 0 ||
-        Boolean(purchaseAt);
+    const hasDirty = useMemo(() => {
+        return items.length > 0 || proveedorSel !== null;
+    }, [items.length, proveedorSel]);
+
+    const [unsavedModalOpen, setUnsavedModalOpen] = useState(false);
+    const [confirmExitCb, setConfirmExitCb] = useState<(() => void) | null>(null);
+
+    useWarnIfUnsavedChanges(hasDirty, (proceed) => {
+        setConfirmExitCb(() => proceed);
+        setUnsavedModalOpen(true);
+    });
 
     const textFieldSx = {
         mt: 0.5,
@@ -1067,6 +1073,15 @@ export default function CompraCrearPage() {
                     onConfirm={onConfirmProducto}
                 />
             )}
+
+            <UnsavedChangesModal
+                open={unsavedModalOpen}
+                onClose={() => { setUnsavedModalOpen(false); setConfirmExitCb(null); }}
+                onConfirm={() => {
+                    setUnsavedModalOpen(false);
+                    if (confirmExitCb) confirmExitCb();
+                }}
+            />
 
             {/* Modal escáner, mismo comportamiento que ventas: no se cierra solo */}
             <BarcodeScannerModal

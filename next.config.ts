@@ -4,9 +4,6 @@ const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/+$/, "");
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  eslint: {
-    ignoreDuringBuilds: true, // desactiva ESLint en el build de Vercel
-  },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "**.up.railway.app" },

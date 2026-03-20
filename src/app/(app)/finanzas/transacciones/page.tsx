@@ -15,6 +15,7 @@ import NewTransactionModal from "@/features/transacciones/NuevaTransaccionModal"
 import DateRangePicker from "@/components/ui/DateRangePicker/DateRangePicker";
 import type { TransactionCreate, TransactionView } from "@/types/transaction";
 import useTransactionsRealtime from "@/hooks/realtime/useTransactionsRealtime";
+import ExtractoBancarioModal from "@/features/transacciones/ExtractoBancarioModal";
 
 const FRAME_BG = "color-mix(in srgb, var(--tg-bg) 90%, #fff 3%)";
 const OUTER_BG = "color-mix(in srgb, var(--tg-bg) 55%, #000 45%)";
@@ -215,7 +216,8 @@ export default function TransactionsPage() {
         items, page, setPage, loading, refresh,
         total_pages, page_size, total, filters, setFilters, options,
         loadMore, hasMoreServer, isFetchingMore,
-    } = useTransactions(1, 8);
+        allFiltered,
+    } = useTransactions(1, 8) as any;
 
     const { remove, loading: deleting } = useDeleteTransaction();
     const { create, loading: creating } = useCreateTransaction();
@@ -227,18 +229,20 @@ export default function TransactionsPage() {
 
     const [openCreate, setOpenCreate] = useState(false);
     const [range, setRange] = useState<DateRange | undefined>(undefined);
+    const [extractOpen, setExtractOpen] = useState(false);
+
+    const checkExtract = useMemo(() => {
+        if (!filters.bank) return { ingresos: 0, retiros: 0, saldo: 0 };
+        let i = 0, r = 0;
+        for (const t of allFiltered || []) {
+            const typ = (t.type_str || "").toLowerCase();
+            if (typ.includes("ingreso") || typ.includes("pago venta")) i += t.amount;
+            else if (typ.includes("retiro") || typ.includes("pago compra")) r += t.amount;
+        }
+        return { ingresos: i, retiros: r, saldo: i - r };
+    }, [allFiltered, filters.bank]);
 
     const frameVars: CSSProperties = { ["--content-x" as any]: "8px" };
-
-    const filteredByRange = useMemo(() => {
-        if (!range?.from || !range?.to) return items;
-        const from = new Date(range.from.getFullYear(), range.from.getMonth(), range.from.getDate(), 0, 0, 0, 0).getTime();
-        const to = new Date(range.to.getFullYear(), range.to.getMonth(), range.to.getDate(), 23, 59, 59, 999).getTime();
-        return items.filter((t) => {
-            const d = new Date(t.created_at).getTime();
-            return d >= from && d <= to;
-        });
-    }, [items, range]);
 
     const [start, end] = useMemo(() => {
         const win = 5;
@@ -271,7 +275,7 @@ export default function TransactionsPage() {
     }
 
     function clearFilters() {
-        setFilters({ q: "", bank: "", type: "", origin: "all" });
+        setFilters({ q: "", bank: "", type: "", origin: "all", dateRange: undefined } as any);
         setRange(undefined);
         setPage(1);
     }
@@ -316,6 +320,14 @@ export default function TransactionsPage() {
                 </label>
 
                 <div className="flex items-center gap-2">
+                    {filters.bank && (
+                        <button
+                            onClick={() => setExtractOpen(true)}
+                            className="hidden md:flex h-10 rounded-md border border-tg bg-tg-card px-4 text-sm font-bold items-center justify-center shadow-sm text-tg-primary"
+                        >
+                            Ver extracto
+                        </button>
+                    )}
                     <select
                         value={filters.bank ?? ""}
                         onChange={(e) => { setFilters((f) => ({ ...f, bank: e.target.value })); setPage(1); }}
@@ -351,7 +363,7 @@ export default function TransactionsPage() {
                         <option value="auto">Automática</option>
                     </select>
 
-                    <DateRangePicker className={DPR_DESKTOP + " whitespace-nowrap"} value={range} onChange={(r) => { setRange(r); setPage(1); }} />
+                    <DateRangePicker className={DPR_DESKTOP + " whitespace-nowrap"} value={range} onChange={(r) => { setRange(r); setPage(1); setFilters((f: any) => ({ ...f, dateRange: r })); }} />
 
                     <button
                         type="button"
@@ -421,10 +433,18 @@ export default function TransactionsPage() {
                     <DateRangePicker
                         className={DPR_MOBILE}
                         value={range}
-                        onChange={(r) => { setRange(r); setPage(1); }}
+                        onChange={(r) => { setRange(r); setPage(1); setFilters((f: any) => ({ ...f, dateRange: r })); }}
                     />
                 </div>
 
+                {filters.bank && (
+                    <button
+                        onClick={() => setExtractOpen(true)}
+                        className="w-full h-9 rounded-md border border-tg bg-tg-card text-[var(--tg-primary)] text-sm font-bold"
+                    >
+                        Ver extracto
+                    </button>
+                )}
                 <button
                     onClick={clearFilters}
                     className="w-full h-9 rounded-md border border-tg bg-[var(--panel-bg)] text-sm"
@@ -440,9 +460,9 @@ export default function TransactionsPage() {
                 <div className="flex-1 min-h-0 overflow-auto px-3 pb-1 space-y-4 sm:space-y-3.5">
                     {loading && items.length === 0
                         ? Array.from({ length: SKELETON_COUNT }).map((_, i) => (<div key={`sk-${i}`} className="h-[60px] rounded-xl border bg-black/10 animate-pulse" />))
-                        : (filteredByRange.length === 0
+                        : (items.length === 0
                             ? <div className="h-full grid place-items-center text-tg-muted text-sm">Sin registros</div>
-                            : filteredByRange.map((r) => <TxRow key={r.id} r={r} onDelete={requestDelete} />))}
+                            : items.map((r: any) => <TxRow key={r.id} r={r} onDelete={requestDelete} />))}
                 </div>
 
                 {/* paginación */}
@@ -497,6 +517,16 @@ export default function TransactionsPage() {
                     </nav>
                 </div>
             </div>
+
+            {/* Extracto Modal */}
+            <ExtractoBancarioModal
+                open={extractOpen}
+                onClose={() => setExtractOpen(false)}
+                banco={filters.bank || ""}
+                ingresos={checkExtract.ingresos}
+                retiros={checkExtract.retiros}
+                saldo={checkExtract.saldo}
+            />
 
             <NewTransactionModal
                 open={openCreate}

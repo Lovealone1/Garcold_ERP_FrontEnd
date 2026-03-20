@@ -44,9 +44,10 @@ export default function PagoVentaModal({ open, onClose, venta, onPaid }: Props) 
     const [bancos, setBancos] = useState<Bank[]>([]);
     const [bancoId, setBancoId] = useState<number | "">("");
     const [monto, setMonto] = useState<string>("");
+    const [fecha, setFecha] = useState<string>("");
 
     useEffect(() => { (async () => { try { setBancos(await listBanks(Date.now())); } catch { setBancos([]); } })(); }, []);
-    useEffect(() => { setBancoId(""); setMonto(""); }, [ventaId, open]);
+    useEffect(() => { setBancoId(""); setMonto(""); setFecha(""); }, [ventaId, open]);
 
     const estadoColor = useMemo(() => {
         if (!ventaInfo) return undefined;
@@ -69,7 +70,7 @@ export default function PagoVentaModal({ open, onClose, venta, onPaid }: Props) 
         const num = Number(monto);
         if (!bancoId || !num || num <= 0) { error("Selecciona banco y un monto válido"); return; }
         try {
-            await create({ sale_id: ventaId, bank_id: Number(bancoId), amount: num });
+            await create({ sale_id: ventaId, bank_id: Number(bancoId), amount: num, created_at: fecha || undefined });
             success("Abono registrado");
             await reload();
             await refreshVenta();
@@ -134,9 +135,9 @@ export default function PagoVentaModal({ open, onClose, venta, onPaid }: Props) 
                     <Stack gap={2} sx={{ mb: 3 }}>
                         <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Registrar abono</Typography>
                         <Grid container spacing={2}>
-                            <Grid size={{ xs: 12, md: 5 }}>
+                            <Grid size={{ xs: 12, md: 4 }}>
                                 <select
-                                    className="h-11 w-full rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-card"
+                                    className="h-11 w-full rounded-md border border-tg bg-tg-card px-3 text-sm focus:outline-none"
                                     value={bancoId}
                                     onChange={(e) => setBancoId((e.target.value ? Number(e.target.value) : "") as any)}
                                 >
@@ -144,15 +145,24 @@ export default function PagoVentaModal({ open, onClose, venta, onPaid }: Props) 
                                     {bancos.map((b) => (<option key={b.id} value={b.id}>{b.name}</option>))}
                                 </select>
                             </Grid>
-                            <Grid size={{ xs: 12, md: 5 }}>
+                            <Grid size={{ xs: 12, md: 3 }}>
                                 <input
                                     type="number"
                                     inputMode="decimal"
                                     min={0}
-                                    className="h-11 w-full rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-card"
+                                    className="h-11 w-full rounded-md border border-tg bg-tg-card px-3 text-sm focus:outline-none"
                                     placeholder="Monto a abonar"
                                     value={monto}
                                     onChange={(e) => setMonto(e.target.value)}
+                                />
+                            </Grid>
+                            <Grid size={{ xs: 12, md: 3 }}>
+                                <input
+                                    type="datetime-local"
+                                    className="h-11 w-full rounded-md border border-tg bg-tg-card px-3 text-sm focus:outline-none"
+                                    style={{ colorScheme: "var(--tg-color-scheme, dark)" }}
+                                    value={fecha}
+                                    onChange={(e) => setFecha(e.target.value)}
                                 />
                             </Grid>
                             <Grid size={{ xs: 12, md: 2 }}>

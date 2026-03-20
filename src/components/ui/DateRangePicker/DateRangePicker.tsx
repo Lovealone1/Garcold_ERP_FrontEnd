@@ -62,41 +62,43 @@ export default function DateRangeInput({
   const fromYear = now.getFullYear() - 2;
   const toYear = now.getFullYear() + 2;
 
-  return (
-    <div className={`relative inline-flex items-center ${className ?? ""}`}>
-      <input
-        type="text"
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        onBlur={commitFromInput}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") e.currentTarget.blur();
-          if (e.key === "Escape") { setText(fmt(value)); e.currentTarget.blur(); }
-        }}
-        placeholder={placeholder}
-        disabled={disabled}
-        className="h-10 w-[260px] rounded-md border border-tg bg-tg-card pr-10 pl-3 text-sm text-tg-card outline-none"
-        aria-label="Rango de fechas"
-      />
+    return (
+        <div className={`relative ${className ?? ""}`}>
+            <div className="h-10 w-full rounded-md border border-tg bg-tg-card pl-3 pr-1 flex items-center focus-within:ring-2 focus-within:ring-[var(--tg-primary)]">
+                <input
+                    type="text"
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    onBlur={commitFromInput}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter") e.currentTarget.blur();
+                        if (e.key === "Escape") { setText(fmt(value)); e.currentTarget.blur(); }
+                    }}
+                    placeholder={placeholder}
+                    disabled={disabled}
+                    className="flex-1 bg-transparent text-sm text-tg-card outline-none placeholder-[var(--tg-placeholder)] max-w-[210px] min-w-0"
+                    aria-label="Rango de fechas"
+                />
 
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => setOpen(o => !o)}
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        aria-controls={id}
-        className="absolute right-2 inline-grid h-7 w-7 place-items-center rounded hover:bg-black/10 dark:hover:bg-white/10 disabled:opacity-50"
-        title="Abrir calendario"
-      >
-        <CalendarMonthOutlinedIcon fontSize="small" />
-      </button>
+                <button
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => setOpen(o => !o)}
+                    aria-haspopup="dialog"
+                    aria-expanded={open}
+                    aria-controls={id}
+                    className="ml-1 inline-grid h-8 w-8 place-items-center rounded hover:bg-black/10 dark:hover:bg-white/10 disabled:opacity-50"
+                    title="Abrir calendario"
+                >
+                    <CalendarMonthOutlinedIcon fontSize="small" />
+                </button>
+            </div>
 
       {open && (
         <div
           id={id}
           role="dialog"
-          className="absolute left-0 top-[44px] z-50 w-[360px] max-w-[90vw] rounded-xl border border-tg bg-[var(--panel-bg,white)] p-3 shadow-xl"
+          className="absolute right-0 top-[44px] z-50 w-[360px] max-w-[90vw] rounded-xl border border-tg bg-[var(--panel-bg,white)] p-3 shadow-xl"
         >
           <DayPicker
             mode="range"
@@ -145,11 +147,11 @@ export default function DateRangeInput({
               </button>
               <button
                 type="button"
-                disabled={!temp?.from || !temp?.to}
+                disabled={!temp?.from}
                 onClick={() => {
-                  if (!temp?.from || !temp?.to) return;
+                  if (!temp?.from) return;
                   const from = startOfDay(temp.from);
-                  const to = endOfDay(temp.to);
+                  const to = temp.to ? endOfDay(temp.to) : endOfDay(temp.from);
                   const range = isAfter(from, to) ? { from: to, to: from } : { from, to };
                   onChange(range);
                   setText(fmt(range));

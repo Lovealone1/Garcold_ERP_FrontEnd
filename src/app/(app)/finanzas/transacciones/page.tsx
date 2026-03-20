@@ -26,21 +26,11 @@ const ACTION_BG_DISABLED = "color-mix(in srgb, var(--tg-card-bg) 75%, #000 25%)"
 const BORDER = "var(--tg-border)";
 const pill = "min-w-[90px] h-8 px-2.5 rounded-md grid place-items-center text-[13px] text-white/90 border";
 
-// SIN glow al enfocar
 const actionBtn =
     "h-8 w-8 grid place-items-center rounded-full text-[var(--tg-primary)] hover:opacity-90 focus:outline-none focus-visible:ring-0";
 
-const DPR_MOBILE =
-    "inline-flex items-center h-10 rounded-md border border-tg bg-tg-card overflow-hidden " +
-    "[&_input]:h-full [&_input]:w-[220px] [&_input]:bg-transparent [&_input]:border-0 [&_input]:px-2 [&_input]:text-[14px] [&_input]:text-tg-card " +
-    "[&_button]:h-10 [&_button]:w-10 [&_button]:p-0 [&_button]:border-0 [&_button]:bg-transparent " +
-    "[&_button_svg]:!ml-7";
-
-const DPR_DESKTOP =
-    "inline-flex items-center h-10 rounded-md border border-tg bg-tg-card overflow-hidden " +
-    "[&_input]:h-full [&_input]:w-[220px] [&_input]:bg-transparent [&_input]:border-0 [&_input]:px-3 [&_input]:text-[14px] [&_input]:text-tg-card " +
-    "[&_button]:h-10 [&_button]:w-10 [&_button]:p-0 [&_button]:border-0 [&_button]:bg-transparent " +
-    "[&_button_svg]:!ml-5";
+const datePickerSxDesktop = "w-[130px] md:w-[210px]";
+const datePickerSxMobile = "flex-1";
 
 const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 const clip = (s?: string | null, n = 28) => (s ?? "—").length > n ? (s as string).slice(0, n).trimEnd() + "…" : (s ?? "—");
@@ -303,23 +293,23 @@ export default function TransactionsPage() {
     const selectNoGlowStyle = { boxShadow: "none" } as const;
 
     return (
-        <div className="app-shell__frame overflow-hidden" style={frameVars}>
+        <div className="app-shell__frame overflow-visible min-h-screen" style={frameVars as any}>
             {/* filtros desktop */}
-            <div className="hidden sm:flex mb-3 items-center justify-between gap-3">
-                <label className="relative flex h-10 w-full max-w-[440px]">
+            <div className="hidden sm:flex mb-3 gap-3 flex-wrap">
+                <label className="relative flex h-10 flex-1 min-w-[200px] max-w-[440px]">
                     <span className="absolute inset-y-0 left-3 flex items-center text-tg-muted pointer-events-none">
                         <MaterialIcon name="search" size={18} />
                     </span>
                     <input
                         type="search"
-                        placeholder="Buscar por banco, tipo o descripción…"
+                        placeholder="Buscar..."
                         className="h-10 w-full rounded-md border border-tg bg-tg-card pl-9 pr-3 focus:outline-none"
                         value={filters.q ?? ""}
                         onChange={(e) => { setFilters((f: any) => ({ ...f, q: e.target.value })); setPage(1); }}
                     />
                 </label>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap flex-1 justify-end">
                     {filters.bank && (
                         <button
                             onClick={() => setExtractOpen(true)}
@@ -363,7 +353,7 @@ export default function TransactionsPage() {
                         <option value="auto">Automática</option>
                     </select>
 
-                    <DateRangePicker className={DPR_DESKTOP + " whitespace-nowrap"} value={range} onChange={(r) => { setRange(r); setPage(1); setFilters((f: any) => ({ ...f, dateRange: r })); }} />
+                    <DateRangePicker className={datePickerSxDesktop + " whitespace-nowrap"} value={range} onChange={(r) => { setRange(r); setPage(1); setFilters((f: any) => ({ ...f, dateRange: r })); }} />
 
                     <button
                         type="button"
@@ -431,7 +421,7 @@ export default function TransactionsPage() {
                     </select>
 
                     <DateRangePicker
-                        className={DPR_MOBILE}
+                        className={datePickerSxMobile}
                         value={range}
                         onChange={(r) => { setRange(r); setPage(1); setFilters((f: any) => ({ ...f, dateRange: r })); }}
                     />

@@ -23,7 +23,9 @@ const root = <T extends string>(name: T) => [name] as const;
 export const queryKeys = {
     sales: {
         all: root("sales"),
-        list: (params: ListParams) => ["sales", params] as const,
+        list: (params: ListParams) => ["sales", "list", params] as const,
+        filterOptions: () => ["sales", "filter-options"] as const,
+        summary: (params: ListParams) => ["sales", "summary", params] as const,
     },
 
     purchases: {

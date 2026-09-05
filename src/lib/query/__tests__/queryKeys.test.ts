@@ -3,13 +3,52 @@ import { queryKeys, QUERY_ROOTS } from "../queryKeys";
 
 describe("queryKeys", () => {
     it("keeps the list shapes the hooks already used", () => {
-        expect(queryKeys.sales.list({ pageSize: 8 })).toEqual(["sales", { pageSize: 8 }]);
         expect(queryKeys.purchases.list({ pageSize: 8 })).toEqual(["purchases", { pageSize: 8 }]);
         expect(queryKeys.customers.list({ pageSize: 8 })).toEqual(["customers", { pageSize: 8 }]);
         expect(queryKeys.suppliers.list({ pageSize: 8 })).toEqual(["suppliers", { pageSize: 8 }]);
         expect(queryKeys.customers.detail(7)).toEqual(["customer", { id: 7 }]);
         expect(queryKeys.salePayments.list(3)).toEqual(["sale-payments", { saleId: 3 }]);
         expect(queryKeys.purchasePayments.list(4)).toEqual(["purchase-payments", { purchaseId: 4 }]);
+    });
+
+    // Roots that gained sibling endpoints (filter-options, summary) nest their
+    // pages under a "list" segment. A prefix invalidation on the root still
+    // reaches all three, which is what the matrix relies on.
+    it("nests paged lists under the root that owns sibling endpoints", () => {
+        expect(queryKeys.sales.list({ pageSize: 8 })).toEqual([
+            "sales",
+            "list",
+            { pageSize: 8 },
+        ]);
+        expect(queryKeys.sales.filterOptions()).toEqual(["sales", "filter-options"]);
+        expect(queryKeys.sales.summary({})).toEqual(["sales", "summary", {}]);
+
+        expect(queryKeys.transactions.list({ page: 1 })).toEqual([
+            "transactions",
+            "list",
+            { page: 1 },
+        ]);
+        expect(queryKeys.transactions.filterOptions()).toEqual([
+            "transactions",
+            "filter-options",
+        ]);
+    });
+
+    it("keeps every sibling under the invalidatable root", () => {
+        for (const key of [
+            queryKeys.sales.list({}),
+            queryKeys.sales.filterOptions(),
+            queryKeys.sales.summary({}),
+        ]) {
+            expect(key[0]).toBe("sales");
+        }
+        for (const key of [
+            queryKeys.transactions.list({}),
+            queryKeys.transactions.filterOptions(),
+            queryKeys.transactions.summary({}),
+        ]) {
+            expect(key[0]).toBe("transactions");
+        }
     });
 
     it("models head and tail as separate roots", () => {

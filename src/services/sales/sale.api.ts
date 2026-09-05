@@ -9,39 +9,59 @@ import type {
   SalePaymentCreate,
 } from "@/types/sale";
 
-type ListSalesOpts = {
+type SaleFilterOpts = {
   signal?: AbortSignal;
   q?: string;
   status?: string;
   bank?: string;
-  from?: string;
-  to?: string;
-  page_size?: number;
+  date_from?: string;
+  date_to?: string;
 };
+
+type ListSalesOpts = SaleFilterOpts & { page_size?: number };
+
+function saleFilterParams(opts: SaleFilterOpts): Record<string, string | undefined> {
+  const { q, status, bank, date_from, date_to } = opts;
+  return {
+    ...(q ? { q } : {}),
+    ...(status ? { status } : {}),
+    ...(bank ? { bank } : {}),
+    ...(date_from ? { date_from } : {}),
+    ...(date_to ? { date_to } : {}),
+  };
+}
 
 export async function listSales(
   page = 1,
   opts: ListSalesOpts = {}
 ): Promise<SalePage> {
-  const { signal, q, status, bank, from, to, page_size } = opts;
-
-  const params: Record<string, string | number | undefined> = {
-    page,
-    page_size,
-    ...(q ? { q } : {}),
-    ...(status ? { status } : {}),
-    ...(bank ? { bank } : {}),
-    ...(from ? { from } : {}),
-    ...(to ? { to } : {}),
-  };
+  const { signal, page_size } = opts;
 
   const { data } = await salesApi.get("/sales", {
-    params,
+    params: { page, page_size, ...saleFilterParams(opts) },
     signal,
-    withCredentials: false,
   });
 
   return data as SalePage;
+}
+
+/** Bank and status names present in sales, for the filter dropdowns. */
+export async function listSaleFilterOptions(
+  opts: { signal?: AbortSignal } = {}
+): Promise<{ banks: string[]; statuses: string[] }> {
+  const { data } = await salesApi.get("/sales/filter-options", { signal: opts.signal });
+  return data as { banks: string[]; statuses: string[] };
+}
+
+/** Totals across the whole filtered set, not just the visible page. */
+export async function summarizeSales(
+  opts: SaleFilterOpts = {}
+): Promise<{ total: number; remaining_balance: number; count: number }> {
+  const { data } = await salesApi.get("/sales/summary", {
+    params: saleFilterParams(opts),
+    signal: opts.signal,
+  });
+  return data as { total: number; remaining_balance: number; count: number };
 }
 
 

@@ -13,8 +13,7 @@ import type {
 export async function listInvestments(page = 1, nocacheToken?: number): Promise<InvestmentsPage> {
   const { data } = await salesApi.get("/investments/page", {
     params: { page, _ts: nocacheToken ?? Date.now() },
-    headers: { "Cache-Control": "no-cache" },
-  });
+    });
   return data as InvestmentsPage;
 }
 

@@ -12,7 +12,6 @@ import { useDeletePurchase } from "@/hooks/compras/useDeletePurchase";
 import { useCompraEstados } from "@/hooks/estados/useEstados";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 
-import { listBanks } from "@/services/sales/bank.api";
 import { getPurchaseById } from "@/services/sales/purchase.api";
 
 import CompraView from "@/features/compras/ViewDetalleCompras";
@@ -22,7 +21,6 @@ import PurchaseReceiptModal from "@/features/compras/PurchaseReceiptModal";
 import type { Purchase } from "@/types/purchase";
 import type { DateRange } from "react-day-picker";
 import DateRangePicker from "@/components/ui/DateRangePicker/DateRangePicker";
-import { usePurchasesRealtime } from "@/hooks/realtime/usePurchasesRealtime";
 /* -------- Tokens visuales (alineado con Ventas) -------- */
 const FRAME_BG = "color-mix(in srgb, var(--tg-bg) 90%, #fff 3%)";
 const OUTER_BG = "color-mix(in srgb, var(--tg-bg) 55%, #000 45%)";
@@ -307,7 +305,6 @@ function PurchaseRow({
 type FrameVars = CSSProperties & { ["--content-x"]?: string };
 
 export default function ComprasPage() {
-    usePurchasesRealtime();
     const router = useRouter();
     const { success, error } = useNotifications();
     const { options: estadoOptions } = useCompraEstados();
@@ -321,34 +318,14 @@ export default function ComprasPage() {
         totalPages,
         loading,
         reload,
-        loadMore,
-        hasMoreServer,
         filters,
         setFilters,
+        options: purchaseOptions,
     } = usePurchases({}, 8);
 
     const [range, setRange] = useState<DateRange | undefined>();
-    const [bancos, setBancos] = useState<string[]>([]);
-
-    // Bancos para filtro
-    useEffect(() => {
-        let alive = true;
-        (async () => {
-            try {
-                const data = await listBanks();
-                if (!alive) return;
-                const unique = Array.from(
-                    new Set((data ?? []).map((b: { name: string }) => b.name))
-                ).sort();
-                setBancos(unique);
-            } catch {
-                if (alive) setBancos([]);
-            }
-        })();
-        return () => {
-            alive = false;
-        };
-    }, []);
+    // Bank names arrive with the other filter options, in the same request.
+    const bancos: string[] = purchaseOptions.banks;
 
     // Handlers filtros -> se envían al hook (server-side)
     const handleSearch = (value: string) =>
@@ -380,12 +357,9 @@ export default function ComprasPage() {
         setFilters({});
     };
 
-    // Paginación usando datos del hook
-    const handlePageChange = async (target: number) => {
+    // The server owns pagination now; there is no local buffer to top up.
+    const handlePageChange = (target: number) => {
         if (target <= 0 || target > totalPages || target === page) return;
-        if (target > page && hasMoreServer) {
-            await loadMore();
-        }
         setPage(target);
     };
 

@@ -11,20 +11,24 @@ import { TopProductQty } from "@/types/product";
 
 type Q = { q?: string }; 
 type Opts = { nocacheToken?: number; signal?: AbortSignal };
-type ListOpts = { signal?: AbortSignal; q?: string; page_size?: number };
+type ListOpts = {
+    signal?: AbortSignal;
+    q?: string;
+    page_size?: number;
+    estado?: "activos" | "inactivos";
+};
 
 const ts = () => Date.now();
-const nocache = { "Cache-Control": "no-cache" };
-
 export async function listProducts(
     page = 1,
     opts: ListOpts = {}
 ): Promise<ProductPageDTO> {
-    const { signal, q, page_size } = opts;
+    const { signal, q, page_size, estado } = opts;
     const params: Record<string, string | number | undefined> = {
         page,
         page_size,
         ...(q ? { q } : {}),
+        ...(estado ? { estado } : {}),
     };
 
     const { data } = await salesApi.get("/products/page", {
@@ -39,7 +43,6 @@ export async function listProducts(
 export async function listAllProducts(opts?: Opts): Promise<ProductDTO[]> {
     const { data } = await salesApi.get("/products", {
         params: { _ts: opts?.nocacheToken ?? ts() },
-        headers: nocache,
         signal: opts?.signal,
     });
     return data as ProductDTO[];
@@ -51,7 +54,6 @@ export async function getProductById(
 ): Promise<ProductDTO> {
     const { data } = await salesApi.get(`/products/by-id/${id}`, {
         params: { _ts: opts?.nocacheToken ?? ts() },
-        headers: nocache,
         signal: opts?.signal,
     });
     return data as ProductDTO;
@@ -63,7 +65,6 @@ export async function createProduct(
 ): Promise<ProductDTO> {
     const { data } = await salesApi.post("/products/create", payload, {
         params: { _ts: opts?.nocacheToken ?? ts() },
-        headers: nocache,
         signal: opts?.signal,
     });
     return data as ProductDTO;
@@ -76,7 +77,6 @@ export async function updateProduct(
 ): Promise<ProductDTO> {
     const { data } = await salesApi.patch(`/products/by-id/${id}`, payload, {
         params: { _ts: opts?.nocacheToken ?? ts() },
-        headers: nocache,
         signal: opts?.signal,
     });
     return data as ProductDTO;
@@ -88,7 +88,6 @@ export async function deleteProduct(
 ): Promise<{ message: string }> {
     const { data } = await salesApi.delete(`/products/by-id/${id}`, {
         params: { _ts: opts?.nocacheToken ?? ts() },
-        headers: nocache,
         signal: opts?.signal,
     });
     return data as { message: string };
@@ -102,7 +101,7 @@ export async function increaseQuantity(
     const { data } = await salesApi.patch(
         `/products/by-id/${id}/increase`,
         { amount },
-        { headers: nocache, signal: opts?.signal }
+        { signal: opts?.signal }
     );
     return data as ProductDTO;
 }
@@ -115,7 +114,7 @@ export async function decreaseQuantity(
     const { data } = await salesApi.patch(
         `/products/by-id/${id}/decrease`,
         { amount },
-        { headers: nocache, signal: opts?.signal }
+        { signal: opts?.signal }
     );
     return data as ProductDTO;
 }
@@ -127,7 +126,7 @@ export async function toggleProductActive(
     const { data } = await salesApi.patch(
         `/products/by-id/${id}/toggle-active`,
         {},
-        { headers: nocache, signal: opts?.signal }
+        { signal: opts?.signal }
     );
     return data as ProductDTO;
 }
@@ -138,7 +137,6 @@ export async function topProductsByQuantity(
 ): Promise<TopProductQty[]> {
     const { data } = await salesApi.get("/products/top", {
         params: { ...args, _ts: opts?.nocacheToken ?? ts() },
-        headers: nocache,
         signal: opts?.signal,
     });
     return data as TopProductQty[];
@@ -161,7 +159,6 @@ export async function soldProductsInRange(
     };
     const { data } = await salesApi.post("/products/sold-in-range", body, {
         params: { _ts: opts?.nocacheToken ?? ts() },
-        headers: nocache,
         signal: opts?.signal,
     });
     return data as SaleProductsDTO[];
@@ -176,7 +173,6 @@ export async function getProductByBarcode(
       `/products/by-barcode/${encodeURIComponent(barcode)}`,
       {
         params: { _ts: opts?.nocacheToken ?? ts() },
-        headers: nocache,
         signal: opts?.signal,
       }
     );

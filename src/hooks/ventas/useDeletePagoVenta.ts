@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { deleteSalePayment } from "@/services/sales/sale.api";
+import { invalidateMovement } from "@/lib/query/invalidateMovement";
 
 export function useDeletePagoVenta() {
   const qc = useQueryClient();
@@ -15,22 +16,7 @@ export function useDeletePagoVenta() {
     try {
       const ok = await deleteSalePayment(paymentId);
 
-      qc.invalidateQueries({
-        queryKey: ["sale-payments", { saleId }],
-        refetchType: "active",
-      });
-
-      qc.invalidateQueries({
-        predicate: ({ queryKey }) =>
-          Array.isArray(queryKey) && queryKey[0] === "sales",
-        refetchType: "active",
-      });
-
-      qc.invalidateQueries({
-        predicate: ({ queryKey }) =>
-          Array.isArray(queryKey) && queryKey[0] === "transactions",
-        refetchType: "active",
-      });
+      await invalidateMovement(qc, { kind: "sale_payment", ids: { saleId } });
 
       return !!ok;
     } catch (e: any) {

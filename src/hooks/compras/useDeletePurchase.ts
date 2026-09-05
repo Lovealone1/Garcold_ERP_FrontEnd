@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import { deletePurchase } from "@/services/sales/purchase.api";
+import { invalidateMovement } from "@/lib/query/invalidateMovement";
 import type { Purchase } from "@/types/purchase";
 
 type PurchasePage = {
@@ -28,7 +29,9 @@ function stripPurchaseFromInfinite(
     data: InfiniteData<PurchasePage> | undefined,
     purchaseId: number
 ) {
-    if (!data) return data;
+    // setQueriesData matches every query under the prefix, including any that
+    // is not an infinite list. Bail out instead of throwing past the mutation.
+    if (!data || !Array.isArray(data.pages)) return data;
     let removed = false;
 
     const pages = data.pages.map((p) => {
@@ -55,7 +58,9 @@ function stripTransactionsByPurchaseId(
     data: InfiniteData<TxPage> | undefined,
     purchaseId: number
 ) {
-    if (!data) return data;
+    // setQueriesData matches every query under the prefix, including any that
+    // is not an infinite list. Bail out instead of throwing past the mutation.
+    if (!data || !Array.isArray(data.pages)) return data;
     let removed = false;
 
     const pages = data.pages.map((p) => {
@@ -102,23 +107,7 @@ export function useDeletePurchase() {
                 (curr) => stripTransactionsByPurchaseId(curr, id)
             );
 
-            qc.invalidateQueries({
-                queryKey: ["sales"],
-                refetchType: "all",
-            });
-
-            qc.invalidateQueries({
-                queryKey: ["transactions"],
-                refetchType: "active"
-            });
-
-            qc.invalidateQueries({ queryKey: ["purchases"], refetchType: "active" });
-
-            qc.invalidateQueries({
-                predicate: ({ queryKey }) =>
-                    Array.isArray(queryKey) && queryKey[0] === "transactions",
-                refetchType: "active",
-            });
+            await invalidateMovement(qc, { kind: "purchase" });
         } catch (e: any) {
             const msg =
                 e?.response?.data?.detail ?? e?.message ?? "Error eliminando compra";

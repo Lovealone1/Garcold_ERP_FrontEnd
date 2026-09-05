@@ -1,225 +1,119 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useInfiniteQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
-import { listProfits } from "@/services/sales/profit.api";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
+import { listProfits, summarizeProfits } from "@/services/sales/profit.api";
+import { queryKeys } from "@/lib/query/queryKeys";
 import type { Profit, ProfitPageDTO } from "@/types/profit";
 
-export type ProfitFilters = { q?: string; from?: Date | null; to?: Date | null };
+type Filters = { q?: string; from?: Date; to?: Date };
 
+/** Widen a date-only range to cover the whole day at each end. */
+function toQueryParams(filters: Filters) {
+    const from = filters.from
+        ? new Date(
+              filters.from.getFullYear(),
+              filters.from.getMonth(),
+              filters.from.getDate(),
+              0, 0, 0, 0
+          )
+        : undefined;
+    const to = filters.to
+        ? new Date(
+              filters.to.getFullYear(),
+              filters.to.getMonth(),
+              filters.to.getDate(),
+              23, 59, 59, 999
+          )
+        : undefined;
+
+    return {
+        q: filters.q?.trim() || undefined,
+        date_from: from?.toISOString(),
+        date_to: to?.toISOString(),
+    };
+}
+
+/**
+ * Profits list, paginated and filtered by the API.
+ *
+ * It used to pump every page into memory and filter the copy.
+ */
 export function useProfits(initialPage = 1, pageSize = 16) {
     const qc = useQueryClient();
     const [page, setPage] = useState(initialPage);
-    const [filters, setFilters] = useState<ProfitFilters>({});
+    const [filters, setFilters] = useState<Filters>({});
 
-    const key = useMemo(
-        () =>
-            [
-                "profits",
-                {
-                    pageSize,
-                    q: filters.q || "",
-                    from: filters.from?.toISOString() ?? "",
-                    to: filters.to?.toISOString() ?? "",
-                },
-            ] as const,
-        [pageSize, filters.q, filters.from, filters.to]
-    );
-
-    const query = useInfiniteQuery<
-        ProfitPageDTO,
-        Error,
-        InfiniteData<ProfitPageDTO>,
-        typeof key,
-        number
-    >({
-        queryKey: key,
-        initialPageParam: 1,
-        queryFn: async ({ pageParam = 1, signal, queryKey }) => {
-            const [, meta] = queryKey;
-            return listProfits(pageParam, { signal, page_size: meta.pageSize });
-        },
-        getNextPageParam: (last) => {
-            const cur = last.page ?? 1;
-            if (last.has_next === true) return cur + 1;
-            if (typeof last.total_pages === "number" && cur < last.total_pages) return cur + 1;
-            if (Array.isArray(last.items) && last.items.length < (last.page_size ?? pageSize)) {
-                return undefined;
-            }
-            return undefined;
-        },
-        refetchOnWindowFocus: false,
-        refetchOnReconnect: false,
-        staleTime: 1000 * 60 * 30,
-        gcTime: 1000 * 60 * 60 * 24 * 3,
-    });
-
-    const serverTotal = query.data?.pages?.[0]?.total;
-    const serverPageSize = query.data?.pages?.[0]?.page_size ?? pageSize;
-    const serverTotalPages =
-        typeof serverTotal === "number" ? Math.max(1, Math.ceil(serverTotal / serverPageSize)) : undefined;
-
-    const all: Profit[] = useMemo(
-        () => (query.data?.pages ?? []).flatMap((p) => p.items),
-        [query.data]
-    );
-
-    const v = (filters.q ?? "").trim().toLowerCase();
-
-    const filtered = useMemo(() => {
-        const fromTime =
-            filters.from != null
-                ? new Date(
-                    filters.from.getFullYear(),
-                    filters.from.getMonth(),
-                    filters.from.getDate(),
-                    0,
-                    0,
-                    0,
-                    0
-                ).getTime()
-                : undefined;
-
-        const toTime =
-            filters.to != null
-                ? new Date(
-                    filters.to.getFullYear(),
-                    filters.to.getMonth(),
-                    filters.to.getDate(),
-                    23,
-                    59,
-                    59,
-                    999
-                ).getTime()
-                : undefined;
-
-        return all.filter((u) => {
-            if (v && !String(u.sale_id).includes(v)) return false;
-            if (fromTime != null || toTime != null) {
-                const t = new Date(u.created_at).getTime();
-                if (fromTime != null && t < fromTime) return false;
-                if (toTime != null && t > toTime) return false;
-            }
-            return true;
-        });
-    }, [all, v, filters.from, filters.to]);
+    const params = useMemo(() => toQueryParams(filters), [filters]);
 
     useEffect(() => {
         setPage(1);
-    }, [filters.q, filters.from, filters.to]);
+    }, [params.q, params.date_from, params.date_to]);
 
-    const totalClient = filtered.length;
-    const localTotalPages = Math.max(1, Math.ceil(totalClient / pageSize));
-    const uiTotalPages = serverTotalPages ?? localTotalPages;
-    const safePage = Math.min(page, uiTotalPages);
-
-    const items = useMemo(() => {
-        const start = (safePage - 1) * pageSize;
-        return filtered.slice(start, start + pageSize);
-    }, [filtered, safePage, pageSize]);
-
-    const loadedCount = (query.data?.pages ?? []).reduce(
-        (a, p) => a + (p.items?.length ?? 0),
-        0
+    const listKey = useMemo(
+        () => queryKeys.profits.list({ page, pageSize, ...params }),
+        [page, pageSize, params]
     );
-    const hasMoreServer = !!serverTotal ? loadedCount < serverTotal : !!query.hasNextPage;
-    const isFetchingMore = query.isFetchingNextPage;
 
-    useEffect(() => {
-        const need = safePage * pageSize;
-        if (loadedCount < need && hasMoreServer && !isFetchingMore) {
-            query.fetchNextPage({ cancelRefetch: true });
-        }
-    }, [safePage, pageSize, loadedCount, hasMoreServer, isFetchingMore, query]);
+    const query = useQuery<ProfitPageDTO>({
+        queryKey: listKey,
+        queryFn: ({ signal }) =>
+            listProfits(page, { signal, page_size: pageSize, ...params }),
+        placeholderData: keepPreviousData,
+    });
 
-    const warmTokenRef = useRef(0);
-    useEffect(() => {
-        const first = query.data?.pages?.[0];
-        if (!first) return;
+    // The screen shows a total for the current filter, which spans every
+    // matching row rather than the visible page.
+    const summaryQuery = useQuery({
+        queryKey: queryKeys.profits.summary(params),
+        queryFn: ({ signal }) => summarizeProfits({ signal, ...params }),
+    });
 
-        warmTokenRef.current += 1;
-        const myToken = warmTokenRef.current;
+    const data = query.data;
+    const items = data?.items ?? [];
+    const total = data?.total ?? 0;
+    const totalPages = Math.max(1, data?.total_pages ?? 1);
 
-        const expectedPages =
-            typeof first.total_pages === "number"
-                ? first.total_pages
-                : typeof first.total === "number"
-                    ? Math.max(1, Math.ceil(first.total / (first.page_size ?? pageSize)))
-                    : undefined;
+    const refresh = useCallback(
+        () => qc.invalidateQueries({ queryKey: queryKeys.profits.all }),
+        [qc]
+    );
 
-        let stopped = false;
-
-        (async () => {
-            const hardCap = expectedPages ?? 200;
-
-            for (; ;) {
-                if (stopped) break;
-                if (myToken !== warmTokenRef.current) break;
-
-                const pagesLoaded =
-                    qc.getQueryData<InfiniteData<ProfitPageDTO>>(key)?.pages?.length ?? 0;
-
-                const canContinue =
-                    (expectedPages ? pagesLoaded < expectedPages : !!query.hasNextPage) &&
-                    hasMoreServer &&
-                    !isFetchingMore;
-
-                if (!canContinue) break;
-
-                await query.fetchNextPage({ cancelRefetch: true }).catch(() => { });
-                await new Promise((r) => setTimeout(r, 80));
-
-                if (pagesLoaded >= hardCap) break;
-            }
-        })();
-
-        return () => {
-            stopped = true;
-        };
-    }, [pageSize, query.data?.pages?.[0]?.page, query.data?.pages?.length, qc, key, query.hasNextPage, hasMoreServer, isFetchingMore]);
-
-    const loadMore = () => {
-        if (hasMoreServer && !isFetchingMore) {
-            return query.fetchNextPage({ cancelRefetch: true });
-        }
-        return Promise.resolve();
-    };
-
-    const refresh = () =>
-        qc.invalidateQueries({
-            queryKey: ["profits"],
-            refetchType: "active",
-        });
-
-    function upsertOne(patch: Partial<Profit> & { id: number }) {
-        qc.setQueryData<InfiniteData<ProfitPageDTO, number>>(key, (data) => {
-            if (!data) return data as any;
-            const nextPages = data.pages.map((pg) => {
-                const items = pg.items.map((it) =>
-                    it.id === patch.id ? { ...it, ...patch } : it
-                );
-                return { ...pg, items };
+    const upsertOne = useCallback(
+        (patch: Partial<Profit> & { id: number }) => {
+            qc.setQueryData<ProfitPageDTO>(listKey, (current) => {
+                if (!current?.items) return current;
+                return {
+                    ...current,
+                    items: current.items.map((p) =>
+                        p.id === patch.id ? { ...p, ...patch } : p
+                    ),
+                };
             });
-            return { ...data, pages: nextPages };
-        });
-    }
+        },
+        [qc, listKey]
+    );
 
     return {
-        page: safePage,
+        page,
         setPage,
         items,
-        all,
-        loading: query.isLoading || (query.isFetching && !query.isFetched),
+        /** Only the current page; there is no local copy of the table any more. */
+        all: items,
+        loading: query.isPending,
+        isFetching: query.isFetching,
         error: query.isError ? (query.error as Error).message : null,
-        loadMore,
-        hasMoreServer,
-        isFetchingMore,
-        total_pages: uiTotalPages,
-        page_size: pageSize,
-        total: serverTotal ?? totalClient,
+        total_pages: totalPages,
+        page_size: data?.page_size ?? pageSize,
+        total,
+        hasPrev: page > 1,
+        hasNext: page < totalPages,
         filters,
         setFilters,
         refresh,
         upsertOne,
+        /** Summed profit across the whole filtered set. */
+        totalFiltrado: summaryQuery.data?.total ?? 0,
     };
 }
 

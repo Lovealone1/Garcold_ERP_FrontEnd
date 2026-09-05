@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { createSalePayment } from "@/services/sales/sale.api";
+import { invalidateMovement } from "@/lib/query/invalidateMovement";
 import type { SalePaymentCreate } from "@/types/sale";
 
 export function useCreatePagoVenta() {
@@ -17,22 +18,7 @@ export function useCreatePagoVenta() {
       const res = await createSalePayment(payload);
       const saleId = Number(payload.sale_id);
 
-      qc.invalidateQueries({
-        queryKey: ["sale-payments", { saleId }],
-        refetchType: "active",
-      });
-
-      qc.invalidateQueries({
-        predicate: ({ queryKey }) =>
-          Array.isArray(queryKey) && queryKey[0] === "sales",
-        refetchType: "active",
-      });
-
-      qc.invalidateQueries({
-        predicate: ({ queryKey }) =>
-          Array.isArray(queryKey) && queryKey[0] === "transactions",
-        refetchType: "active",
-      });
+      await invalidateMovement(qc, { kind: "sale_payment", ids: { saleId } });
 
       return res;
     } catch (e: any) {

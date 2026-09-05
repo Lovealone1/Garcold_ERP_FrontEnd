@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 import { createTransaction } from "@/services/sales/transaction.api";
+import { invalidateMovement } from "@/lib/query/invalidateMovement";
 import type { TransactionCreate, TransactionCreated } from "@/types/transaction";
 
 export function useCreateTransaction() {
@@ -19,9 +20,9 @@ export function useCreateTransaction() {
       const tx = await createTransaction(payload);
       success("Transacción creada correctamente");
 
-      // Cliente que crea → refresca head y tail activos
-      qc.invalidateQueries({ queryKey: ["transactions-head"], refetchType: "active" });
-      qc.invalidateQueries({ queryKey: ["transactions"], refetchType: "active" });
+      // Head + tail + banks + dashboard. Awaited so the list is current by the
+      // time the caller closes the modal.
+      await invalidateMovement(qc, { kind: "transaction" });
       return tx;
     } catch (e: any) {
       const msg = e?.response?.data?.detail ?? e?.message ?? "Error al crear la transacción";

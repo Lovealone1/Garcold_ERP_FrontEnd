@@ -36,7 +36,6 @@ export async function importInsert(opts: ImportOptions): Promise<ImportReport> {
             ...(headerRow != null ? { header_row: headerRow } : {}),
             _ts,
         },
-        headers: { "Cache-Control": "no-cache" },
         signal,
     });
 

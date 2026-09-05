@@ -1,8 +1,11 @@
 "use client";
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { deleteExpense } from "@/services/sales/expense.api";
+import { invalidateMovement } from "@/lib/query/invalidateMovement";
 
 export function useDeleteExpense(onDeleted?: () => void) {
+    const qc = useQueryClient();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -11,6 +14,12 @@ export function useDeleteExpense(onDeleted?: () => void) {
         setError(null);
         try {
             const res = await deleteExpense(id);
+
+            // Same gap as the create hook: no invalidation lived here, so a
+            // deleted expense stayed in transactions and left the bank balance
+            // and dashboard showing the reverted amount.
+            await invalidateMovement(qc, { kind: "expense" });
+
             onDeleted?.();
             return res;
         } catch (e: any) {

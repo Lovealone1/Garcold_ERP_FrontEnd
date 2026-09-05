@@ -11,8 +11,7 @@ import type {
 export async function listLoans(page = 1, nocacheToken?: number): Promise<LoansPage> {
   const { data } = await salesApi.get("/loans/page", {
     params: { page, _ts: nocacheToken ?? Date.now() },
-    headers: { "Cache-Control": "no-cache" },
-  });
+    });
   return data as LoansPage;
 }
 

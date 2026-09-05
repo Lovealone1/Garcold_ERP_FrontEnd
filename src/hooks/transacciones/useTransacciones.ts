@@ -1,189 +1,131 @@
-// hooks/transactions/useTransactions.ts
 "use client";
-import { useEffect, useMemo, useState } from "react";
-import { useQuery, useInfiniteQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
-import type { TransactionView, TransactionPageDTO } from "@/types/transaction";
-import { listTransactions } from "@/services/sales/transaction.api";
-import { useRtVersion } from "@/lib/realtime/rtVersion";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { DateRange } from "react-day-picker";
+import type { TransactionPageDTO } from "@/types/transaction";
+import {
+    listTransactions,
+    listTransactionFilterOptions,
+    summarizeTransactions,
+} from "@/services/sales/transaction.api";
+import { queryKeys } from "@/lib/query/queryKeys";
 
 export type OriginFilter = "all" | "auto" | "manual";
-export interface TransactionFilters { q?: string; bank?: string; type?: string; origin?: OriginFilter; dateRange?: DateRange; }
-type Page = TransactionPageDTO;
-
-// IMPORTANTE: filtros FUERA de la key y del fetch
-function fetchKey(pageSize: number, rtVersion: number) {
-    return { pageSize, rtVersion };
+export interface TransactionFilters {
+    q?: string;
+    bank?: string;
+    type?: string;
+    origin?: OriginFilter;
+    dateRange?: DateRange;
 }
 
+const EMPTY_FILTERS: TransactionFilters = {
+    q: "",
+    bank: "",
+    type: "",
+    origin: "all",
+    dateRange: undefined,
+};
+
+/** Filters in the shape the API expects, and stable enough to be a cache key. */
+function toQueryParams(filters: TransactionFilters) {
+    return {
+        q: filters.q?.trim() || undefined,
+        bank: filters.bank || undefined,
+        type: filters.type || undefined,
+        origin: filters.origin && filters.origin !== "all" ? filters.origin : undefined,
+        date_from: filters.dateRange?.from?.toISOString(),
+        date_to: filters.dateRange?.to?.toISOString(),
+    };
+}
+
+/**
+ * Transactions list, paginated and filtered by the API.
+ *
+ * This hook used to walk every page of the table at 120ms intervals until it
+ * had a complete local copy, then filter and paginate that copy in memory. At
+ * the server's page size of 8 that is one request per 8 rows -- hundreds of
+ * sequential round trips, a multi-megabyte cache entry, and a COUNT plus an
+ * offset scan on the database for each one, all to display eight rows.
+ *
+ * It also split the data across two query roots -- `transactions-head` for
+ * page 1 and `transactions` for the rest -- which is how invalidation kept
+ * missing the newest rows. There is now a single query per page.
+ */
 export function useTransactions(initialPage = 1, pageSize = 8) {
     const qc = useQueryClient();
-    const rtVersion = useRtVersion();
     const [page, setPage] = useState(initialPage);
-    const [filters, setFilters] = useState<TransactionFilters>({ q: "", bank: "", type: "", origin: "all", dateRange: undefined });
+    const [filters, setFilters] = useState<TransactionFilters>(EMPTY_FILTERS);
 
-    const fkey = useMemo(() => fetchKey(pageSize, rtVersion), [pageSize, rtVersion]);
+    const params = useMemo(() => toQueryParams(filters), [filters]);
 
-    // HEAD (page 1) - sin filtros en el fetch
-    const headKey = useMemo(() => ["transactions-head", fkey] as const, [fkey]);
-    const head = useQuery<Page, Error>({
-        queryKey: headKey,
-        queryFn: ({ signal }) => listTransactions(1, { signal, page_size: fkey.pageSize }),
-        staleTime: 0,
-        refetchOnMount: "always",
-        refetchOnWindowFocus: true,
-        refetchOnReconnect: true,
-    });
-
-    // TAIL (pages 2+) - sin filtros en el fetch
-    const tailKey = useMemo(() => ["transactions", fkey] as const, [fkey]);
-    const tail = useInfiniteQuery<Page, Error, InfiniteData<Page>, typeof tailKey, number>({
-        queryKey: tailKey,
-        enabled: !!head.data,                   // arranca cuando HEAD está lista
-        initialPageParam: 2,
-        queryFn: ({ pageParam = 2, signal }) =>
-            listTransactions(pageParam, { signal, page_size: fkey.pageSize }),
-        getNextPageParam: (last) => {
-            const cur = last.page ?? 1;
-            if (last.has_next === true) return cur + 1;
-            if (typeof last.total_pages === "number" && cur < last.total_pages) return cur + 1;
-            if (Array.isArray(last.items) && last.page_size && last.items.length === last.page_size) return cur + 1;
-            return undefined;
-        },
-        staleTime: 0,
-        refetchOnMount: "always",
-        refetchOnWindowFocus: true,
-        refetchOnReconnect: true,
-    });
-
-    // Prefetch secuencial del TAIL
+    // Changing a filter changes the result set, so any page but the first is
+    // meaningless against it.
     useEffect(() => {
-        if (!tail.data?.pages?.length) return;
-        let cancelled = false;
-        const prefetchAll = async () => {
-            if (cancelled || tail.isFetchingNextPage || !tail.hasNextPage) return;
-            await tail.fetchNextPage({ cancelRefetch: true });
-            const data = qc.getQueryData<InfiniteData<Page>>(tailKey);
-            const pages = data?.pages ?? [];
-            const last = pages[pages.length - 1];
-            const canContinue =
-                last?.has_next === true ||
-                (typeof last?.total_pages === "number" && pages.length + 1 < last.total_pages) || // +1 por HEAD
-                (Array.isArray(last?.items) && last.page_size && last.items.length === last.page_size);
-            if (!cancelled && canContinue) setTimeout(prefetchAll, 120);
-        };
-        const t = setTimeout(prefetchAll, 120);
-        return () => { cancelled = true; clearTimeout(t); };
-    }, [tail.data?.pages?.length, tail.hasNextPage, tail.isFetchingNextPage, qc, tailKey, tail.fetchNextPage]);
+        setPage(1);
+    }, [params.q, params.bank, params.type, params.origin, params.date_from, params.date_to]);
 
-    // Cambiar filtros → volver a page 1 (sin refetch)
-    useEffect(() => { setPage(1); }, [filters.q, filters.bank, filters.type, filters.origin]);
-
-    // ---------- SOLO PARA FILTROS: base = TODO lo cargado (HEAD + TAIL) ----------
-    const loadedPages: Page[] = useMemo(() => {
-        const out: Page[] = [];
-        if (head.data) out.push(head.data);
-        if (tail.data?.pages?.length) out.push(...tail.data.pages);
-        return out;
-    }, [head.data, tail.data?.pages]);
-
-    // Aplana y dedup por id a partir de TODO lo cargado
-    const all: TransactionView[] = useMemo(() => {
-        const flat = loadedPages.flatMap(p => p.items ?? []);
-        const byId = new Map<number, TransactionView>();
-        for (const t of flat) byId.set(t.id, t);
-        const uniq = Array.from(byId.values());
-        return uniq.sort((a, b) => {
-            const ta = +new Date(a.created_at), tb = +new Date(b.created_at);
-            return tb !== ta ? tb - ta : (b.id ?? 0) - (a.id ?? 0);
-        });
-    }, [loadedPages]);
-
-    // Filtros 100% locales (normalizados)
-    const qNorm = (filters.q ?? "").trim().toLowerCase();
-    const bankNorm = (filters.bank ?? "").trim();
-    const typeNorm = (filters.type ?? "").trim();
-    const originF = (filters.origin ?? "all") as OriginFilter;
-    const fromTime = filters.dateRange?.from?.getTime();
-    const toTime = filters.dateRange?.to?.getTime();
-
-    const filtered = useMemo(
-        () => all.filter((r) => {
-            const byQ =
-                !qNorm ||
-                String(r.id).includes(qNorm) ||
-                r.bank.toLowerCase().includes(qNorm) ||
-                r.type_str.toLowerCase().includes(qNorm) ||
-                (r.description ?? "").toLowerCase().includes(qNorm);
-
-            const byBank = !bankNorm || r.bank === bankNorm;
-            const byType = !typeNorm || r.type_str === typeNorm;
-            const byOrigin = originF === "all" || (originF === "auto" ? r.is_auto : !r.is_auto);
-
-            let byDate = true;
-            if (fromTime && toTime) {
-                const d = new Date(r.created_at).getTime();
-                byDate = d >= fromTime && d <= toTime;
-            }
-
-            return byQ && byBank && byType && byOrigin && byDate;
-        }),
-        [all, qNorm, bankNorm, typeNorm, originF, fromTime, toTime]
+    const listKey = useMemo(
+        () => queryKeys.transactions.list({ page, pageSize, ...params }),
+        [page, pageSize, params]
     );
 
-    // Paginación SIEMPRE desde los datos filtrados (cliente)
-    const clientTotal = filtered.length;
-    const uiTotalPages = Math.max(1, Math.ceil(clientTotal / pageSize));
-    const safePage = Math.min(page, uiTotalPages);
+    const query = useQuery<TransactionPageDTO>({
+        queryKey: listKey,
+        queryFn: ({ signal }) =>
+            listTransactions(page, { signal, page_size: pageSize, ...params }),
+        // Keeps the current rows on screen while the next page loads, instead
+        // of flashing an empty table between pages.
+        placeholderData: keepPreviousData,
+    });
 
-    const items = useMemo(
-        () => filtered.slice((safePage - 1) * pageSize, safePage * pageSize),
-        [filtered, safePage, pageSize]
-    );
+    // The dropdowns used to be derived from the downloaded rows; with server
+    // paging the client can no longer see them all.
+    const optionsQuery = useQuery({
+        queryKey: queryKeys.transactions.filterOptions(),
+        queryFn: ({ signal }) => listTransactionFilterOptions({ signal }),
+    });
 
-    const options = useMemo(() => {
-        const banks = Array.from(new Set(all.map((x) => x.bank))).sort();
-        const types = Array.from(new Set(all.map((x) => x.type_str))).sort();
-        return { banks, types };
-    }, [all]);
+    // Totals for the extract panel span the whole filtered set, not the page.
+    const summaryQuery = useQuery({
+        queryKey: queryKeys.transactions.summary(params),
+        queryFn: ({ signal }) => summarizeTransactions({ signal, ...params }),
+        enabled: !!filters.bank,
+    });
 
-    const refresh = () => {
-        qc.invalidateQueries({ queryKey: headKey, refetchType: "active" });
-        qc.invalidateQueries({ queryKey: tailKey, refetchType: "active" });
-    };
+    const data = query.data;
+    const items = data?.items ?? [];
+    const total = data?.total ?? 0;
+    const totalPages = Math.max(1, data?.total_pages ?? 1);
 
-    const loadingHead = head.isLoading || (!head.data && head.isFetching);
-    const loadingTail = page > 1 && tail.isFetching && !tail.data?.pages?.length;
-
-    const hasMoreServer = !!tail.hasNextPage;
-    const isFetchingMore = tail.isFetchingNextPage;
-    const loadMore = () => {
-        if (hasMoreServer && !isFetchingMore) return tail.fetchNextPage({ cancelRefetch: true });
-        return Promise.resolve();
-    };
-
-    // Info de server (opcional, solo informativa, NO usada para UI)
-    const serverTotal = head.data?.total ?? null;
-    const serverTotalPages = head.data?.page_size ? Math.max(1, Math.ceil((head.data.total ?? 0) / head.data.page_size)) : null;
+    const refresh = useCallback(() => {
+        void qc.invalidateQueries({ queryKey: queryKeys.transactions.all });
+    }, [qc]);
 
     return {
-        page: safePage,
+        page,
         setPage,
         items,
-        loading: loadingHead || loadingTail,
-        error: head.isError ? (head.error as Error).message : (tail.isError ? (tail.error as Error).message : null),
+        loading: query.isPending,
+        isFetching: query.isFetching,
+        error: query.isError ? (query.error as Error).message : null,
         refresh,
-        loadMore,
-        hasMoreServer,
-        isFetchingMore,
-        total_pages: uiTotalPages,  // locales
-        page_size: pageSize,
-        total: clientTotal,         // local
+
+        total,
+        total_pages: totalPages,
+        page_size: data?.page_size ?? pageSize,
+
         filters,
         setFilters,
-        options,
-        serverTotal,                // opcional
-        serverTotalPages,           // opcional
-        allFiltered: filtered,
+        options: {
+            banks: optionsQuery.data?.banks ?? [],
+            types: optionsQuery.data?.types ?? [],
+        },
+
+        /** Total amount per transaction type across the whole filtered set. */
+        summaryByType: summaryQuery.data ?? {},
+
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
     };
 }

@@ -18,8 +18,7 @@ export async function listUsers(
 ): Promise<AdminUsersPage> {
     const { data } = await api.get("/admin", {
         params: { page, per_page, email: email || undefined, _ts: Date.now() },
-        headers: { "Cache-Control": "no-cache" },
-    });
+        });
     return data as AdminUsersPage;
 }
 
@@ -52,16 +51,14 @@ export async function updateUser(userId: string, payload: UpdateUserIn): Promise
 export async function listLocalUsers(): Promise<UserDTO[]> {
     const { data } = await api.get("/admin/users/local", {
         params: { _ts: Date.now() },
-        headers: { "Cache-Control": "no-cache" },
-    });
+        });
     return data as UserDTO[];
 }
 
 export async function getUserBySub(sub: string): Promise<UserDTO> {
     const { data } = await api.get(`/admin/users/${encodeURIComponent(sub)}`, {
         params: { _ts: Date.now() },
-        headers: { "Cache-Control": "no-cache" },
-    });
+        });
     return data as UserDTO;
 }
 

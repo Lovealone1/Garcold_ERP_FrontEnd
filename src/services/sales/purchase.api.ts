@@ -8,38 +8,62 @@ import type {
   PurchasePaymentCreate,
 } from "@/types/purchase";
 
-type ListPurchasesOpts = {
+type PurchaseFilterOpts = {
   signal?: AbortSignal;
   q?: string;
   supplier?: string;
   status?: string;
   bank?: string;
-  from?: string;
-  to?: string;
-  page_size?: number;
+  date_from?: string;
+  date_to?: string;
 };
+
+type ListPurchasesOpts = PurchaseFilterOpts & { page_size?: number };
+
+function purchaseFilterParams(
+  opts: PurchaseFilterOpts
+): Record<string, string | undefined> {
+  const { q, supplier, status, bank, date_from, date_to } = opts;
+  return {
+    ...(q ? { q } : {}),
+    ...(supplier ? { supplier } : {}),
+    ...(status ? { status } : {}),
+    ...(bank ? { bank } : {}),
+    ...(date_from ? { date_from } : {}),
+    ...(date_to ? { date_to } : {}),
+  };
+}
+
+/** Bank, status and supplier names present in purchases, for the dropdowns. */
+export async function listPurchaseFilterOptions(
+  opts: { signal?: AbortSignal } = {}
+): Promise<{ banks: string[]; statuses: string[]; suppliers: string[] }> {
+  const { data } = await salesApi.get("/purchases/filter-options", {
+    signal: opts.signal,
+  });
+  return data as { banks: string[]; statuses: string[]; suppliers: string[] };
+}
+
+/** Totals across the whole filtered set, not just the visible page. */
+export async function summarizePurchases(
+  opts: PurchaseFilterOpts = {}
+): Promise<{ total: number; balance: number; count: number }> {
+  const { data } = await salesApi.get("/purchases/summary", {
+    params: purchaseFilterParams(opts),
+    signal: opts.signal,
+  });
+  return data as { total: number; balance: number; count: number };
+}
 
 export async function listPurchases(
   page = 1,
   opts: ListPurchasesOpts = {}
 ): Promise<PurchasePage> {
-  const { signal, q, supplier, status, bank, from, to, page_size } = opts;
-
-  const params: Record<string, string | number | undefined> = {
-    page,
-    page_size,
-    ...(q ? { q } : {}),
-    ...(supplier ? { supplier } : {}),
-    ...(status ? { status } : {}),
-    ...(bank ? { bank } : {}),
-    ...(from ? { from } : {}),
-    ...(to ? { to } : {}),
-  };
+  const { signal, page_size } = opts;
 
   const { data } = await salesApi.get("/purchases/", {
-    params,
+    params: { page, page_size, ...purchaseFilterParams(opts) },
     signal,
-    withCredentials: false,
   });
 
   return data as PurchasePage;
@@ -51,8 +75,7 @@ export async function getPurchaseById(
 ): Promise<Purchase> {
   const { data } = await salesApi.get(`/purchases/${purchaseId}`, {
     params: { _ts: nocacheToken ?? Date.now() },
-    headers: { "Cache-Control": "no-cache" },
-  });
+    });
   return data as Purchase;
 }
 
@@ -77,8 +100,7 @@ export async function createPurchase(
   };
 
   const { data } = await salesApi.post("/purchases/create", body, {
-    headers: { "Cache-Control": "no-cache" },
-  });
+    });
   return data as Purchase;
 }
 
@@ -86,8 +108,7 @@ export async function deletePurchase(
   purchaseId: number
 ): Promise<{ message: string }> {
   const { data } = await salesApi.delete(`/purchases/${purchaseId}`, {
-    headers: { "Cache-Control": "no-cache" },
-  });
+    });
   return data as { message: string };
 }
 
@@ -97,8 +118,7 @@ export async function listPurchaseItems(
 ): Promise<PurchaseDetailItem[]> {
   const { data } = await salesApi.get(`/purchases/${purchaseId}/items`, {
     params: { _ts: nocacheToken ?? Date.now() },
-    headers: { "Cache-Control": "no-cache" },
-  });
+    });
   return data as PurchaseDetailItem[];
 }
 
@@ -110,8 +130,7 @@ export async function listPurchasePayments(
     `/purchase-payments/by-purchase/${purchaseId}`,
     {
       params: { _ts: nocacheToken ?? Date.now() },
-      headers: { "Cache-Control": "no-cache" },
-    }
+      }
   );
   return data as PurchasePayment[];
 }
@@ -120,8 +139,7 @@ export async function createPurchasePayment(
   payload: PurchasePaymentCreate
 ): Promise<PurchasePayment> {
   const { data } = await salesApi.post("/purchase-payments/create", payload, {
-    headers: { "Cache-Control": "no-cache" },
-  });
+    });
   return data as PurchasePayment;
 }
 
@@ -129,7 +147,6 @@ export async function deletePurchasePayment(
   paymentId: number
 ): Promise<{ message: string }> {
   const { data } = await salesApi.delete(`/purchase-payments/${paymentId}`, {
-    headers: { "Cache-Control": "no-cache" },
-  });
+    });
   return data as { message: string };
 }

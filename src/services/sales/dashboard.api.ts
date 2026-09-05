@@ -17,7 +17,6 @@ export async function fetchFinalDashboard(
   const body = { payload: compact(payload) };
   const { data } = await salesApi.post("/dashboard", body, {
     params: { top_limit: opts?.topLimit ?? 10, _ts: opts?.nocacheToken ?? Date.now() },
-    headers: { "Cache-Control": "no-cache" },
     signal: opts?.signal, // Axios v1 soporta AbortController
   });
   return data as FinalReportDTO;

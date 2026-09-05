@@ -4,7 +4,9 @@ export interface Profit {
   id: number;
   sale_id: number;
   profit: number;
-  created_at: string; 
+  created_at: string;
+  /** Resolved by the API; the screen used to fetch each sale to get this. */
+  customer?: string | null;
 }
 
 export type ProfitPageDTO = PageDTO<Profit>;

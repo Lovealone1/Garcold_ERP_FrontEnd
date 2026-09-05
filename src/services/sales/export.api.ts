@@ -13,7 +13,6 @@ export async function exportAny(
 ): Promise<Blob> {
     const res = await salesApi.get("/export", {
         params: { entity, fmt, _ts },
-        headers: { "Cache-Control": "no-cache" },
         responseType: "blob",
         signal,
     });

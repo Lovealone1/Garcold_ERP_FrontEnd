@@ -15,7 +15,6 @@ import { useExport } from "@/hooks/io/useExport";
 import ImportDialog from "@/features/io/ImportDialog";
 import ExportDialog from "@/features/io/ExportDialog";
 import { useMediaQuery } from "@/hooks/ui/useMediaQuery";
-import { useCustomersRealtime } from "@/hooks/realtime/useCustomersRealtime";
 import { useCreateCustomer } from "@/hooks/clientes/useCreateCustomer";
 import { useUpdateCustomer } from "@/hooks/clientes/useUpdateCustomer";
 import { useDeleteCustomer } from "@/hooks/clientes/useDeleteCustomer";
@@ -279,7 +278,6 @@ export default function ClientesPage() {
     upsertOne,
   } = useCustomers(perPage);
 
-  useCustomersRealtime();
 
   const { success, error: err } = useNotifications();
 

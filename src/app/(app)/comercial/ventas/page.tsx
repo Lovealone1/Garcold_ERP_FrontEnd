@@ -14,15 +14,11 @@ import { useVentas } from "@/hooks/ventas/useVentas";
 import { useDeleteVenta } from "@/hooks/ventas/useDeleteVenta";
 import { useVentaEstados } from "@/hooks/estados/useEstados";
 import { getSaleById } from "@/services/sales/sale.api";
-import { listBanks } from "@/services/sales/bank.api";
 
 import type { Sale } from "@/types/sale";
 import type { DateRange } from "react-day-picker";
 import DateRangePicker from "@/components/ui/DateRangePicker/DateRangePicker";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
-
-import { useSalesRealtime } from "@/hooks/realtime/useSalesRealtime";
-
 const FRAME_BG = "color-mix(in srgb, var(--tg-bg) 90%, #fff 3%)";
 const OUTER_BG = "color-mix(in srgb, var(--tg-bg) 55%, #000 45%)";
 const INNER_BG = "color-mix(in srgb, var(--tg-bg) 95%, #fff 2%)";
@@ -237,7 +233,6 @@ function SaleRow({
 =========================================================== */
 
 export default function VentasPage() {
-    useSalesRealtime();
 
     const router = useRouter();
     const { success, error } = useNotifications();
@@ -252,31 +247,15 @@ export default function VentasPage() {
         totalPages,
         loading,
         reload,
-        loadMore,
-        hasMoreServer,
         filters,
         setFilters,
         totalFiltrado,
+        options: saleOptions,
     } = useVentas({}, 8);
 
     const [range, setRange] = useState<DateRange | undefined>();
-    const [bancos, setBancos] = useState<string[]>([]);
-
-    useEffect(() => {
-        let alive = true;
-        (async () => {
-            try {
-                const data = await listBanks();
-                if (!alive) return;
-                setBancos([...new Set(data?.map((b: any) => b.name))].sort());
-            } catch {
-                if (alive) setBancos([]);
-            }
-        })();
-        return () => {
-            alive = false;
-        };
-    }, []);
+    // Bank names arrive with the other filter options, from the same request.
+    const bancos: string[] = saleOptions.banks;
 
     const handleSearch = (v: string) => setFilters((f) => ({ ...f, q: v }));
     const handleEstado = (v: string) => setFilters((f) => ({ ...f, estado: v || undefined }));
@@ -298,9 +277,8 @@ export default function VentasPage() {
         setFilters({});
     };
 
-    const handlePageChange = async (target: number) => {
+    const handlePageChange = (target: number) => {
         if (target <= 0 || target > totalPages || target === page) return;
-        if (target > page && hasMoreServer) await loadMore();
         setPage(target);
     };
 

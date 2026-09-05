@@ -6,8 +6,7 @@ export async function listExpenseCategories(
 ): Promise<ExpenseCategory[]> {
     const { data } = await salesApi.get("/expense-categories", {
         params: { _ts: nocacheToken ?? Date.now() },
-        headers: { "Cache-Control": "no-cache" },
-    });
+        });
     return data as ExpenseCategory[];
 }
 

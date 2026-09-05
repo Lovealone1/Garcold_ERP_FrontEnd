@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import { createPurchasePayment } from "@/services/sales/purchase.api";
+import { invalidateMovement } from "@/lib/query/invalidateMovement";
 import type {
   PurchasePaymentCreate,
   PurchasePayment,
@@ -23,10 +24,12 @@ function patchPurchaseById(
   purchaseId: number,
   updater: (p: Purchase) => Purchase
 ): InfiniteData<Page> | undefined {
-  if (!data) return data;
+  // setQueriesData matches every query under the prefix, including any that
+  // is not an infinite list. Bail out instead of throwing past the mutation.
+  if (!data || !Array.isArray(data.pages)) return data;
   const pages = data.pages.map((p) => ({
     ...p,
-    items: p.items.map((purchase) =>
+    items: (p.items ?? []).map((purchase) =>
       purchase.id === purchaseId ? updater(purchase) : purchase
     ),
   }));
@@ -59,12 +62,10 @@ export function useCreatePurchasePayment() {
         })
       );
 
-      qc.invalidateQueries({ queryKey: ["purchases"], refetchType: "active" });
-      qc.invalidateQueries({
-        queryKey: ["purchase-payments", { purchaseId }],
-        refetchType: "active",
+      await invalidateMovement(qc, {
+        kind: "purchase_payment",
+        ids: { purchaseId },
       });
-      qc.invalidateQueries({ queryKey: ["transactions"], refetchType: "active" });
 
       return res;
     } catch (e: any) {

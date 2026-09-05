@@ -7,7 +7,6 @@ export async function listEstados(
 ): Promise<Status[]> {
     const { data } = await salesApi.get("/statuses/", {
         params: { _ts: nocacheToken ?? Date.now() },
-        headers: { "Cache-Control": "no-cache" },
-    });
+        });
     return data as Status[];
 }

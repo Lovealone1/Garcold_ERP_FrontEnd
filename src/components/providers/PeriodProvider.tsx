@@ -5,9 +5,7 @@ import {
     clampCalendar,
     currentMonthPeriod,
     periodLabel,
-    toPeriodParams,
     type CalendarPeriod,
-    type PeriodParams,
     type PeriodSelection,
 } from "@/lib/period/period";
 
@@ -21,8 +19,6 @@ import {
  */
 export type PeriodState = {
     period: PeriodSelection;
-    /** Query parameters for the API. Never carries both halves of the contract. */
-    params: PeriodParams;
     label: string;
     /** True while the selection still is the API's own default. */
     isDefault: boolean;
@@ -81,7 +77,6 @@ export function PeriodProvider({ children }: { children: React.ReactNode }) {
         const fallback = currentMonthPeriod();
         return {
             period,
-            params: toPeriodParams(period),
             label: periodLabel(period),
             isDefault:
                 period.kind === "calendar" &&

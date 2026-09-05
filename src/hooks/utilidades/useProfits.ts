@@ -4,22 +4,22 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { listProfits, summarizeProfits } from "@/services/sales/profit.api";
 import { queryKeys } from "@/lib/query/queryKeys";
-import { usePeriod } from "@/components/providers/PeriodProvider";
+import { toApiDate } from "@/lib/period/period";
 import type { Profit, ProfitPageDTO } from "@/types/profit";
 
-type Filters = { q?: string };
+type Filters = { q?: string; from?: Date; to?: Date };
 
 /**
- * The period is no longer built here.
- *
- * This used to widen a date-only range to cover both whole days and send it as
- * ISO timestamps. The API now reads a bare YYYY-MM-DD as the whole day in
- * Bogota, so the widening -- and the timezone shift that came with it -- is
- * the server's job.
+ * This used to widen a date-only range to cover both whole days and then send
+ * it as ISO timestamps -- which moved the upper bound back across the day
+ * boundary and dropped the last day of the range. The API now reads a bare
+ * YYYY-MM-DD as the whole day in Bogota, so the widening is the server's job.
  */
 function toQueryParams(filters: Filters) {
     return {
         q: filters.q?.trim() || undefined,
+        date_from: toApiDate(filters.from) ?? undefined,
+        date_to: toApiDate(filters.to) ?? undefined,
     };
 }
 
@@ -33,15 +33,7 @@ export function useProfits(initialPage = 1, pageSize = 16) {
     const [page, setPage] = useState(initialPage);
     const [filters, setFilters] = useState<Filters>({});
 
-    // The period comes from the header selector, shared by every screen.
-    // Utilidades is also the screen that legitimately wants all of history,
-    // which is now the named `period=all` rather than sending no dates.
-    const { params: periodParams } = usePeriod();
-
-    const params = useMemo(
-        () => ({ ...toQueryParams(filters), ...periodParams }),
-        [filters, periodParams]
-    );
+    const params = useMemo(() => toQueryParams(filters), [filters]);
 
     useEffect(() => {
         setPage(1);

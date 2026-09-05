@@ -18,7 +18,7 @@ import { getSaleById } from "@/services/sales/sale.api";
 import type { Sale } from "@/types/sale";
 import type { DateRange } from "react-day-picker";
 import DateRangePicker from "@/components/ui/DateRangePicker/DateRangePicker";
-import { usePeriodRange } from "@/lib/period/usePeriodRange";
+import { toApiDate } from "@/lib/period/period";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 const FRAME_BG = "color-mix(in srgb, var(--tg-bg) 90%, #fff 3%)";
 const OUTER_BG = "color-mix(in srgb, var(--tg-bg) 55%, #000 45%)";
@@ -254,9 +254,9 @@ export default function VentasPage() {
         options: saleOptions,
     } = useVentas({}, 8);
 
-    // The picker writes the shared period, so it and the header selector can
-    // never both be in effect -- the API answers that pair with a 422.
-    const { range, setRange } = usePeriodRange();
+    // The date range filters the table on this screen; the header period
+    // selector belongs to the dashboard and does not reach here.
+    const [range, setRange] = useState<DateRange | undefined>();
     // Bank names arrive with the other filter options, from the same request.
     const bancos: string[] = saleOptions.banks;
 
@@ -264,7 +264,13 @@ export default function VentasPage() {
     const handleEstado = (v: string) => setFilters((f) => ({ ...f, estado: v || undefined }));
     const handleBanco = (v: string) => setFilters((f) => ({ ...f, banco: v || undefined }));
 
-    const handleRange = (r?: DateRange) => setRange(r);
+    const handleRange = (r?: DateRange) => {
+        setRange(r);
+        // Bare dates: the API reads one as the whole day in Bogota.
+        const from = toApiDate(r?.from) ?? undefined;
+        const to = toApiDate(r?.to ?? r?.from) ?? undefined;
+        setFilters((f) => ({ ...f, from, to }));
+    };
 
     const clearFilters = () => {
         setRange(undefined);

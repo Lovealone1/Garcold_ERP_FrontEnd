@@ -9,7 +9,7 @@ import { MaterialIcon } from "@/components/ui/material-icon";
 import type { Profit } from "@/types/profit";
 import UtilidadView from "@/features/utilidades/ViewDetalleUtilidades";
 import DateRangeInput from "@/components/ui/DateRangePicker/DateRangePicker";
-import { usePeriodRange } from "@/lib/period/usePeriodRange";
+import type { DateRange } from "react-day-picker";
 import { useProfits } from "@/hooks/utilidades/useProfits";
 
 /* -------- Tokens visuales -------- */
@@ -108,15 +108,15 @@ export default function UtilidadesPage() {
     } = useProfits(1, 16);
 
     const [q, setQ] = useState("");
-    // Utilidades is the screen that legitimately wants all of history; that is
-    // now the header's named "Todo el historial", not an absent date filter.
-    const { range, setRange } = usePeriodRange();
+    // The date range filters the table on this screen; the header period
+    // selector belongs to the dashboard and does not reach here.
+    const [range, setRange] = useState<DateRange | undefined>(undefined);
     const [openView, setOpenView] = useState(false);
     const [ventaToView, setVentaToView] = useState<number | null>(null);
 
     useEffect(() => {
-        setFilters({ q });
-    }, [q, setFilters]);
+        setFilters({ q, from: range?.from, to: range?.to });
+    }, [q, range, setFilters]);
 
     const safePage = page;
 

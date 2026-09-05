@@ -7,9 +7,7 @@ import {
     routeHasPeriod,
     toApiDate,
     todayInBogota,
-    toPeriodParams,
     type CalendarPeriod,
-    type PeriodSelection,
 } from "../period";
 
 const cal = (
@@ -17,55 +15,6 @@ const cal = (
     month: number | null = null,
     day: number | null = null
 ): CalendarPeriod => ({ kind: "calendar", year, month, day });
-
-describe("toPeriodParams", () => {
-    // The API answers a request carrying a calendar selector *and* a free range
-    // with a 422 -- the two describe the same thing. The union makes sending
-    // both unrepresentable; these lock that in.
-    it("never emits a calendar selector and a range together", () => {
-        const selections: PeriodSelection[] = [
-            cal(2026),
-            cal(2026, 9),
-            cal(2026, 9, 5),
-            { kind: "range", from: "2026-01-01", to: "2026-03-31" },
-            { kind: "range", from: null, to: null },
-            { kind: "all" },
-        ];
-        // Three selectors now, so the exclusivity is three-way: the API answers
-        // any pair with a 422 naming the two that collided.
-        for (const sel of selections) {
-            const p = toPeriodParams(sel);
-            const used = [
-                p.year !== undefined || p.month !== undefined || p.day !== undefined,
-                p.date_from !== undefined || p.date_to !== undefined,
-                p.period !== undefined,
-            ].filter(Boolean).length;
-            expect(used).toBeLessThanOrEqual(1);
-        }
-    });
-
-    it("asks for all-history by name", () => {
-        expect(toPeriodParams({ kind: "all" })).toEqual({ period: "all" });
-    });
-
-    it("sends the calendar units the user actually chose", () => {
-        expect(toPeriodParams(cal(2026))).toEqual({ year: 2026 });
-        expect(toPeriodParams(cal(2026, 9))).toEqual({ year: 2026, month: 9 });
-        expect(toPeriodParams(cal(2026, 9, 5))).toEqual({ year: 2026, month: 9, day: 5 });
-    });
-
-    it("omits an empty end of a range rather than sending null", () => {
-        expect(toPeriodParams({ kind: "range", from: "2026-01-01", to: null })).toEqual({
-            date_from: "2026-01-01",
-        });
-        expect(toPeriodParams({ kind: "range", from: null, to: null })).toEqual({});
-    });
-
-    it("drops a day the month does not have instead of sending a 422", () => {
-        // year=2026&month=2&day=30 -> "day 30 does not exist in 2026-02"
-        expect(toPeriodParams(cal(2026, 2, 30))).toEqual({ year: 2026, month: 2 });
-    });
-});
 
 describe("toApiDate", () => {
     // The API reads a bare YYYY-MM-DD as the whole day in Bogota -- start of
@@ -191,7 +140,13 @@ describe("periodLabel", () => {
 });
 
 describe("routeHasPeriod", () => {
-    it("covers the five screens backed by the period endpoints", () => {
+    it("covers the dashboard, which the selector drives", () => {
+        expect(routeHasPeriod("/inicio")).toBe(true);
+    });
+
+    // The list screens filter a table the user is already looking at, with
+    // their own date range pickers sending date_from/date_to directly.
+    it("excludes the list screens, which own their date filters", () => {
         for (const path of [
             "/comercial/ventas",
             "/comercial/compras",
@@ -199,17 +154,8 @@ describe("routeHasPeriod", () => {
             "/finanzas/gastos",
             "/finanzas/transacciones",
         ]) {
-            expect(routeHasPeriod(path)).toBe(true);
+            expect(routeHasPeriod(path)).toBe(false);
         }
-    });
-
-    it("excludes /inicio, which posts to /dashboard with its own contract", () => {
-        expect(routeHasPeriod("/inicio")).toBe(false);
-    });
-
-    it("excludes nested routes that do not report on a period", () => {
-        expect(routeHasPeriod("/comercial/ventas/crear")).toBe(false);
-        expect(routeHasPeriod("/comercial/ventas/facturas/12")).toBe(false);
     });
 
     it("excludes screens with no period at all", () => {
@@ -218,8 +164,8 @@ describe("routeHasPeriod", () => {
     });
 
     it("tolerates a trailing slash, a query and no path", () => {
-        expect(routeHasPeriod("/comercial/ventas/")).toBe(true);
-        expect(routeHasPeriod("/comercial/ventas?page=2")).toBe(true);
+        expect(routeHasPeriod("/inicio/")).toBe(true);
+        expect(routeHasPeriod("/inicio?x=1")).toBe(true);
         expect(routeHasPeriod(null)).toBe(false);
     });
 });

@@ -8,7 +8,6 @@ import {
   summarizePurchases,
 } from "@/services/sales/purchase.api";
 import { queryKeys } from "@/lib/query/queryKeys";
-import { usePeriod } from "@/components/providers/PeriodProvider";
 import type { PurchasePage } from "@/types/purchase";
 
 type Filters = {
@@ -16,6 +15,8 @@ type Filters = {
   status?: string;
   bank?: string;
   supplier?: string;
+  from?: string;
+  to?: string;
 };
 
 function toQueryParams(filters: Filters) {
@@ -24,6 +25,8 @@ function toQueryParams(filters: Filters) {
     status: filters.status || undefined,
     bank: filters.bank || undefined,
     supplier: filters.supplier || undefined,
+    date_from: filters.from || undefined,
+    date_to: filters.to || undefined,
   };
 }
 
@@ -39,13 +42,7 @@ export function usePurchases(initialFilters: Filters = {}, pageSize = 8) {
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<Filters>(initialFilters);
 
-  // The period comes from the header selector, shared by every screen.
-  const { params: periodParams } = usePeriod();
-
-  const params = useMemo(
-    () => ({ ...toQueryParams(filters), ...periodParams }),
-    [filters, periodParams]
-  );
+  const params = useMemo(() => toQueryParams(filters), [filters]);
 
   useEffect(() => {
     setPage(1);

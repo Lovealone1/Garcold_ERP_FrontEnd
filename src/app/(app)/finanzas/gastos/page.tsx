@@ -8,14 +8,15 @@ import { useExpenses } from "@/hooks/gastos/useGastos";
 import { useExpenseCategories } from "@/hooks/categoria-gastos/useCategoriaGastos";
 import { useDeleteExpense } from "@/hooks/gastos/useDeleteGasto";
 import DateRangePicker from "@/components/ui/DateRangePicker/DateRangePicker";
-import { usePeriodRange } from "@/lib/period/usePeriodRange";
+import type { DateRange } from "react-day-picker";
+import { toApiDate } from "@/lib/period/period";
 import CreateExpenseModal from "@/features/gastos/CreateGastoModal";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 
 export default function GastosPage() {
-    // The picker writes the shared period, so it and the header selector can
-    // never both be in effect -- the API answers that pair with a 422.
-    const { range, setRange } = usePeriodRange();
+    // The date range filters the table on this screen; the header period
+    // selector belongs to the dashboard and does not reach here.
+    const [range, setRange] = useState<DateRange | undefined>();
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
     const [confirmDelete, setConfirmDelete] = useState(false);
     const [openCreate, setOpenCreate] = useState(false);
@@ -147,6 +148,13 @@ export default function GastosPage() {
                                     onChange={(r) => {
                                         setRange(r);
                                         setPage(1);
+                                        // Bare dates: the API reads one as the
+                                        // whole day in Bogota.
+                                        setFilters((f) => ({
+                                            ...f,
+                                            from: toApiDate(r?.from) ?? undefined,
+                                            to: toApiDate(r?.to ?? r?.from) ?? undefined,
+                                        }));
                                     }}
                                 />
                             </div>

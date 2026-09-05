@@ -33,7 +33,6 @@ import { useProductos } from "@/hooks/productos/useProductos";
 import { useProfits } from "@/hooks/utilidades/useProfits";
 import { invalidateMovement } from "@/lib/query/invalidateMovement";
 import { makeTestQueryClient, makeWrapper } from "@/test/queryWrapper";
-import { todayInBogota } from "@/lib/period/period";
 
 function pageOf(items: unknown[], overrides = {}) {
     return {
@@ -243,19 +242,24 @@ describe("useProfits", () => {
         expect(result.current.items[0].customer).toBe("Perez");
     });
 
-    // Widening a range to cover whole days used to happen here, as ISO
-    // timestamps. The API now reads a bare date as the whole day in Bogota, so
-    // the hook's job is only to always send a period.
-    it("always sends a period, defaulting to the current month", async () => {
+    // This used to widen the range to 23:59:59.999 in local time and then
+    // serialise it to UTC, moving the upper bound back across the day boundary
+    // and cutting off the last day. Bare dates leave the widening to the server.
+    it("sends the range as bare dates, not timestamps", async () => {
         const { result } = mount();
         await waitFor(() => expect(result.current.loading).toBe(false));
 
-        const args = listProfits.mock.calls[0][1] as Record<string, unknown>;
-        const today = todayInBogota();
-        expect(args.year).toBe(today.year);
-        expect(args.month).toBe(today.month);
-        expect(args.date_from).toBeUndefined();
-        expect(args.date_to).toBeUndefined();
+        act(() =>
+            result.current.setFilters({
+                from: new Date(2026, 0, 1),
+                to: new Date(2026, 0, 31),
+            })
+        );
+        await waitFor(() => expect(listProfits).toHaveBeenCalledTimes(2));
+
+        const args = listProfits.mock.calls[1][1] as Record<string, string>;
+        expect(args.date_from).toBe("2026-01-01");
+        expect(args.date_to).toBe("2026-01-31");
     });
 
     it("gets the filtered total from the API", async () => {

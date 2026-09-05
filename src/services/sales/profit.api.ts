@@ -1,28 +1,26 @@
 import salesApi from "../salesApi";
+import { pickPeriodParams, type PeriodParams } from "@/lib/period/period";
 import type { Profit, ProfitPageDTO, ProfitDetail } from "@/types/profit";
 
 type Opts = { nocacheToken?: number; signal?: AbortSignal };
-type ListOpts = {
+type ProfitFilterOpts = PeriodParams & {
   signal?: AbortSignal;
-  page_size?: number;
   q?: string;
-  date_from?: string;
-  date_to?: string;
 };
+type ListOpts = ProfitFilterOpts & { page_size?: number };
 
 const ts = () => Date.now();
 export async function listProfits(
   page = 1,
   opts: ListOpts = {}
 ): Promise<ProfitPageDTO> {
-  const { signal, page_size, q, date_from, date_to } = opts;
+  const { signal, page_size, q } = opts;
 
   const params: Record<string, string | number | undefined> = {
     page,
     page_size,
     ...(q ? { q } : {}),
-    ...(date_from ? { date_from } : {}),
-    ...(date_to ? { date_to } : {}),
+    ...pickPeriodParams(opts),
   };
 
   const { data } = await salesApi.get("/profits/", {
@@ -58,14 +56,13 @@ export async function listProfitDetailsBySaleId(
 
 /** Total profit across the whole filtered set, not just the visible page. */
 export async function summarizeProfits(
-  opts: { signal?: AbortSignal; q?: string; date_from?: string; date_to?: string } = {}
+  opts: ProfitFilterOpts = {}
 ): Promise<{ total: number; count: number }> {
-  const { signal, q, date_from, date_to } = opts;
+  const { signal, q } = opts;
   const { data } = await salesApi.get("/profits/summary", {
     params: {
       ...(q ? { q } : {}),
-      ...(date_from ? { date_from } : {}),
-      ...(date_to ? { date_to } : {}),
+      ...pickPeriodParams(opts),
     },
     signal,
   });

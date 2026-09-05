@@ -8,14 +8,13 @@ import {
   summarizeExpenses,
 } from "@/services/sales/expense.api";
 import { queryKeys } from "@/lib/query/queryKeys";
+import { usePeriod } from "@/components/providers/PeriodProvider";
 import type { ExpensesPage } from "@/types/expense";
 
 type Filters = {
   q?: string;
   category?: string;
   bank?: string;
-  from?: string;
-  to?: string;
 };
 
 function toQueryParams(filters: Filters) {
@@ -23,8 +22,6 @@ function toQueryParams(filters: Filters) {
     q: filters.q?.trim() || undefined,
     category: filters.category || undefined,
     bank: filters.bank || undefined,
-    date_from: filters.from || undefined,
-    date_to: filters.to || undefined,
   };
 }
 
@@ -44,11 +41,17 @@ export function useExpenses(initialFilters: Filters = {}, pageSize = 8) {
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<Filters>(initialFilters);
 
-  const params = useMemo(() => toQueryParams(filters), [filters]);
+  // The period comes from the header selector, shared by every screen.
+  const { params: periodParams } = usePeriod();
+
+  const params = useMemo(
+    () => ({ ...toQueryParams(filters), ...periodParams }),
+    [filters, periodParams]
+  );
 
   useEffect(() => {
     setPage(1);
-  }, [params.q, params.category, params.bank, params.date_from, params.date_to]);
+  }, [params]);
 
   const query = useQuery<ExpensesPage>({
     queryKey: queryKeys.expenses.list({ page, pageSize, ...params }),

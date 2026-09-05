@@ -5,7 +5,10 @@ import { usePathname } from "next/navigation";
 import Sidebar from "@/components/layout/sidebar";
 import { MaterialIcon } from "@/components/ui/material-icon";
 import { NotificationsProvider } from "@/components/providers/NotificationsProvider";
+import { PeriodProvider } from "@/components/providers/PeriodProvider";
 import Breadcrumbs from "@/components/ui/Breadcrumbs";
+import PeriodSelector from "@/components/ui/PeriodSelector";
+import { routeHasPeriod } from "@/lib/period/period";
 
 function titleFromPath(path: string): string {
   const map: Record<string, string> = {
@@ -28,7 +31,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const mobileTitle = useMemo(() => titleFromPath(pathname || "/"), [pathname]);
 
+  // Only the screens that actually report on a period get the selector; on the
+  // rest it would be a control that changes nothing.
+  const showPeriod = routeHasPeriod(pathname);
+
   return (
+    <PeriodProvider>
     <NotificationsProvider>
       <div className="app-shell min-h-screen flex">
         <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
@@ -84,7 +92,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               </button>
 
               {/* Título móvil */}
-              <h1 className="md:hidden text-lg font-extrabold text-tg-primary truncate">
+              <h1 className="md:hidden min-w-0 text-lg font-extrabold text-tg-primary truncate">
                 {mobileTitle}
               </h1>
 
@@ -92,6 +100,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               <div className="hidden md:flex items-center flex-1 min-w-0">
                 <Breadcrumbs className="flex-1 min-w-0 truncate" />
               </div>
+
+              {/* Periodo: a la derecha del header, junto a las breadcrumbs.
+                  `ml-auto` lo empuja al borde en móvil, donde no hay
+                  breadcrumbs que ocupen el espacio intermedio. */}
+              {showPeriod && <PeriodSelector className="ml-auto md:ml-0 shrink-0" />}
             </div>
           </header>
 
@@ -102,5 +115,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </div>
     </NotificationsProvider>
+    </PeriodProvider>
   );
 }

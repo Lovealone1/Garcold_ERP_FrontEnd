@@ -5,7 +5,7 @@ export async function listBanks(
   nocacheToken?: number,
   opts?: { signal?: AbortSignal }
 ): Promise<Bank[]> {
-  const { data } = await salesApi.get("/banks", {
+  const { data } = await salesApi.get("/banks/", {
     params: { _ts: nocacheToken ?? Date.now() },
     signal: opts?.signal,
   });

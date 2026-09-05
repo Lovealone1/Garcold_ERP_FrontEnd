@@ -16,7 +16,11 @@ const nextConfig: NextConfig = {
   },
   async rewrites() {
     if (!/^https?:\/\//.test(API_BASE)) return [];
-    return [{ source: "/api/:path*", destination: `${API_BASE}/:path*` }];
+    // `:path*` captures what follows `/api/`, so the destination has to put the
+    // prefix back. It used to forward `/api/v1/sales` to `${API_BASE}/v1/sales`,
+    // and every route on the API lives under `/api/v1` -- so anything that took
+    // this path got a 404 rather than reaching the endpoint.
+    return [{ source: "/api/:path*", destination: `${API_BASE}/api/:path*` }];
   },
 };
 

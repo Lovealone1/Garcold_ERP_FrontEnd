@@ -16,6 +16,7 @@ import { useTransactions } from "../useTransacciones";
 import { queryKeys } from "@/lib/query/queryKeys";
 import { invalidateMovement } from "@/lib/query/invalidateMovement";
 import { makeTestQueryClient, makeWrapper } from "@/test/queryWrapper";
+import { todayInBogota } from "@/lib/period/period";
 
 function page(overrides: Partial<TransactionPageDTO> = {}): TransactionPageDTO {
     return {
@@ -151,20 +152,19 @@ describe("useTransactions", () => {
             expect(callArgs(1).origin).toBe("manual");
         });
 
-        it("sends the date range as ISO strings", async () => {
+        // It used to send .toISOString() bounds. The upper one landed at
+        // midnight, so the last day of every range was silently dropped: a
+        // transaction at 20:00 on the 30th fell outside the month it belongs
+        // to. The range is now the shared period, sent as bare dates.
+        it("always sends a period, defaulting to the current month", async () => {
             const { result } = mount();
             await waitFor(() => expect(result.current.loading).toBe(false));
 
-            act(() =>
-                result.current.setFilters({
-                    ...result.current.filters,
-                    dateRange: { from: new Date("2026-01-01T00:00:00Z"), to: new Date("2026-02-01T00:00:00Z") },
-                })
-            );
-            await waitFor(() => expect(listTransactions).toHaveBeenCalledTimes(2));
-
-            expect(callArgs(1).date_from).toBe("2026-01-01T00:00:00.000Z");
-            expect(callArgs(1).date_to).toBe("2026-02-01T00:00:00.000Z");
+            const today = todayInBogota();
+            expect(callArgs(0).year).toBe(today.year);
+            expect(callArgs(0).month).toBe(today.month);
+            expect(callArgs(0).date_from).toBeUndefined();
+            expect(callArgs(0).date_to).toBeUndefined();
         });
 
         // Page 4 of an unfiltered list is meaningless against a filtered one.

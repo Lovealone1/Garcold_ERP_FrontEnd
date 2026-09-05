@@ -9,6 +9,7 @@ import {
     summarizeTransactions,
 } from "@/services/sales/transaction.api";
 import { queryKeys } from "@/lib/query/queryKeys";
+import { usePeriod } from "@/components/providers/PeriodProvider";
 
 export type OriginFilter = "all" | "auto" | "manual";
 export interface TransactionFilters {
@@ -16,7 +17,6 @@ export interface TransactionFilters {
     bank?: string;
     type?: string;
     origin?: OriginFilter;
-    dateRange?: DateRange;
 }
 
 const EMPTY_FILTERS: TransactionFilters = {
@@ -24,7 +24,6 @@ const EMPTY_FILTERS: TransactionFilters = {
     bank: "",
     type: "",
     origin: "all",
-    dateRange: undefined,
 };
 
 /** Filters in the shape the API expects, and stable enough to be a cache key. */
@@ -34,8 +33,6 @@ function toQueryParams(filters: TransactionFilters) {
         bank: filters.bank || undefined,
         type: filters.type || undefined,
         origin: filters.origin && filters.origin !== "all" ? filters.origin : undefined,
-        date_from: filters.dateRange?.from?.toISOString(),
-        date_to: filters.dateRange?.to?.toISOString(),
     };
 }
 
@@ -57,13 +54,21 @@ export function useTransactions(initialPage = 1, pageSize = 8) {
     const [page, setPage] = useState(initialPage);
     const [filters, setFilters] = useState<TransactionFilters>(EMPTY_FILTERS);
 
-    const params = useMemo(() => toQueryParams(filters), [filters]);
+    // The period comes from the header selector, shared by every screen. It
+    // also replaced this hook's own .toISOString() bounds, whose upper end
+    // landed at midnight and dropped the last day of every range.
+    const { params: periodParams } = usePeriod();
+
+    const params = useMemo(
+        () => ({ ...toQueryParams(filters), ...periodParams }),
+        [filters, periodParams]
+    );
 
     // Changing a filter changes the result set, so any page but the first is
     // meaningless against it.
     useEffect(() => {
         setPage(1);
-    }, [params.q, params.bank, params.type, params.origin, params.date_from, params.date_to]);
+    }, [params]);
 
     const listKey = useMemo(
         () => queryKeys.transactions.list({ page, pageSize, ...params }),

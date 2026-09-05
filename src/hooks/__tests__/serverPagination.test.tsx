@@ -23,6 +23,7 @@ import { usePurchases } from "@/hooks/compras/usePurchases";
 import { useExpenses } from "@/hooks/gastos/useGastos";
 import { invalidateMovement } from "@/lib/query/invalidateMovement";
 import { makeTestQueryClient, makeWrapper } from "@/test/queryWrapper";
+import { todayInBogota } from "@/lib/period/period";
 
 function pageOf(items: unknown[]) {
     return {
@@ -79,8 +80,6 @@ describe("usePurchases", () => {
                 status: "Credito",
                 bank: "Nequi",
                 supplier: "Acme",
-                from: "2026-01-01",
-                to: "2026-02-01",
             })
         );
         await waitFor(() => expect(listPurchases).toHaveBeenCalledTimes(2));
@@ -89,8 +88,20 @@ describe("usePurchases", () => {
         expect(args.q).toBe("acme");
         expect(args.status).toBe("Credito");
         expect(args.supplier).toBe("Acme");
-        expect(args.date_from).toBe("2026-01-01");
-        expect(args.date_to).toBe("2026-02-01");
+    });
+
+    // The screen used to open with no dates at all, which made /summary sum
+    // every purchase ever recorded.
+    it("always sends a period, defaulting to the current month", async () => {
+        const { result } = mount();
+        await waitFor(() => expect(result.current.loading).toBe(false));
+
+        const args = listPurchases.mock.calls[0][1] as Record<string, unknown>;
+        const today = todayInBogota();
+        expect(args.year).toBe(today.year);
+        expect(args.month).toBe(today.month);
+        expect(args.date_from).toBeUndefined();
+        expect(args.date_to).toBeUndefined();
     });
 
     it("returns to page 1 when a filter changes", async () => {
@@ -166,8 +177,6 @@ describe("useExpenses", () => {
                 q: " arri ",
                 category: "Arriendo",
                 bank: "Nequi",
-                from: "2026-01-01",
-                to: "2026-02-01",
             })
         );
         await waitFor(() => expect(listExpenses).toHaveBeenCalledTimes(2));
@@ -176,7 +185,16 @@ describe("useExpenses", () => {
         expect(args.q).toBe("arri");
         expect(args.category).toBe("Arriendo");
         expect(args.bank).toBe("Nequi");
-        expect(args.date_from).toBe("2026-01-01");
+    });
+
+    it("always sends a period, defaulting to the current month", async () => {
+        const { result } = mount();
+        await waitFor(() => expect(result.current.loading).toBe(false));
+
+        const args = listExpenses.mock.calls[0][1] as Record<string, unknown>;
+        const today = todayInBogota();
+        expect(args.year).toBe(today.year);
+        expect(args.month).toBe(today.month);
     });
 
     it("omits blank filters entirely", async () => {

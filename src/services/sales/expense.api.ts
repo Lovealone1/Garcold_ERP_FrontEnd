@@ -1,31 +1,29 @@
 import salesApi from "../salesApi";
+import { pickPeriodParams, type PeriodParams } from "@/lib/period/period";
 import type {
     Expense,
     ExpensesPage,
     ExpenseCreate,
 } from "@/types/expense";
 
-type ExpenseFilterOpts = {
+type ExpenseFilterOpts = PeriodParams & {
     signal?: AbortSignal;
     q?: string;
     category?: string;
     bank?: string;
-    date_from?: string;
-    date_to?: string;
 };
 
 type ListExpensesOpts = ExpenseFilterOpts & { page_size?: number };
 
 function expenseFilterParams(
     opts: ExpenseFilterOpts
-): Record<string, string | undefined> {
-    const { q, category, bank, date_from, date_to } = opts;
+): Record<string, string | number | undefined> {
+    const { q, category, bank } = opts;
     return {
         ...(q ? { q } : {}),
         ...(category ? { category } : {}),
         ...(bank ? { bank } : {}),
-        ...(date_from ? { date_from } : {}),
-        ...(date_to ? { date_to } : {}),
+        ...pickPeriodParams(opts),
     };
 }
 

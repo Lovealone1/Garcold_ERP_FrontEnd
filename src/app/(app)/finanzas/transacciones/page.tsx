@@ -4,7 +4,6 @@
 import { useEffect, useMemo, useState, CSSProperties } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import type { DateRange } from "react-day-picker";
 import { MaterialIcon } from "@/components/ui/material-icon";
 
 import { useTransactions } from "@/hooks/transacciones/useTransacciones";
@@ -13,6 +12,7 @@ import { useCreateTransaction } from "@/hooks/transacciones/useCreateTransaccion
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 import NewTransactionModal from "@/features/transacciones/NuevaTransaccionModal";
 import DateRangePicker from "@/components/ui/DateRangePicker/DateRangePicker";
+import { usePeriodRange } from "@/lib/period/usePeriodRange";
 import type { TransactionCreate, TransactionView } from "@/types/transaction";
 import ExtractoBancarioModal from "@/features/transacciones/ExtractoBancarioModal";
 
@@ -215,7 +215,9 @@ export default function TransactionsPage() {
     const [pendingTx, setPendingTx] = useState<TransactionView | null>(null);
 
     const [openCreate, setOpenCreate] = useState(false);
-    const [range, setRange] = useState<DateRange | undefined>(undefined);
+    // The picker writes the shared period, so it and the header selector can
+    // never both be in effect -- the API answers that pair with a 422.
+    const { range, setRange } = usePeriodRange();
     const [extractOpen, setExtractOpen] = useState(false);
 
     // Totals span the whole filtered set, so they come from the API. They used
@@ -265,7 +267,8 @@ export default function TransactionsPage() {
     }
 
     function clearFilters() {
-        setFilters({ q: "", bank: "", type: "", origin: "all", dateRange: undefined } as any);
+        setFilters({ q: "", bank: "", type: "", origin: "all" } as any);
+        setRange(undefined);
         setRange(undefined);
         setPage(1);
     }
@@ -344,7 +347,7 @@ export default function TransactionsPage() {
                         <option value="auto">Automática</option>
                     </select>
 
-                    <DateRangePicker className={datePickerSxDesktop + " whitespace-nowrap"} value={range} onChange={(r) => { setRange(r); setPage(1); setFilters((f: any) => ({ ...f, dateRange: r })); }} />
+                    <DateRangePicker className={datePickerSxDesktop + " whitespace-nowrap"} value={range} onChange={(r) => { setRange(r); setPage(1); }} />
 
                     <button
                         type="button"

@@ -1,4 +1,5 @@
 import salesApi from "../salesApi";
+import { pickPeriodParams, type PeriodParams } from "@/lib/period/period";
 import type {
   Purchase,
   PurchasePage,
@@ -8,29 +9,26 @@ import type {
   PurchasePaymentCreate,
 } from "@/types/purchase";
 
-type PurchaseFilterOpts = {
+type PurchaseFilterOpts = PeriodParams & {
   signal?: AbortSignal;
   q?: string;
   supplier?: string;
   status?: string;
   bank?: string;
-  date_from?: string;
-  date_to?: string;
 };
 
 type ListPurchasesOpts = PurchaseFilterOpts & { page_size?: number };
 
 function purchaseFilterParams(
   opts: PurchaseFilterOpts
-): Record<string, string | undefined> {
-  const { q, supplier, status, bank, date_from, date_to } = opts;
+): Record<string, string | number | undefined> {
+  const { q, supplier, status, bank } = opts;
   return {
     ...(q ? { q } : {}),
     ...(supplier ? { supplier } : {}),
     ...(status ? { status } : {}),
     ...(bank ? { bank } : {}),
-    ...(date_from ? { date_from } : {}),
-    ...(date_to ? { date_to } : {}),
+    ...pickPeriodParams(opts),
   };
 }
 

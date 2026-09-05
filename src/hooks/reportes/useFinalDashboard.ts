@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchFinalDashboard } from "@/services/sales/dashboard.api";
 import { queryKeys } from "@/lib/query/queryKeys";
@@ -22,6 +22,13 @@ export function useFinalDashboard(
 ) {
     const qc = useQueryClient();
     const [params, setParams] = useState<RequestMetaDTO | undefined>(initialParams);
+
+    // The dashboard drives this from the header period selector, so the hook
+    // has to follow the params it is handed rather than freeze the first ones
+    // it saw. Callers memoise them, so this fires only on a real change.
+    useEffect(() => {
+        setParams(initialParams);
+    }, [initialParams]);
 
     const query = useQuery<FinalReportDTO>({
         queryKey: queryKeys.dashboard.detail({ params: params ?? null, topLimit }),

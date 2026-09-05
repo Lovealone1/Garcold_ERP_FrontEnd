@@ -1,11 +1,15 @@
 "use client";
 
+import { useMemo } from "react";
 import KpiCard from "@/components/ui/KpiCard";
 import BalanceKpi from "@/components/ui/BalanceKpi";
 import HalfDonutKpi from "@/components/ui/HalfDonutKpi";
 import VentasAreaChart from "@/components/charts/VentasAreaChart";
 import { useFinalDashboard } from "@/hooks/reportes/useFinalDashboard";
-import { currentReportYear, monthCapEs, utilidadMesActual } from "@/utils/report-dates";
+import { monthCapEs, utilidadMesActual } from "@/utils/report-dates";
+import { usePeriod } from "@/components/providers/PeriodProvider";
+import { toDashboardMeta } from "@/lib/period/dashboardMeta";
+import { todayInBogota } from "@/lib/period/period";
 import type { RequestMetaDTO } from "@/types/reporte-general";
 import TopProductosGrid from "@/components/tables/TopProductosGrid";
 import CuentasCardsPanel from "@/components/tables/CuentasCardPanel";
@@ -17,7 +21,11 @@ const money = new Intl.NumberFormat("es-CO", {
 });
 
 export default function DashboardPage() {
-  const payload: RequestMetaDTO = { bucket: "year", year: currentReportYear() };
+  // The dashboard used to be pinned to `{ bucket: "year", year: <this year> }`,
+  // so every figure on it reported the whole year with no way to ask for less.
+  // It now follows the period chosen in the header.
+  const { period } = usePeriod();
+  const payload: RequestMetaDTO = useMemo(() => toDashboardMeta(period), [period]);
   const { data, loading } = useFinalDashboard(payload, { topLimit: 10 });
 
   // Ventas
@@ -30,7 +38,20 @@ export default function DashboardPage() {
 
   // Utilidad
   const utilTotal = data?.profit.total_profit ?? 0;
-  const utilMes = data?.profit ? utilidadMesActual(data.profit.series) : 0;
+
+  // "Utilidad <mes>" reads the current month out of a monthly series, so it
+  // only means anything while the period on show is the current year. Pick a
+  // month and the series turns daily; pick another year and the current month
+  // is not in it -- either way it would quietly render $0 next to a real
+  // total, which reads as "we made nothing this month" rather than "this
+  // figure does not apply here".
+  const today = todayInBogota();
+  const showUtilMes =
+    period.kind === "calendar" &&
+    period.month === null &&
+    period.year === today.year;
+  const utilMes =
+    showUtilMes && data?.profit ? utilidadMesActual(data.profit.series) : 0;
   const mesCap = monthCapEs();
 
   return (
@@ -57,8 +78,10 @@ export default function DashboardPage() {
           title="Utilidades"
           value={loading ? "—" : money.format(utilTotal)}
           caption="Total de utilidades"
-          secondaryLabel={`Utilidad ${mesCap}`}
-          secondaryValue={loading ? "—" : money.format(utilMes)}
+          secondaryLabel={showUtilMes ? `Utilidad ${mesCap}` : undefined}
+          secondaryValue={
+            showUtilMes ? (loading ? "—" : money.format(utilMes)) : undefined
+          }
           iconName="paid"
         />
         <BalanceKpi

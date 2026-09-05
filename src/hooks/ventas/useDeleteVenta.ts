@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import { deleteSale } from "@/services/sales/sale.api";
+import { invalidateMovement } from "@/lib/query/invalidateMovement";
 import type { Sale } from "@/types/sale";
 
 type SalePage = { items: Sale[]; page: number; page_size: number; total?: number; total_pages?: number; has_next?: boolean };
@@ -10,7 +11,9 @@ type Tx = { id: number; sale_id?: number | null };
 type TxPage = { items: Tx[]; page: number; page_size: number; total?: number; total_pages?: number; has_next?: boolean };
 
 function stripSaleFromInfinite(data: InfiniteData<SalePage> | undefined, saleId: number) {
-  if (!data) return data;
+  // setQueriesData matches every query under the prefix, including any that
+  // is not an infinite list. Bail out instead of throwing past the mutation.
+  if (!data || !Array.isArray(data.pages)) return data;
   let removed = false;
   const pages = data.pages.map((p) => {
     const filtered = p.items?.filter((x) => x.id !== saleId) ?? [];
@@ -27,7 +30,9 @@ function stripSaleFromInfinite(data: InfiniteData<SalePage> | undefined, saleId:
 }
 
 function stripTransactionsBySaleId(data: InfiniteData<TxPage> | undefined, saleId: number) {
-  if (!data) return data;
+  // setQueriesData matches every query under the prefix, including any that
+  // is not an infinite list. Bail out instead of throwing past the mutation.
+  if (!data || !Array.isArray(data.pages)) return data;
   let removed = false;
   const pages = data.pages.map((p) => {
     const filtered = (p.items ?? []).filter((t) => Number(t.sale_id) !== Number(saleId));
@@ -62,30 +67,9 @@ export function useDeleteVenta() {
         stripTransactionsBySaleId(curr, id)
       );
 
-      // Refetch 1→n en background para TODAS las variantes de claves
-      qc.invalidateQueries({
-        queryKey: ["sales"],
-        refetchType: "all",
-      });
-
-      qc.invalidateQueries({
-        queryKey: ["products"],
-        refetchType: "active",
-      });
-
-      qc.invalidateQueries({
-        queryKey: ["all-products"],
-        refetchType: "active",
-      });
-      qc.invalidateQueries({
-        predicate: ({ queryKey }) => Array.isArray(queryKey) && queryKey[0] === "transactions",
-        refetchType: "active",
-      });
-
-      qc.invalidateQueries({
-          queryKey: ["profits"],
-          refetchType: "active",
-        });
+      // Reverting a sale also reverts stock, profit, the bank balance and --
+      // on credit -- the customer balance, so the whole matrix has to run.
+      await invalidateMovement(qc, { kind: "sale" });
 
     } catch (e: any) {
       const msg = e?.response?.data?.detail ?? e?.message ?? "Error eliminando venta";

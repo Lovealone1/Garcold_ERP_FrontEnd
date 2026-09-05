@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { createSale } from "@/services/sales/sale.api";
+import { invalidateMovement } from "@/lib/query/invalidateMovement";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 import type { SaleCreate, Sale } from "@/types/sale";
 
@@ -30,29 +31,13 @@ export function useCreateVenta(opts: Options = {}) {
                 setVenta(v);
                 success("Venta creada correctamente");
 
-                qc.invalidateQueries({
-                    queryKey: ["sales"],
-                    refetchType: "all",
-                });
-
-                qc.invalidateQueries({
-                    queryKey: ["transactions"],
-                    refetchType: "active"
-                });
-
-                qc.invalidateQueries({
-                    queryKey: ["products"],
-                    refetchType: "active",
-                });
-
-                qc.invalidateQueries({
-                    queryKey: ["all-products"],
-                    refetchType: "active",
-                });
-
-                qc.invalidateQueries({
-                    queryKey: ["profits"],
-                    refetchType: "active",
+                // Awaited so the caller can close the modal or navigate knowing
+                // the lists behind it already show the new sale. The matrix also
+                // covers transactions-head, banks, customers and the dashboard,
+                // which this hook used to miss entirely.
+                await invalidateMovement(qc, {
+                    kind: "sale",
+                    ids: { customerId: Number(payload.customer_id) },
                 });
 
                 opts.onSuccess?.(v);

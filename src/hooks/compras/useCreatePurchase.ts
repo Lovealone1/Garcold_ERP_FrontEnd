@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { createPurchase } from "@/services/sales/purchase.api";
+import { invalidateMovement } from "@/lib/query/invalidateMovement";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 import type { PurchaseCreate, Purchase } from "@/types/purchase";
 
@@ -31,35 +32,7 @@ export function useCreatePurchase(opts: Options = {}) {
         setPurchase(p);
         success("Compra creada correctamente");
 
-        qc.invalidateQueries({
-          queryKey: ["purchases"],
-          refetchType: "all",
-        });
-
-        qc.invalidateQueries({
-          queryKey: ["transactions"],
-          refetchType: "active",
-        });
-
-        qc.invalidateQueries({
-          queryKey: ["sales"],
-          refetchType: "all",
-        });
-
-        qc.invalidateQueries({
-          queryKey: ["transactions"],
-          refetchType: "active"
-        });
-
-        qc.invalidateQueries({
-          queryKey: ["products"],
-          refetchType: "active",
-        });
-
-        qc.invalidateQueries({
-          queryKey: ["all-products"],
-          refetchType: "active",
-        });
+        await invalidateMovement(qc, { kind: "purchase" });
 
         opts.onSuccess?.(p);
         return p;

@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import { deleteTransaction } from "@/services/sales/transaction.api";
+import { invalidateMovement } from "@/lib/query/invalidateMovement";
 
 type Tx = { id: number };
 type Page = {
@@ -17,7 +18,9 @@ function removeTxFromInfinite(
   data: InfiniteData<Page> | undefined,
   id: number
 ) {
-  if (!data) return data;
+  // setQueriesData matches every query under the prefix, including any that
+  // is not an infinite list. Bail out instead of throwing past the mutation.
+  if (!data || !Array.isArray(data.pages)) return data;
 
   let removed = false;
   const pages = data.pages.map((p) => {
@@ -64,16 +67,10 @@ export function useDeleteTransaction() {
             : curr
       );
 
-      qc.invalidateQueries({
-        queryKey: ["transactions"],
-        refetchType: "active",
-      });
-
-      qc.invalidateQueries({
-        predicate: ({ queryKey }) =>
-          Array.isArray(queryKey) && queryKey[0] === "customers",
-        refetchType: "active",
-      });
+      // Deleting a manual transaction reverts a bank balance, so banks and the
+      // dashboard have to refetch too -- and transactions-head, which this hook
+      // never invalidated even though it holds the newest rows.
+      await invalidateMovement(qc, { kind: "transaction" });
 
       return res.message ?? "Transacción eliminada";
     } catch (e: any) {

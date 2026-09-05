@@ -1,4 +1,5 @@
 import salesApi from "../salesApi";
+import { pickPeriodParams, type PeriodParams } from "@/lib/period/period";
 import type {
     TransactionPageDTO,
     TransactionCreate,
@@ -6,27 +7,24 @@ import type {
 } from "@/types/transaction";
 import type { OriginFilter } from "@/hooks/transacciones/useTransacciones";
 
-type FilterOpts = {
+type FilterOpts = PeriodParams & {
     signal?: AbortSignal;
     q?: string;
     bank?: string;
     type?: string;
     origin?: OriginFilter;
-    date_from?: string;
-    date_to?: string;
 };
 
 type ListOpts = FilterOpts & { page_size?: number };
 
-function filterParams(opts: FilterOpts): Record<string, string | undefined> {
-    const { q, bank, type, origin, date_from, date_to } = opts;
+function filterParams(opts: FilterOpts): Record<string, string | number | undefined> {
+    const { q, bank, type, origin } = opts;
     return {
         ...(q ? { q } : {}),
         ...(bank ? { bank } : {}),
         ...(type ? { type } : {}),
         ...(origin && origin !== "all" ? { origin } : {}),
-        ...(date_from ? { date_from } : {}),
-        ...(date_to ? { date_to } : {}),
+        ...pickPeriodParams(opts),
     };
 }
 

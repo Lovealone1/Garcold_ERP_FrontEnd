@@ -4,33 +4,22 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { listProfits, summarizeProfits } from "@/services/sales/profit.api";
 import { queryKeys } from "@/lib/query/queryKeys";
+import { usePeriod } from "@/components/providers/PeriodProvider";
 import type { Profit, ProfitPageDTO } from "@/types/profit";
 
-type Filters = { q?: string; from?: Date; to?: Date };
+type Filters = { q?: string };
 
-/** Widen a date-only range to cover the whole day at each end. */
+/**
+ * The period is no longer built here.
+ *
+ * This used to widen a date-only range to cover both whole days and send it as
+ * ISO timestamps. The API now reads a bare YYYY-MM-DD as the whole day in
+ * Bogota, so the widening -- and the timezone shift that came with it -- is
+ * the server's job.
+ */
 function toQueryParams(filters: Filters) {
-    const from = filters.from
-        ? new Date(
-              filters.from.getFullYear(),
-              filters.from.getMonth(),
-              filters.from.getDate(),
-              0, 0, 0, 0
-          )
-        : undefined;
-    const to = filters.to
-        ? new Date(
-              filters.to.getFullYear(),
-              filters.to.getMonth(),
-              filters.to.getDate(),
-              23, 59, 59, 999
-          )
-        : undefined;
-
     return {
         q: filters.q?.trim() || undefined,
-        date_from: from?.toISOString(),
-        date_to: to?.toISOString(),
     };
 }
 
@@ -44,11 +33,19 @@ export function useProfits(initialPage = 1, pageSize = 16) {
     const [page, setPage] = useState(initialPage);
     const [filters, setFilters] = useState<Filters>({});
 
-    const params = useMemo(() => toQueryParams(filters), [filters]);
+    // The period comes from the header selector, shared by every screen.
+    // Utilidades is also the screen that legitimately wants all of history,
+    // which is now the named `period=all` rather than sending no dates.
+    const { params: periodParams } = usePeriod();
+
+    const params = useMemo(
+        () => ({ ...toQueryParams(filters), ...periodParams }),
+        [filters, periodParams]
+    );
 
     useEffect(() => {
         setPage(1);
-    }, [params.q, params.date_from, params.date_to]);
+    }, [params]);
 
     const listKey = useMemo(
         () => queryKeys.profits.list({ page, pageSize, ...params }),

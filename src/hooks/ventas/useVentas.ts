@@ -4,14 +4,13 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { listSales, listSaleFilterOptions, summarizeSales } from "@/services/sales/sale.api";
 import { queryKeys } from "@/lib/query/queryKeys";
+import { usePeriod } from "@/components/providers/PeriodProvider";
 import type { SalePage } from "@/types/sale";
 
 type Filters = {
     q?: string;
     estado?: string;
     banco?: string;
-    from?: string;
-    to?: string;
 };
 
 /** Filters in the shape the API expects. */
@@ -20,8 +19,6 @@ function toQueryParams(filters: Filters) {
         q: filters.q?.trim() || undefined,
         status: filters.estado || undefined,
         bank: filters.banco || undefined,
-        date_from: filters.from || undefined,
-        date_to: filters.to || undefined,
     };
 }
 
@@ -37,12 +34,20 @@ export function useVentas(initialFilters: Filters = {}, pageSize = 8) {
     const [page, setPage] = useState(1);
     const [filters, setFilters] = useState<Filters>(initialFilters);
 
-    const params = useMemo(() => toQueryParams(filters), [filters]);
+    // The period comes from the header selector, which lives above every
+    // screen. It is already exclusive by construction, so this can never send
+    // a calendar selector and a date range together.
+    const { params: periodParams } = usePeriod();
+
+    const params = useMemo(
+        () => ({ ...toQueryParams(filters), ...periodParams }),
+        [filters, periodParams]
+    );
 
     // A page number from the previous result set means nothing against a new one.
     useEffect(() => {
         setPage(1);
-    }, [params.q, params.status, params.bank, params.date_from, params.date_to]);
+    }, [params]);
 
     const query = useQuery<SalePage>({
         queryKey: queryKeys.sales.list({ page, pageSize, ...params }),

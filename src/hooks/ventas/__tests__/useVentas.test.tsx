@@ -15,6 +15,7 @@ vi.mock("@/services/sales/sale.api", () => ({
 import { useVentas } from "../useVentas";
 import { invalidateMovement } from "@/lib/query/invalidateMovement";
 import { makeTestQueryClient, makeWrapper } from "@/test/queryWrapper";
+import { todayInBogota } from "@/lib/period/period";
 
 function salePage(overrides: Partial<SalePage> = {}): SalePage {
     return {
@@ -114,15 +115,18 @@ describe("useVentas", () => {
             expect(callArgs(1).bank).toBe("Nequi");
         });
 
-        it("maps from/to onto date_from/date_to", async () => {
+        // The range moved to the shared period, so the screen can no longer
+        // open with no dates -- which is what made /summary report the whole
+        // history of the business as the month's total.
+        it("always sends a period, defaulting to the current month", async () => {
             const { result } = mount();
             await waitFor(() => expect(result.current.loading).toBe(false));
 
-            act(() => result.current.setFilters({ from: "2026-01-01", to: "2026-02-01" }));
-            await waitFor(() => expect(listSales).toHaveBeenCalledTimes(2));
-
-            expect(callArgs(1).date_from).toBe("2026-01-01");
-            expect(callArgs(1).date_to).toBe("2026-02-01");
+            const today = todayInBogota();
+            expect(callArgs(0).year).toBe(today.year);
+            expect(callArgs(0).month).toBe(today.month);
+            expect(callArgs(0).date_from).toBeUndefined();
+            expect(callArgs(0).date_to).toBeUndefined();
         });
 
         it("trims the search term and omits it when empty", async () => {

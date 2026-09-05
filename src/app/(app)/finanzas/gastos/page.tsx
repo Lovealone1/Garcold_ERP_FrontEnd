@@ -8,12 +8,14 @@ import { useExpenses } from "@/hooks/gastos/useGastos";
 import { useExpenseCategories } from "@/hooks/categoria-gastos/useCategoriaGastos";
 import { useDeleteExpense } from "@/hooks/gastos/useDeleteGasto";
 import DateRangePicker from "@/components/ui/DateRangePicker/DateRangePicker";
-import type { DateRange } from "react-day-picker";
+import { usePeriodRange } from "@/lib/period/usePeriodRange";
 import CreateExpenseModal from "@/features/gastos/CreateGastoModal";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 
 export default function GastosPage() {
-    const [range, setRange] = useState<DateRange | undefined>();
+    // The picker writes the shared period, so it and the header selector can
+    // never both be in effect -- the API answers that pair with a 422.
+    const { range, setRange } = usePeriodRange();
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
     const [confirmDelete, setConfirmDelete] = useState(false);
     const [openCreate, setOpenCreate] = useState(false);
@@ -145,16 +147,6 @@ export default function GastosPage() {
                                     onChange={(r) => {
                                         setRange(r);
                                         setPage(1);
-                                        // The range is a server filter now; it
-                                        // used to feed a local filter over the
-                                        // current page only.
-                                        setFilters((f) => ({
-                                            ...f,
-                                            from: r?.from
-                                                ? r.from.toISOString()
-                                                : undefined,
-                                            to: r?.to ? r.to.toISOString() : undefined,
-                                        }));
                                     }}
                                 />
                             </div>

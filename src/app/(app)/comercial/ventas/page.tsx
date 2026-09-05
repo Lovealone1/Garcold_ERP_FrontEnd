@@ -20,9 +20,6 @@ import type { Sale } from "@/types/sale";
 import type { DateRange } from "react-day-picker";
 import DateRangePicker from "@/components/ui/DateRangePicker/DateRangePicker";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
-
-import { useSalesRealtime } from "@/hooks/realtime/useSalesRealtime";
-
 const FRAME_BG = "color-mix(in srgb, var(--tg-bg) 90%, #fff 3%)";
 const OUTER_BG = "color-mix(in srgb, var(--tg-bg) 55%, #000 45%)";
 const INNER_BG = "color-mix(in srgb, var(--tg-bg) 95%, #fff 2%)";
@@ -237,7 +234,6 @@ function SaleRow({
 =========================================================== */
 
 export default function VentasPage() {
-    useSalesRealtime();
 
     const router = useRouter();
     const { success, error } = useNotifications();

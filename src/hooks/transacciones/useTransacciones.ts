@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery, useInfiniteQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import type { TransactionView, TransactionPageDTO } from "@/types/transaction";
 import { listTransactions } from "@/services/sales/transaction.api";
-import { useRtVersion } from "@/lib/realtime/rtVersion";
+import { queryKeys } from "@/lib/query/queryKeys";
 import { DateRange } from "react-day-picker";
 
 export type OriginFilter = "all" | "auto" | "manual";
@@ -12,20 +12,19 @@ export interface TransactionFilters { q?: string; bank?: string; type?: string; 
 type Page = TransactionPageDTO;
 
 // IMPORTANTE: filtros FUERA de la key y del fetch
-function fetchKey(pageSize: number, rtVersion: number) {
-    return { pageSize, rtVersion };
+function fetchKey(pageSize: number) {
+    return { pageSize };
 }
 
 export function useTransactions(initialPage = 1, pageSize = 8) {
     const qc = useQueryClient();
-    const rtVersion = useRtVersion();
     const [page, setPage] = useState(initialPage);
     const [filters, setFilters] = useState<TransactionFilters>({ q: "", bank: "", type: "", origin: "all", dateRange: undefined });
 
-    const fkey = useMemo(() => fetchKey(pageSize, rtVersion), [pageSize, rtVersion]);
+    const fkey = useMemo(() => fetchKey(pageSize), [pageSize]);
 
     // HEAD (page 1) - sin filtros en el fetch
-    const headKey = useMemo(() => ["transactions-head", fkey] as const, [fkey]);
+    const headKey = useMemo(() => queryKeys.transactions.head(fkey), [fkey]);
     const head = useQuery<Page, Error>({
         queryKey: headKey,
         queryFn: ({ signal }) => listTransactions(1, { signal, page_size: fkey.pageSize }),
@@ -36,7 +35,7 @@ export function useTransactions(initialPage = 1, pageSize = 8) {
     });
 
     // TAIL (pages 2+) - sin filtros en el fetch
-    const tailKey = useMemo(() => ["transactions", fkey] as const, [fkey]);
+    const tailKey = useMemo(() => queryKeys.transactions.tail(fkey), [fkey]);
     const tail = useInfiniteQuery<Page, Error, InfiniteData<Page>, typeof tailKey, number>({
         queryKey: tailKey,
         enabled: !!head.data,                   // arranca cuando HEAD está lista

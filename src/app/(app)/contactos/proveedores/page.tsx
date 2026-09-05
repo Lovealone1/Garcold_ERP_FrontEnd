@@ -14,7 +14,6 @@ import { useMediaQuery } from "@/hooks/ui/useMediaQuery";
 import { useCreateSupplier } from "@/hooks/proveedores/useCreateSupplier";
 import { useUpdateSupplier } from "@/hooks/proveedores/useUpdateSupplier";
 import { useDeleteSupplier } from "@/hooks/proveedores/useDeleteSupplier";
-import { useSuppliersRealtime } from "@/hooks/realtime/useSuppliersRealtime";
 import ImportDialog from "@/features/io/ImportDialog";
 import ExportDialog from "@/features/io/ExportDialog";
 
@@ -195,7 +194,6 @@ export default function ProveedoresPage() {
   const { update, loading: updating } = useUpdateSupplier();
   const { deleteSupplier: removeSupplier, loading: deleting } = useDeleteSupplier();
 
-  useSuppliersRealtime();
 
   const [openCreate, setOpenCreate] = useState(false);
 

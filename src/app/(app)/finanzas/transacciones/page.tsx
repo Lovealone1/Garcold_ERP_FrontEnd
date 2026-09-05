@@ -14,7 +14,6 @@ import { useNotifications } from "@/components/providers/NotificationsProvider";
 import NewTransactionModal from "@/features/transacciones/NuevaTransaccionModal";
 import DateRangePicker from "@/components/ui/DateRangePicker/DateRangePicker";
 import type { TransactionCreate, TransactionView } from "@/types/transaction";
-import useTransactionsRealtime from "@/hooks/realtime/useTransactionsRealtime";
 import ExtractoBancarioModal from "@/features/transacciones/ExtractoBancarioModal";
 
 const FRAME_BG = "color-mix(in srgb, var(--tg-bg) 90%, #fff 3%)";
@@ -200,7 +199,6 @@ function ConfirmDeleteModal({
 }
 
 export default function TransactionsPage() {
-    useTransactionsRealtime();
 
     const {
         items, page, setPage, loading, refresh,

@@ -2,16 +2,15 @@
 "use client";
 
 import { useEffect, useMemo, useState, CSSProperties } from "react";
-import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
+import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import type { DateRange } from "react-day-picker";
 
 import { MaterialIcon } from "@/components/ui/material-icon";
-import { getSaleById } from "@/services/sales/sale.api";
 import type { Profit } from "@/types/profit";
 import UtilidadView from "@/features/utilidades/ViewDetalleUtilidades";
 import DateRangeInput from "@/components/ui/DateRangePicker/DateRangePicker";
-import { useAllProfits } from "@/hooks/utilidades/useAllProfits";
+import { useProfits } from "@/hooks/utilidades/useProfits";
 
 /* -------- Tokens visuales -------- */
 const FRAME_BG = "color-mix(in srgb, var(--tg-bg) 90%, #fff 3%)";
@@ -92,64 +91,32 @@ function ProfitCard({
 }
 
 export default function UtilidadesPage() {
-    const { items: all, loading } = useAllProfits();
-    const [clienteByVenta, setClienteByVenta] = useState<Record<number, string>>({});
+    // This screen used to download every profit row and then issue one
+    // getSaleById per sale just to show a customer name -- a full-table
+    // download plus an N+1 on top of it. The API now paginates, filters, and
+    // carries the customer name on each row.
+    const {
+        items: rows,
+        page,
+        setPage,
+        total,
+        total_pages: totalPages,
+        page_size: pageSize,
+        loading,
+        setFilters,
+        totalFiltrado: totalProfitFiltered,
+    } = useProfits(1, 16);
+
     const [q, setQ] = useState("");
     const [range, setRange] = useState<DateRange | undefined>(undefined);
-    const pageSize = 16;
-    const [page, setPage] = useState(1);
     const [openView, setOpenView] = useState(false);
     const [ventaToView, setVentaToView] = useState<number | null>(null);
 
     useEffect(() => {
-        if (!all.length) return;
-        const missing = Array.from(new Set(all.map(u => u.sale_id).filter(id => clienteByVenta[id] == null)));
-        if (missing.length === 0) return;
-        let cancelled = false;
-        (async () => {
-            const chunk = 25;
-            for (let i = 0; i < missing.length; i += chunk) {
-                const ids = missing.slice(i, i + chunk);
-                const results = await Promise.allSettled(ids.map(id => getSaleById(id)));
-                const next: Record<number, string> = {};
-                results.forEach((res, idx) => { next[ids[idx]] = res.status === "fulfilled" ? res.value?.customer ?? "" : ""; });
-                if (cancelled) return;
-                setClienteByVenta(prev => ({ ...prev, ...next }));
-            }
-        })();
-        return () => { cancelled = true; };
-    }, [all, clienteByVenta]);
+        setFilters({ q, from: range?.from, to: range?.to });
+    }, [q, range, setFilters]);
 
-    const filtered = useMemo(() => {
-        const v = q.trim().toLowerCase();
-        const byVentaOrCliente = (u: Profit) => {
-            if (!v) return true;
-            if (String(u.sale_id).includes(v)) return true;
-            const nombre = (clienteByVenta[u.sale_id] ?? "").toLowerCase();
-            return nombre.includes(v);
-        };
-        const byDate = (u: Profit) => {
-            if (!range?.from || !range?.to) return true;
-            const d = new Date(u.created_at);
-            return isWithinInterval(d, { start: startOfDay(range.from), end: endOfDay(range.to) });
-        };
-        return all.filter(u => byVentaOrCliente(u) && byDate(u));
-    }, [all, q, range, clienteByVenta]);
-
-    const totalProfitFiltered = useMemo(
-        () => filtered.reduce((acc, u) => acc + (u.profit ?? 0), 0),
-        [filtered]
-    );
-
-    useEffect(() => { setPage(1); }, [q, range]);
-
-    const total = filtered.length;
-    const totalPages = Math.max(1, Math.ceil(total / pageSize));
-    const safePage = Math.min(page, totalPages);
-    const rows = useMemo(() => {
-        const start = (safePage - 1) * pageSize;
-        return filtered.slice(start, start + pageSize);
-    }, [filtered, safePage, pageSize]);
+    const safePage = page;
 
     const from = useMemo(() => (total === 0 ? 0 : (safePage - 1) * pageSize + 1), [safePage, pageSize, total]);
     const to = useMemo(() => Math.min(safePage * pageSize, total), [safePage, pageSize, total]);
@@ -235,7 +202,7 @@ export default function UtilidadesPage() {
                                     <ProfitCard
                                         key={`${r.sale_id}-${r.created_at}`}
                                         r={r}
-                                        customer={clienteByVenta[r.sale_id]}
+                                        customer={r.customer ?? ""}
                                         onView={onView}
                                     />
                                 ))}

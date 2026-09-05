@@ -68,7 +68,7 @@ export const queryKeys = {
 
     products: {
         all: root("products"),
-        list: (params: ListParams) => ["products", params] as const,
+        list: (params: ListParams) => ["products", "list", params] as const,
         /** Unpaginated catalogue used by the cart pickers; a separate root. */
         allItems: root("all-products"),
         allItemsList: (params: ListParams) => ["all-products", params] as const,
@@ -76,7 +76,8 @@ export const queryKeys = {
 
     customers: {
         all: root("customers"),
-        list: (params: ListParams) => ["customers", params] as const,
+        list: (params: ListParams) => ["customers", "list", params] as const,
+        cities: () => ["customers", "cities"] as const,
         options: (params: ListParams) => ["customers", "all", params] as const,
         detail: (id: number) => ["customer", { id }] as const,
         detailAll: root("customer"),
@@ -84,13 +85,15 @@ export const queryKeys = {
 
     suppliers: {
         all: root("suppliers"),
-        list: (params: ListParams) => ["suppliers", params] as const,
+        list: (params: ListParams) => ["suppliers", "list", params] as const,
+        cities: () => ["suppliers", "cities"] as const,
         options: (params: ListParams) => ["suppliers", "all", params] as const,
     },
 
     profits: {
         all: root("profits"),
-        list: (params: ListParams) => ["profits", params] as const,
+        list: (params: ListParams) => ["profits", "list", params] as const,
+        summary: (params: ListParams) => ["profits", "summary", params] as const,
         options: (params: ListParams) => ["profits", "all", params] as const,
     },
 

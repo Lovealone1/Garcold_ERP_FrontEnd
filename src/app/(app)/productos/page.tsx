@@ -173,9 +173,6 @@ export default function ProductosPage() {
     loading,
     filters,
     setFilters,
-    loadMore,
-    hasMoreServer,
-    isFetchingMore,
     refresh,
     upsertOne,
   } = useProductos(1, pageSizeWanted);
@@ -211,40 +208,13 @@ export default function ProductosPage() {
     return [s, s + (win - 1)] as const;
   }, [page, total_pages]);
 
-  useEffect(() => {
-    const t = setTimeout(() => { loadMore(); }, 600);
-    return () => clearTimeout(t);
-  }, []);
-
-  useEffect(() => {
-    if (page === total_pages && hasMoreServer && !isFetchingMore) {
-      loadMore();
-    }
-  }, [page, total_pages, hasMoreServer, isFetchingMore, loadMore]);
-
-  const goToPage = async (p: number) => {
-    while (p > (total_pages || 1) && hasMoreServer && !isFetchingMore) {
-      await loadMore();
-    }
-    setPage(Math.min(p, total_pages || 1));
-  };
+  // The server owns pagination now: the two effects that pre-loaded pages into
+  // a local buffer, and the loops that drained it before jumping, are gone.
+  const goToPage = (p: number) => setPage(Math.min(Math.max(1, p), total_pages || 1));
 
   const onPrev = () => { if (page > 1) setPage(page - 1); };
-  const onNext = async () => {
-    if (page < (total_pages || 1)) return setPage(page + 1);
-    if (hasMoreServer && !isFetchingMore) {
-      await loadMore();
-      setPage(page + 1);
-    }
-  };
-  const onLast = async () => {
-    if (!total_pages) return;
-    if (page >= total_pages && !hasMoreServer) return;
-    while (hasMoreServer && !isFetchingMore) {
-      await loadMore();
-    }
-    setPage(total_pages);
-  };
+  const onNext = () => { if (page < (total_pages || 1)) setPage(page + 1); };
+  const onLast = () => { if (total_pages) setPage(total_pages); };
 
   async function handleCreateSubmit(payload: ProductCreate) {
     setCreating(true);
@@ -441,10 +411,10 @@ export default function ProductosPage() {
               );
             })}
 
-            <button disabled={!hasMoreServer && page >= (total_pages || 1)} onClick={onNext} className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
+            <button disabled={page >= (total_pages || 1)} onClick={onNext} className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
               <MaterialIcon name="chevron_right" size={16} />
             </button>
-            <button disabled={!hasMoreServer && page >= (total_pages || 1)} onClick={onLast} className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
+            <button disabled={page >= (total_pages || 1)} onClick={onLast} className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
               <MaterialIcon name="last_page" size={16} />
             </button>
 

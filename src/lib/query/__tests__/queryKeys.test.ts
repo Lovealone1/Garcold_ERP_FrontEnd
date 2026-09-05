@@ -2,47 +2,34 @@ import { describe, it, expect } from "vitest";
 import { queryKeys, QUERY_ROOTS } from "../queryKeys";
 
 describe("queryKeys", () => {
-    it("keeps the list shapes the hooks already used", () => {
-        expect(queryKeys.customers.list({ pageSize: 8 })).toEqual(["customers", { pageSize: 8 }]);
-        expect(queryKeys.suppliers.list({ pageSize: 8 })).toEqual(["suppliers", { pageSize: 8 }]);
+    it("keeps the detail shapes the hooks already used", () => {
         expect(queryKeys.customers.detail(7)).toEqual(["customer", { id: 7 }]);
         expect(queryKeys.salePayments.list(3)).toEqual(["sale-payments", { saleId: 3 }]);
         expect(queryKeys.purchasePayments.list(4)).toEqual(["purchase-payments", { purchaseId: 4 }]);
     });
 
+    // Every paginated root follows the same shape: [root, "list", params],
+    // with siblings under the same root so one prefix invalidation reaches the
+    // page, its filter options and its totals together.
+    it.each([
+        "sales",
+        "purchases",
+        "expenses",
+        "transactions",
+        "products",
+        "customers",
+        "suppliers",
+        "profits",
+    ] as const)("%s nests its pages under a list segment", (rootName) => {
+        const key = queryKeys[rootName].list({ pageSize: 8 });
+        expect(key[0]).toBe(rootName);
+        expect(key[1]).toBe("list");
+        expect(key[2]).toEqual({ pageSize: 8 });
+    });
+
     // Roots that gained sibling endpoints (filter-options, summary) nest their
     // pages under a "list" segment. A prefix invalidation on the root still
     // reaches all three, which is what the matrix relies on.
-    it("nests paged lists under the root that owns sibling endpoints", () => {
-        expect(queryKeys.sales.list({ pageSize: 8 })).toEqual([
-            "sales",
-            "list",
-            { pageSize: 8 },
-        ]);
-        expect(queryKeys.sales.filterOptions()).toEqual(["sales", "filter-options"]);
-        expect(queryKeys.sales.summary({})).toEqual(["sales", "summary", {}]);
-
-        expect(queryKeys.transactions.list({ page: 1 })).toEqual([
-            "transactions",
-            "list",
-            { page: 1 },
-        ]);
-        expect(queryKeys.transactions.filterOptions()).toEqual([
-            "transactions",
-            "filter-options",
-        ]);
-
-        for (const root of ["purchases", "expenses"] as const) {
-            expect(queryKeys[root].list({ pageSize: 8 })).toEqual([
-                root,
-                "list",
-                { pageSize: 8 },
-            ]);
-            expect(queryKeys[root].filterOptions()).toEqual([root, "filter-options"]);
-            expect(queryKeys[root].summary({})).toEqual([root, "summary", {}]);
-        }
-    });
-
     it("keeps every sibling under the invalidatable root", () => {
         for (const key of [
             queryKeys.sales.list({}),

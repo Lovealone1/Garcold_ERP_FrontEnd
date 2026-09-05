@@ -10,18 +10,27 @@
 
   type Q = { q?: string };
   type Opts = { nocacheToken?: number; signal?: AbortSignal };
-  type ListOpts = { signal?: AbortSignal; q?: string; page_size?: number };
+  type ListOpts = {
+  signal?: AbortSignal;
+  q?: string;
+  page_size?: number;
+  cities?: string[];
+  pending_balance?: "yes" | "no";
+};
 
   const ts = () => Date.now();
   export async function listCustomers(
     page = 1,
     opts: ListOpts = {}
   ): Promise<CustomerPage> {
-    const { signal, q, page_size } = opts;
-    const params: Record<string, string | number | undefined> = {
+    const { signal, q, page_size, cities, pending_balance } = opts;
+    const params: Record<string, unknown> = {
       page,
       page_size,
       ...(q ? { q } : {}),
+      // Repeatable parameter: axios serialises an array as cities=a&cities=b.
+      ...(cities?.length ? { cities } : {}),
+      ...(pending_balance ? { pending_balance } : {}),
     };
 
     const { data } = await salesApi.get("/customers/page", {
@@ -29,19 +38,6 @@
       signal,
     });
     return data as CustomerPage;
-  }
-
-  export async function fetchAllCustomers(
-    params?: Q,
-    opts?: Opts
-  ): Promise<Customer[]> {
-    const first = await listCustomers(1, { q: params?.q });
-    const acc = [...first.items];
-    for (let p = 2; p <= first.total_pages; p++) {
-      const page = await listCustomers(p, { q: params?.q });
-      acc.push(...page.items);
-    }
-    return acc;
   }
 
   export async function getCustomerById(
@@ -125,3 +121,11 @@
     );
     return res.data as boolean;
   }
+
+/** Cities present in the data, for the filter multi-select. */
+export async function listCustomerCities(
+  opts: { signal?: AbortSignal } = {}
+): Promise<string[]> {
+  const { data } = await salesApi.get("/customers/cities", { signal: opts.signal });
+  return data as string[];
+}

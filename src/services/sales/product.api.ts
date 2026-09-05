@@ -11,18 +11,24 @@ import { TopProductQty } from "@/types/product";
 
 type Q = { q?: string }; 
 type Opts = { nocacheToken?: number; signal?: AbortSignal };
-type ListOpts = { signal?: AbortSignal; q?: string; page_size?: number };
+type ListOpts = {
+    signal?: AbortSignal;
+    q?: string;
+    page_size?: number;
+    estado?: "activos" | "inactivos";
+};
 
 const ts = () => Date.now();
 export async function listProducts(
     page = 1,
     opts: ListOpts = {}
 ): Promise<ProductPageDTO> {
-    const { signal, q, page_size } = opts;
+    const { signal, q, page_size, estado } = opts;
     const params: Record<string, string | number | undefined> = {
         page,
         page_size,
         ...(q ? { q } : {}),
+        ...(estado ? { estado } : {}),
     };
 
     const { data } = await salesApi.get("/products/page", {

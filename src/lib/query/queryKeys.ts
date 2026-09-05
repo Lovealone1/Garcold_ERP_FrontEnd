@@ -30,12 +30,16 @@ export const queryKeys = {
 
     purchases: {
         all: root("purchases"),
-        list: (params: ListParams) => ["purchases", params] as const,
+        list: (params: ListParams) => ["purchases", "list", params] as const,
+        filterOptions: () => ["purchases", "filter-options"] as const,
+        summary: (params: ListParams) => ["purchases", "summary", params] as const,
     },
 
     expenses: {
         all: root("expenses"),
-        list: (params: ListParams) => ["expenses", params] as const,
+        list: (params: ListParams) => ["expenses", "list", params] as const,
+        filterOptions: () => ["expenses", "filter-options"] as const,
+        summary: (params: ListParams) => ["expenses", "summary", params] as const,
     },
 
     /**

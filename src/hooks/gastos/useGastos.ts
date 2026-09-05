@@ -1,195 +1,101 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  useInfiniteQuery,
-  useQueryClient,
-  type InfiniteData,
-} from "@tanstack/react-query";
-import { listExpenses } from "@/services/sales/expense.api";
-import type { ExpenseView, ExpensesPage } from "@/types/expense";
+  listExpenses,
+  listExpenseFilterOptions,
+  summarizeExpenses,
+} from "@/services/sales/expense.api";
+import { queryKeys } from "@/lib/query/queryKeys";
+import type { ExpensesPage } from "@/types/expense";
 
 type Filters = {
   q?: string;
   category?: string;
   bank?: string;
-  type?: string;
+  from?: string;
+  to?: string;
 };
 
+function toQueryParams(filters: Filters) {
+  return {
+    q: filters.q?.trim() || undefined,
+    category: filters.category || undefined,
+    bank: filters.bank || undefined,
+    date_from: filters.from || undefined,
+    date_to: filters.to || undefined,
+  };
+}
+
+/**
+ * Expenses list, paginated and filtered by the API.
+ *
+ * These filters were the most broken of the four screens. The client sent
+ * them, the endpoint ignored them, and this hook did not filter locally
+ * either -- it only sliced. The page then filtered the eight rows it happened
+ * to be showing, so the visible rows and the pagination disagreed: page 2 of a
+ * filtered list still paged through the unfiltered set.
+ *
+ * Filtering now happens once, in SQL, and the counts match what is shown.
+ */
 export function useExpenses(initialFilters: Filters = {}, pageSize = 8) {
   const qc = useQueryClient();
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<Filters>(initialFilters);
 
-  const key = useMemo(
-    () =>
-      [
-        "expenses",
-        {
-          q: filters.q || "",
-          category: filters.category || "",
-          bank: filters.bank || "",
-          type: filters.type || "",
-          pageSize,
-        },
-      ] as const,
-    [filters.q, filters.category, filters.bank, filters.type, pageSize]
-  );
+  const params = useMemo(() => toQueryParams(filters), [filters]);
 
-  const query = useInfiniteQuery<
-    ExpensesPage,
-    Error,
-    InfiniteData<ExpensesPage>,
-    typeof key,
-    number
-  >({
-    queryKey: key,
-    initialPageParam: 1,
-    queryFn: async ({ pageParam = 1, signal, queryKey }) => {
-      const [, f] = queryKey;
-      return listExpenses(pageParam, {
-        signal,
-        page_size: f.pageSize,
-        q: f.q || undefined,
-        category: f.category || undefined,
-        bank: f.bank || undefined,
-        type: f.type || undefined,
-      });
-    },
-    getNextPageParam: (last) => {
-      const cur = last.page ?? 1;
-      if (last.has_next === true) return cur + 1;
-      if (typeof last.total_pages === "number" && cur < last.total_pages)
-        return cur + 1;
-      if (
-        Array.isArray(last.items) &&
-        last.page_size &&
-        last.items.length === last.page_size
-      )
-        return cur + 1;
-      return undefined;
-    },
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    staleTime: 1000 * 60 * 30,
-    gcTime: 1000 * 60 * 60 * 24 * 3,
-  });
-
-  // Auto-prefetch en background: drena todas las páginas mientras haya hasNextPage
-  useEffect(() => {
-    let cancelled = false;
-
-    const pump = async () => {
-      if (query.isLoading || query.isFetchingNextPage) return;
-      if (!query.hasNextPage) return;
-
-      // bucle controlado: pide una página, revisa si aún hay más
-      while (!cancelled && query.hasNextPage) {
-        const res = await query.fetchNextPage({ cancelRefetch: true });
-        if (cancelled) return;
-
-        const pages = res.data?.pages ?? query.data?.pages;
-        if (!pages || pages.length === 0) break;
-
-        const last = pages[pages.length - 1];
-        const canContinue =
-          last?.has_next === true ||
-          (typeof last?.total_pages === "number" &&
-            pages.length < last.total_pages) ||
-          (Array.isArray(last?.items) &&
-            last.page_size &&
-            last.items.length === last.page_size);
-
-        if (!canContinue) break;
-      }
-    };
-
-    void pump();
-
-    return () => {
-      cancelled = true;
-    };
-    // Cuando cambian filtros/clave o cambia el estado de la query,
-    // reevaluamos si hay que seguir prefetch.
-  }, [
-    query.hasNextPage,
-    query.isLoading,
-    query.isFetchingNextPage,
-    key,
-  ]);
-
-  // Reset de página cuando cambian filtros
   useEffect(() => {
     setPage(1);
-  }, [filters.q, filters.category, filters.bank, filters.type]);
+  }, [params.q, params.category, params.bank, params.date_from, params.date_to]);
 
-  const pages = query.data?.pages ?? [];
+  const query = useQuery<ExpensesPage>({
+    queryKey: queryKeys.expenses.list({ page, pageSize, ...params }),
+    queryFn: ({ signal }) =>
+      listExpenses(page, { signal, page_size: pageSize, ...params }),
+    placeholderData: keepPreviousData,
+  });
 
-  const serverTotal = pages[0]?.total;
-  const serverPageSize = pages[0]?.page_size ?? pageSize;
-  const serverTotalPages =
-    typeof serverTotal === "number"
-      ? Math.max(1, Math.ceil(serverTotal / serverPageSize))
-      : undefined;
+  const optionsQuery = useQuery({
+    queryKey: queryKeys.expenses.filterOptions(),
+    queryFn: ({ signal }) => listExpenseFilterOptions({ signal }),
+  });
 
-  const all: ExpenseView[] = useMemo(
-    () => pages.flatMap((p) => p.items ?? []),
-    [pages]
+  const summaryQuery = useQuery({
+    queryKey: queryKeys.expenses.summary(params),
+    queryFn: ({ signal }) => summarizeExpenses({ signal, ...params }),
+  });
+
+  const data = query.data;
+  const total = data?.total ?? 0;
+  const totalPages = Math.max(1, data?.total_pages ?? 1);
+
+  const reload = useCallback(
+    () => qc.invalidateQueries({ queryKey: queryKeys.expenses.all }),
+    [qc]
   );
-
-  const totalClient = all.length;
-  const localTotalPages = Math.max(1, Math.ceil(totalClient / pageSize));
-  const uiTotalPages = serverTotalPages ?? localTotalPages;
-
-  const safePage = Math.min(page, uiTotalPages || 1);
-
-  const items = useMemo(
-    () =>
-      all.slice(
-        (safePage - 1) * pageSize,
-        (safePage - 1) * pageSize + pageSize
-      ),
-    [all, safePage, pageSize]
-  );
-
-  const reload = () => qc.invalidateQueries({ queryKey: key });
-
-  const loadedCount = pages.reduce(
-    (a, p) => a + (p.items?.length ?? 0),
-    0
-  );
-  const hasMoreServer = !!serverTotal
-    ? loadedCount < serverTotal
-    : !!query.hasNextPage;
-
-  const isFetchingMore = query.isFetchingNextPage;
-
-  const loadMore = () => {
-    if (hasMoreServer && !isFetchingMore) {
-      return query.fetchNextPage({ cancelRefetch: true });
-    }
-    return Promise.resolve();
-  };
 
   return {
-    items,
-    page: safePage,
+    items: data?.items ?? [],
+    page,
     setPage,
-    pageSize,
-    total: serverTotal ?? totalClient,
-    totalPages: uiTotalPages,
-    hasPrev: safePage > 1,
-    hasNext: safePage < uiTotalPages,
-    loading:
-      query.isLoading || (query.isFetching && !query.isFetched),
-    error: query.isError ? query.error?.message ?? "Error" : null,
+    pageSize: data?.page_size ?? pageSize,
+    total,
+    totalPages,
+    hasPrev: page > 1,
+    hasNext: page < totalPages,
+    loading: query.isPending,
+    isFetching: query.isFetching,
+    error: query.isError ? (query.error as Error)?.message ?? "Error" : null,
     reload,
-    loadMore,
-    hasMoreServer,
-    isFetchingMore,
     filters,
     setFilters,
-    serverTotal,
-    serverTotalPages: uiTotalPages,
+    options: {
+      categories: optionsQuery.data?.categories ?? [],
+      banks: optionsQuery.data?.banks ?? [],
+    },
+    /** Summed amount across the whole filtered set. */
+    totalFiltrado: summaryQuery.data?.total ?? 0,
   };
 }

@@ -12,36 +12,6 @@ import type { DateRange } from "react-day-picker";
 import CreateExpenseModal from "@/features/gastos/CreateGastoModal";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 
-function inRange(d: string, range?: DateRange) {
-    if (!range?.from && !range?.to) return true;
-    const t = new Date(d).getTime();
-    const from = range?.from
-        ? new Date(
-            range.from.getFullYear(),
-            range.from.getMonth(),
-            range.from.getDate(),
-            0,
-            0,
-            0,
-            0
-        ).getTime()
-        : undefined;
-    const to = range?.to
-        ? new Date(
-            range.to.getFullYear(),
-            range.to.getMonth(),
-            range.to.getDate(),
-            23,
-            59,
-            59,
-            999
-        ).getTime()
-        : undefined;
-    if (from !== undefined && t < from) return false;
-    if (to !== undefined && t > to) return false;
-    return true;
-}
-
 export default function GastosPage() {
     const [range, setRange] = useState<DateRange | undefined>();
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -63,8 +33,7 @@ export default function GastosPage() {
         setFilters,
         hasPrev,
         hasNext,
-        loadMore,
-        hasMoreServer,
+        options: expenseOptions,
     } = useExpenses({}, 8);
 
     const { items: categorias, loading: loadingCats } = useExpenseCategories();
@@ -74,25 +43,14 @@ export default function GastosPage() {
         reload();
     });
 
-    const bancos = useMemo(
-        () =>
-            Array.from(
-                new Set(items.map((g) => g.bank_name).filter(Boolean))
-            ).sort((a, b) => a.localeCompare(b)),
-        [items]
-    );
+    // Previously derived from the rows on the current page, so the available
+    // options changed as you paged through the list.
+    const bancos: string[] = expenseOptions.banks;
 
-    const filtered = useMemo(
-        () =>
-            items.filter((g) => {
-                if (filters.category && g.category_name !== filters.category)
-                    return false;
-                if (filters.bank && g.bank_name !== filters.bank) return false;
-                if (!inRange(g.expense_date, range)) return false;
-                return true;
-            }),
-        [items, filters.category, filters.bank, range]
-    );
+    // The API applies the filters, so the page renders what it is given.
+    // Filtering the page slice again produced fewer rows than the pagination
+    // claimed, and paged through the unfiltered set.
+    const filtered = items;
 
     async function handleConfirmDelete() {
         try {
@@ -125,10 +83,6 @@ export default function GastosPage() {
         if (target < page) {
             setPage(target);
             return;
-        }
-
-        if (hasMoreServer && target > totalPages) {
-            await loadMore();
         }
 
         const max = totalPages && totalPages > 0 ? totalPages : target;
@@ -191,6 +145,16 @@ export default function GastosPage() {
                                     onChange={(r) => {
                                         setRange(r);
                                         setPage(1);
+                                        // The range is a server filter now; it
+                                        // used to feed a local filter over the
+                                        // current page only.
+                                        setFilters((f) => ({
+                                            ...f,
+                                            from: r?.from
+                                                ? r.from.toISOString()
+                                                : undefined,
+                                            to: r?.to ? r.to.toISOString() : undefined,
+                                        }));
                                     }}
                                 />
                             </div>
@@ -229,7 +193,7 @@ export default function GastosPage() {
                         <button
                             className="h-9 w-9 grid place-items-center rounded border border-tg disabled:opacity-50"
                             onClick={() => handlePageChange(page + 1)}
-                            disabled={(!hasNext && !hasMoreServer) || loading}
+                            disabled={!hasNext || loading}
                             type="button"
                         >
                             <ChevronRightIcon fontSize="small" />

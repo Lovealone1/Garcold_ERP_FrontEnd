@@ -1,60 +1,69 @@
 import salesApi from "../salesApi";
 import type {
     Expense,
-    ExpenseView,
     ExpensesPage,
     ExpenseCreate,
 } from "@/types/expense";
 
-type ListExpensesOpts = {
+type ExpenseFilterOpts = {
     signal?: AbortSignal;
     q?: string;
     category?: string;
     bank?: string;
-    type?: string;
-    page_size?: number;
+    date_from?: string;
+    date_to?: string;
 };
+
+type ListExpensesOpts = ExpenseFilterOpts & { page_size?: number };
+
+function expenseFilterParams(
+    opts: ExpenseFilterOpts
+): Record<string, string | undefined> {
+    const { q, category, bank, date_from, date_to } = opts;
+    return {
+        ...(q ? { q } : {}),
+        ...(category ? { category } : {}),
+        ...(bank ? { bank } : {}),
+        ...(date_from ? { date_from } : {}),
+        ...(date_to ? { date_to } : {}),
+    };
+}
 
 export async function listExpenses(
     page = 1,
     opts: ListExpensesOpts = {}
 ): Promise<ExpensesPage> {
-    const { signal, q, category, bank, type, page_size } = opts;
-
-    const params: Record<string, string | number | undefined> = {
-        page,
-        page_size,
-        ...(q ? { q } : {}),
-        ...(category ? { category } : {}),
-        ...(bank ? { bank } : {}),
-        ...(type ? { type } : {}),
-    };
+    const { signal, page_size } = opts;
 
     const { data } = await salesApi.get("/expenses/page", {
-        params,
+        params: { page, page_size, ...expenseFilterParams(opts) },
         signal,
-        withCredentials: false,
     });
 
     return data as ExpensesPage;
 }
 
-
-export async function fetchAllExpenses(
-    params?: Record<string, any>,
-    nocacheToken?: number
-): Promise<ExpenseView[]> {
-    let page = 1;
-    const acc: ExpenseView[] = [];
-    const first = await listExpenses(page, params);
-    acc.push(...first.items);
-    while (page < first.total_pages) {
-        page += 1;
-        const p = await listExpenses(page, params);
-        acc.push(...p.items);
-    }
-    return acc;
+/** Category and bank names present in expenses, for the filter dropdowns. */
+export async function listExpenseFilterOptions(
+    opts: { signal?: AbortSignal } = {}
+): Promise<{ categories: string[]; banks: string[] }> {
+    const { data } = await salesApi.get("/expenses/filter-options", {
+        signal: opts.signal,
+    });
+    return data as { categories: string[]; banks: string[] };
 }
+
+/** Summed amount across the whole filtered set. */
+export async function summarizeExpenses(
+    opts: ExpenseFilterOpts = {}
+): Promise<{ total: number; count: number }> {
+    const { data } = await salesApi.get("/expenses/summary", {
+        params: expenseFilterParams(opts),
+        signal: opts.signal,
+    });
+    return data as { total: number; count: number };
+}
+
 
 export async function createExpense(payload: ExpenseCreate): Promise<Expense> {
     const { data } = await salesApi.post("/expenses/create", payload);

@@ -3,7 +3,6 @@ import { queryKeys, QUERY_ROOTS } from "../queryKeys";
 
 describe("queryKeys", () => {
     it("keeps the list shapes the hooks already used", () => {
-        expect(queryKeys.purchases.list({ pageSize: 8 })).toEqual(["purchases", { pageSize: 8 }]);
         expect(queryKeys.customers.list({ pageSize: 8 })).toEqual(["customers", { pageSize: 8 }]);
         expect(queryKeys.suppliers.list({ pageSize: 8 })).toEqual(["suppliers", { pageSize: 8 }]);
         expect(queryKeys.customers.detail(7)).toEqual(["customer", { id: 7 }]);
@@ -32,6 +31,16 @@ describe("queryKeys", () => {
             "transactions",
             "filter-options",
         ]);
+
+        for (const root of ["purchases", "expenses"] as const) {
+            expect(queryKeys[root].list({ pageSize: 8 })).toEqual([
+                root,
+                "list",
+                { pageSize: 8 },
+            ]);
+            expect(queryKeys[root].filterOptions()).toEqual([root, "filter-options"]);
+            expect(queryKeys[root].summary({})).toEqual([root, "summary", {}]);
+        }
     });
 
     it("keeps every sibling under the invalidatable root", () => {
@@ -48,6 +57,15 @@ describe("queryKeys", () => {
             queryKeys.transactions.summary({}),
         ]) {
             expect(key[0]).toBe("transactions");
+        }
+        for (const root of ["purchases", "expenses"] as const) {
+            for (const key of [
+                queryKeys[root].list({}),
+                queryKeys[root].filterOptions(),
+                queryKeys[root].summary({}),
+            ]) {
+                expect(key[0]).toBe(root);
+            }
         }
     });
 

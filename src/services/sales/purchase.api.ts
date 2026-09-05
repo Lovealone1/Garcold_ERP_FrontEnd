@@ -8,38 +8,62 @@ import type {
   PurchasePaymentCreate,
 } from "@/types/purchase";
 
-type ListPurchasesOpts = {
+type PurchaseFilterOpts = {
   signal?: AbortSignal;
   q?: string;
   supplier?: string;
   status?: string;
   bank?: string;
-  from?: string;
-  to?: string;
-  page_size?: number;
+  date_from?: string;
+  date_to?: string;
 };
+
+type ListPurchasesOpts = PurchaseFilterOpts & { page_size?: number };
+
+function purchaseFilterParams(
+  opts: PurchaseFilterOpts
+): Record<string, string | undefined> {
+  const { q, supplier, status, bank, date_from, date_to } = opts;
+  return {
+    ...(q ? { q } : {}),
+    ...(supplier ? { supplier } : {}),
+    ...(status ? { status } : {}),
+    ...(bank ? { bank } : {}),
+    ...(date_from ? { date_from } : {}),
+    ...(date_to ? { date_to } : {}),
+  };
+}
+
+/** Bank, status and supplier names present in purchases, for the dropdowns. */
+export async function listPurchaseFilterOptions(
+  opts: { signal?: AbortSignal } = {}
+): Promise<{ banks: string[]; statuses: string[]; suppliers: string[] }> {
+  const { data } = await salesApi.get("/purchases/filter-options", {
+    signal: opts.signal,
+  });
+  return data as { banks: string[]; statuses: string[]; suppliers: string[] };
+}
+
+/** Totals across the whole filtered set, not just the visible page. */
+export async function summarizePurchases(
+  opts: PurchaseFilterOpts = {}
+): Promise<{ total: number; balance: number; count: number }> {
+  const { data } = await salesApi.get("/purchases/summary", {
+    params: purchaseFilterParams(opts),
+    signal: opts.signal,
+  });
+  return data as { total: number; balance: number; count: number };
+}
 
 export async function listPurchases(
   page = 1,
   opts: ListPurchasesOpts = {}
 ): Promise<PurchasePage> {
-  const { signal, q, supplier, status, bank, from, to, page_size } = opts;
-
-  const params: Record<string, string | number | undefined> = {
-    page,
-    page_size,
-    ...(q ? { q } : {}),
-    ...(supplier ? { supplier } : {}),
-    ...(status ? { status } : {}),
-    ...(bank ? { bank } : {}),
-    ...(from ? { from } : {}),
-    ...(to ? { to } : {}),
-  };
+  const { signal, page_size } = opts;
 
   const { data } = await salesApi.get("/purchases/", {
-    params,
+    params: { page, page_size, ...purchaseFilterParams(opts) },
     signal,
-    withCredentials: false,
   });
 
   return data as PurchasePage;

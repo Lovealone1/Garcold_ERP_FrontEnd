@@ -37,12 +37,18 @@ export const queryKeys = {
     },
 
     /**
-     * The transactions page is split in two queries: `head` holds page 1 (the
-     * newest rows) and `tail` holds the infinite query for pages 2+. They are
-     * distinct roots, so anything touching transactions must invalidate BOTH --
-     * that is what `movementKeys` in invalidateMovement.ts guarantees.
+     * The screen now reads one page at a time from a single root.
+     *
+     * It used to be split across `transactions-head` (page 1) and
+     * `transactions` (pages 2+), which is how invalidation kept missing the
+     * newest rows. `head`/`tail` are retained so the invalidation matrix still
+     * covers the old root on clients running a cached bundle.
      */
     transactions: {
+        all: root("transactions"),
+        list: (params: ListParams) => ["transactions", "list", params] as const,
+        filterOptions: () => ["transactions", "filter-options"] as const,
+        summary: (params: ListParams) => ["transactions", "summary", params] as const,
         head: (params: ListParams) => ["transactions-head", params] as const,
         headAll: root("transactions-head"),
         tail: (params: ListParams) => ["transactions", params] as const,

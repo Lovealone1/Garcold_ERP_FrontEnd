@@ -203,8 +203,7 @@ export default function TransactionsPage() {
     const {
         items, page, setPage, loading, refresh,
         total_pages, page_size, total, filters, setFilters, options,
-        loadMore, hasMoreServer, isFetchingMore,
-        allFiltered,
+        summaryByType, hasNextPage,
     } = useTransactions(1, 8) as any;
 
     const { remove, loading: deleting } = useDeleteTransaction();
@@ -219,16 +218,19 @@ export default function TransactionsPage() {
     const [range, setRange] = useState<DateRange | undefined>(undefined);
     const [extractOpen, setExtractOpen] = useState(false);
 
+    // Totals span the whole filtered set, so they come from the API. They used
+    // to be summed from the rows the client had downloaded, which was only
+    // correct because the client downloaded every page.
     const checkExtract = useMemo(() => {
         if (!filters.bank) return { ingresos: 0, retiros: 0, saldo: 0 };
         let i = 0, r = 0;
-        for (const t of allFiltered || []) {
-            const typ = (t.type_str || "").toLowerCase();
-            if (typ.includes("ingreso") || typ.includes("pago venta")) i += t.amount;
-            else if (typ.includes("retiro") || typ.includes("pago compra")) r += t.amount;
+        for (const [typeName, amount] of Object.entries(summaryByType ?? {})) {
+            const typ = typeName.toLowerCase();
+            if (typ.includes("ingreso") || typ.includes("pago venta")) i += Number(amount);
+            else if (typ.includes("retiro") || typ.includes("pago compra")) r += Number(amount);
         }
         return { ingresos: i, retiros: r, saldo: i - r };
-    }, [allFiltered, filters.bank]);
+    }, [summaryByType, filters.bank]);
 
     const frameVars: CSSProperties = { ["--content-x" as any]: "8px" };
 
@@ -269,17 +271,8 @@ export default function TransactionsPage() {
     }
 
     const onPrev = () => { if (page > 1) setPage(page - 1); };
-    const onNext = async () => {
-        if (page < total_pages) return setPage(page + 1);
-        if (hasMoreServer && !isFetchingMore) {
-            await loadMore();
-            setPage(page + 1);
-        }
-    };
-    const goToPage = async (p: number) => {
-        while (p > total_pages && hasMoreServer && !isFetchingMore) await loadMore();
-        setPage(Math.min(p, total_pages));
-    };
+    const onNext = () => { if (hasNextPage) setPage(page + 1); };
+    const goToPage = (p: number) => setPage(Math.min(Math.max(1, p), total_pages));
 
     const bancos = options.banks;
     const tipos = options.types;
@@ -493,7 +486,7 @@ export default function TransactionsPage() {
                             );
                         })}
 
-                        <button disabled={!hasMoreServer && page >= total_pages} onClick={onNext}
+                        <button disabled={!hasNextPage} onClick={onNext}
                             className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
                             <MaterialIcon name="chevron_right" size={16} />
                         </button>

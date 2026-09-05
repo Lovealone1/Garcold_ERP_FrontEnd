@@ -7,7 +7,6 @@ export async function listBanks(
 ): Promise<Bank[]> {
   const { data } = await salesApi.get("/banks", {
     params: { _ts: nocacheToken ?? Date.now() },
-    headers: { "Cache-Control": "no-cache" },
     signal: opts?.signal,
   });
   return data as Bank[];

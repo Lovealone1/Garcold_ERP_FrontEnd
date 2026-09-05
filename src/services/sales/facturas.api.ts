@@ -103,8 +103,7 @@ export async function facturaDesdeVenta(
 ): Promise<SaleInvoiceDTO> {
     const { data } = await api.get(norm(`/invoices/from-sale/${ventaId}`), {
         params: { company_id: opts?.companyId, _ts: opts?.nocacheToken ?? Date.now() },
-        headers: { "Cache-Control": "no-cache" },
-    });
+        });
     return data as SaleInvoiceDTO;
 }
 

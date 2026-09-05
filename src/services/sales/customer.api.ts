@@ -13,8 +13,6 @@
   type ListOpts = { signal?: AbortSignal; q?: string; page_size?: number };
 
   const ts = () => Date.now();
-  const nocache = { "Cache-Control": "no-cache" };
-
   export async function listCustomers(
     page = 1,
     opts: ListOpts = {}
@@ -52,7 +50,6 @@
   ): Promise<Customer> {
     const { data } = await salesApi.get(`/customers/by-id/${customerId}`, {
       params: { _ts: opts?.nocacheToken ?? ts() },
-      headers: nocache,
       signal: opts?.signal,
     });
     return data as Customer;
@@ -64,7 +61,6 @@
   ): Promise<Customer> {
     const { data } = await salesApi.post("/customers/create", payload, {
       params: { _ts: opts?.nocacheToken ?? ts() },
-      headers: nocache,
       signal: opts?.signal,
     });
     return data as Customer;
@@ -77,7 +73,6 @@
   ): Promise<Customer> {
     const { data } = await salesApi.patch(`/customers/by-id/${id}`, payload, {
       params: { _ts: opts?.nocacheToken ?? ts() },
-      headers: nocache,
       signal: opts?.signal,
     });
     return data as Customer;
@@ -91,7 +86,7 @@
     const { data } = await salesApi.patch(
       `/customers/by-id/${id}/balance`,
       { new_balance: newBalance },
-      { params: { _ts: opts?.nocacheToken ?? ts() }, headers: nocache, signal: opts?.signal }
+      { params: { _ts: opts?.nocacheToken ?? ts() }, signal: opts?.signal }
     );
     return data as Customer;
   }
@@ -102,7 +97,6 @@
   ): Promise<{ message: string }> {
     const { data } = await salesApi.delete(`/customers/by-id/${id}`, {
       params: { _ts: opts?.nocacheToken ?? ts() },
-      headers: nocache,
       signal: opts?.signal,
     });
     return data as { message: string };
@@ -113,7 +107,6 @@
   ): Promise<CustomerLite[]> {
     const { data } = await salesApi.get("/customers", {
       params: { _ts: opts?.nocacheToken ?? ts() },
-      headers: nocache,
       signal: opts?.signal,
     });
     const full: Customer[] = data as Customer[];
@@ -128,7 +121,7 @@
     const res = await salesApi.post(
       `/customers/by-id/${customerId}/payments/simple`,
       payload,
-      { params: { _ts: opts?.nocacheToken ?? ts() }, headers: nocache, signal: opts?.signal }
+      { params: { _ts: opts?.nocacheToken ?? ts() }, signal: opts?.signal }
     );
     return res.data as boolean;
   }

@@ -8,8 +8,7 @@ export async function getCompany(
 ): Promise<CompanyDTO> {
   const { data } = await salesApi.get("/company/", {
     params: { _ts: nocacheToken ?? Date.now() },
-    headers: { "Cache-Control": "no-cache" },
-  });
+    });
   return data as CompanyDTO;
 }
 

@@ -16,8 +16,7 @@ export async function listRoles(
   const { data } = await salesApi.get(`${BASE}/`, {
     params: { _ts: opts?.nocacheToken ?? Date.now() },
     signal: opts?.signal,
-    headers: { "Cache-Control": "no-cache" },
-  });
+    });
   return data as RoleDTO[];
 }
 
@@ -27,8 +26,7 @@ export async function listPermissionsCatalog(
   const { data } = await salesApi.get(`${BASE}/permissions`, {
     params: { _ts: opts?.nocacheToken ?? Date.now() },
     signal: opts?.signal,
-    headers: { "Cache-Control": "no-cache" },
-  });
+    });
   return data as PermissionDTO[];
 }
 
@@ -39,8 +37,7 @@ export async function listRolePermissions(
   const { data } = await salesApi.get(`${BASE}/${roleId}/permissions`, {
     params: { _ts: opts?.nocacheToken ?? Date.now() },
     signal: opts?.signal,
-    headers: { "Cache-Control": "no-cache" },
-  });
+    });
   return data as RolePermissionOut[];
 }
 

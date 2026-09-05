@@ -5,8 +5,6 @@ type Opts = { nocacheToken?: number; signal?: AbortSignal };
 type ListOpts = { signal?: AbortSignal; page_size?: number; q?: string }; 
 
 const ts = () => Date.now();
-const nocache = { "Cache-Control": "no-cache" };
-
 export async function listProfits(
   page = 1,
   opts: ListOpts = {}
@@ -49,7 +47,6 @@ export async function getProfitBySaleId(
 ): Promise<Profit> {
   const { data } = await salesApi.get(`/profits/by-sale/${saleId}`, {
     params: { _ts: opts?.nocacheToken ?? ts() },
-    headers: nocache,
     signal: opts?.signal,
   });
   return data as Profit;
@@ -61,7 +58,6 @@ export async function listProfitDetailsBySaleId(
 ): Promise<ProfitDetail[]> {
   const { data } = await salesApi.get(`/profits/details/${saleId}`, {
     params: { _ts: opts?.nocacheToken ?? ts() },
-    headers: nocache,
     signal: opts?.signal,
   });
   return data as ProfitDetail[];

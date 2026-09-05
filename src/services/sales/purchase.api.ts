@@ -51,8 +51,7 @@ export async function getPurchaseById(
 ): Promise<Purchase> {
   const { data } = await salesApi.get(`/purchases/${purchaseId}`, {
     params: { _ts: nocacheToken ?? Date.now() },
-    headers: { "Cache-Control": "no-cache" },
-  });
+    });
   return data as Purchase;
 }
 
@@ -77,8 +76,7 @@ export async function createPurchase(
   };
 
   const { data } = await salesApi.post("/purchases/create", body, {
-    headers: { "Cache-Control": "no-cache" },
-  });
+    });
   return data as Purchase;
 }
 
@@ -86,8 +84,7 @@ export async function deletePurchase(
   purchaseId: number
 ): Promise<{ message: string }> {
   const { data } = await salesApi.delete(`/purchases/${purchaseId}`, {
-    headers: { "Cache-Control": "no-cache" },
-  });
+    });
   return data as { message: string };
 }
 
@@ -97,8 +94,7 @@ export async function listPurchaseItems(
 ): Promise<PurchaseDetailItem[]> {
   const { data } = await salesApi.get(`/purchases/${purchaseId}/items`, {
     params: { _ts: nocacheToken ?? Date.now() },
-    headers: { "Cache-Control": "no-cache" },
-  });
+    });
   return data as PurchaseDetailItem[];
 }
 
@@ -110,8 +106,7 @@ export async function listPurchasePayments(
     `/purchase-payments/by-purchase/${purchaseId}`,
     {
       params: { _ts: nocacheToken ?? Date.now() },
-      headers: { "Cache-Control": "no-cache" },
-    }
+      }
   );
   return data as PurchasePayment[];
 }
@@ -120,8 +115,7 @@ export async function createPurchasePayment(
   payload: PurchasePaymentCreate
 ): Promise<PurchasePayment> {
   const { data } = await salesApi.post("/purchase-payments/create", payload, {
-    headers: { "Cache-Control": "no-cache" },
-  });
+    });
   return data as PurchasePayment;
 }
 
@@ -129,7 +123,6 @@ export async function deletePurchasePayment(
   paymentId: number
 ): Promise<{ message: string }> {
   const { data } = await salesApi.delete(`/purchase-payments/${paymentId}`, {
-    headers: { "Cache-Control": "no-cache" },
-  });
+    });
   return data as { message: string };
 }

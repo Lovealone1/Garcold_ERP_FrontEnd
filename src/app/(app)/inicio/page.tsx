@@ -5,7 +5,7 @@ import BalanceKpi from "@/components/ui/BalanceKpi";
 import HalfDonutKpi from "@/components/ui/HalfDonutKpi";
 import VentasAreaChart from "@/components/charts/VentasAreaChart";
 import { useFinalDashboard } from "@/hooks/reportes/useFinalDashboard";
-import { monthCapEs, utilidadMesActual } from "@/utils/report-dates";
+import { currentReportYear, monthCapEs, utilidadMesActual } from "@/utils/report-dates";
 import type { RequestMetaDTO } from "@/types/reporte-general";
 import TopProductosGrid from "@/components/tables/TopProductosGrid";
 import CuentasCardsPanel from "@/components/tables/CuentasCardPanel";
@@ -17,7 +17,7 @@ const money = new Intl.NumberFormat("es-CO", {
 });
 
 export default function DashboardPage() {
-  const payload: RequestMetaDTO = { bucket: "year", year: 2025 };
+  const payload: RequestMetaDTO = { bucket: "year", year: currentReportYear() };
   const { data, loading } = useFinalDashboard(payload, { topLimit: 10 });
 
   // Ventas

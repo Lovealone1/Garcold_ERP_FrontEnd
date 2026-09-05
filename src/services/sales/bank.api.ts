@@ -1,10 +1,14 @@
 import salesApi from "../salesApi";
 import type { Bank, BankCreate } from "@/types/bank";
 
-export async function listBanks(nocacheToken?: number): Promise<Bank[]> {
+export async function listBanks(
+  nocacheToken?: number,
+  opts?: { signal?: AbortSignal }
+): Promise<Bank[]> {
   const { data } = await salesApi.get("/banks", {
     params: { _ts: nocacheToken ?? Date.now() },
     headers: { "Cache-Control": "no-cache" },
+    signal: opts?.signal,
   });
   return data as Bank[];
 }

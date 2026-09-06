@@ -1,11 +1,20 @@
 "use client";
-import { useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { DayPicker, DateRange } from "react-day-picker";
 import "react-day-picker/dist/style.css";
 import { es } from "date-fns/locale";
 import { format, parse, isValid, startOfDay, endOfDay, isAfter } from "date-fns";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
+import { useMediaQuery } from "@/hooks/ui/useMediaQuery";
 import styles from "./DateRangePicker.module.css";
+
+/** Ancho del panel en escritorio; en móvil ocupa el ancho de la pantalla. */
+const PANEL_W = 360;
+/** Alto aproximado, solo para decidir si el panel cabe debajo del campo. */
+const PANEL_H = 420;
+const GAP = 4;
+const MARGIN = 8;
 
 export interface DateRangeInputProps {
   value?: DateRange | undefined;
@@ -49,8 +58,80 @@ export default function DateRangeInput({
   const [text, setText] = useState(fmt(value));
   const id = useId();
 
+  const anchorRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+
+  // Por debajo de sm el calendario ocupa casi toda la pantalla; como hoja
+  // inferior se alcanza con el pulgar y no hay que adivinar dónde cabe.
+  const asSheet = !useMediaQuery("(min-width: 640px)");
+
+  useEffect(() => setMounted(true), []);
   useEffect(() => { setText(fmt(value)); }, [value]);
   useEffect(() => { if (open) setTemp(value); }, [open, value]);
+
+  /*
+    El panel se monta en <body> con position: fixed.
+
+    Como `absolute` dentro del campo quedaba recortado: los toolbars de las
+    listas viven dentro de contenedores con overflow, así que el calendario se
+    cortaba por el borde en cuanto no cabía. Y al ir anclado con `right-0` sin
+    comprobar el viewport, cerca del borde derecho se salía de pantalla.
+  */
+  const place = useCallback(() => {
+    const r = anchorRef.current?.getBoundingClientRect();
+    if (!r) return;
+
+    const vw = document.documentElement.clientWidth;
+    const vh = document.documentElement.clientHeight;
+
+    // Alineado a la derecha del campo, pero sin salirse por ningún lado.
+    let left = r.right - PANEL_W;
+    left = Math.min(Math.max(MARGIN, left), Math.max(MARGIN, vw - PANEL_W - MARGIN));
+
+    // Debajo si cabe; si no, encima.
+    let top = r.bottom + GAP;
+    if (top + PANEL_H > vh - MARGIN) {
+      top = r.top - PANEL_H - GAP;
+      if (top < MARGIN) top = Math.max(MARGIN, vh - PANEL_H - MARGIN);
+    }
+
+    setPos({ top, left });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!open || asSheet) return;
+    place();
+    window.addEventListener("resize", place);
+    // `true` para capturar también el scroll de los contenedores internos.
+    window.addEventListener("scroll", place, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [open, asSheet, place]);
+
+  // Cerrar al tocar fuera y con Escape. Antes solo se salía con Cancelar o
+  // Aplicar, lo que en móvil dejaba el calendario tapando la pantalla.
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent) => {
+      const t = e.target as Node;
+      if (panelRef.current?.contains(t) || anchorRef.current?.contains(t)) return;
+      setOpen(false);
+      setText(fmt(value));
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { setOpen(false); setText(fmt(value)); }
+    };
+    document.addEventListener("pointerdown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open, value]);
 
   function commitFromInput() {
     const parsed = parseRangeText(text);
@@ -63,7 +144,7 @@ export default function DateRangeInput({
   const toYear = now.getFullYear() + 2;
 
     return (
-        <div className={`relative ${className ?? ""}`}>
+        <div ref={anchorRef} className={`relative ${className ?? ""}`}>
             <div className="h-10 w-full rounded-md border border-tg bg-tg-card pl-3 pr-1 flex items-center focus-within:ring-2 focus-within:ring-[var(--tg-primary)]">
                 <input
                     type="text"
@@ -87,19 +168,49 @@ export default function DateRangeInput({
                     aria-haspopup="dialog"
                     aria-expanded={open}
                     aria-controls={id}
-                    className="ml-1 inline-grid h-8 w-8 place-items-center rounded hover:bg-black/10 dark:hover:bg-white/10 disabled:opacity-50"
+                    className="tap-target ml-1 inline-grid h-8 w-8 place-items-center rounded hover:bg-black/10 dark:hover:bg-white/10 disabled:opacity-50"
                     title="Abrir calendario"
                 >
                     <CalendarMonthOutlinedIcon fontSize="small" />
                 </button>
             </div>
 
-      {open && (
+      {open && mounted && createPortal(
+        <>
+          {asSheet && (
+            <div
+              aria-hidden
+              className="fixed inset-0 z-[59] bg-black/50"
+            />
+          )}
         <div
           id={id}
           role="dialog"
-          className="absolute right-0 top-[44px] z-50 w-[360px] max-w-[90vw] rounded-xl border border-tg bg-[var(--panel-bg,white)] p-3 shadow-xl"
+          aria-modal={asSheet || undefined}
+          aria-label="Rango de fechas"
+          ref={panelRef}
+          style={
+            asSheet
+              ? undefined
+              : { top: pos?.top ?? -9999, left: pos?.left ?? -9999, width: PANEL_W }
+          }
+          className={
+            asSheet
+              ? "fixed inset-x-0 bottom-0 z-[60] max-h-[85dvh] overflow-y-auto overscroll-contain " +
+                "rounded-t-2xl border-t border-tg bg-[var(--panel-bg,white)] p-3 shadow-2xl " +
+                "pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+              : "fixed z-[60] max-h-[min(85dvh,32rem)] overflow-y-auto overscroll-contain " +
+                "rounded-xl border border-tg bg-[var(--panel-bg,white)] p-3 shadow-xl"
+          }
         >
+          {asSheet && (
+            // Asidero visual de hoja inferior: indica que esto se cierra
+            // tocando fuera, sin ocupar una fila de cabecera.
+            <div
+              aria-hidden
+              className="mx-auto mb-2 h-1 w-10 rounded-full bg-[var(--tg-muted)] opacity-40"
+            />
+          )}
           <DayPicker
             mode="range"
             numberOfMonths={1}
@@ -164,6 +275,8 @@ export default function DateRangeInput({
             </div>
           </div>
         </div>
+        </>,
+        document.body
       )}
     </div>
   );

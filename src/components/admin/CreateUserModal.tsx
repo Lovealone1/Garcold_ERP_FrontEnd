@@ -6,6 +6,7 @@ import IconButton from "@mui/material/IconButton";
 import LockResetIcon from "@mui/icons-material/LockReset";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import { useNotifications } from "@/components/providers/NotificationsProvider"; 
+import ModalOverlay from "@/components/ui/ModalOverlay";
 
 function generatePassword(len = 14) {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@$%&*?-_";
@@ -66,7 +67,7 @@ export default function CreateUserModal({
   } as const;
 
   return (
-    <div className="fixed inset-0 bg-black/30 grid place-items-center z-50">
+    <ModalOverlay open scrim="rgba(0,0,0,0.3)">
       <div className="w-[560px] max-w-[95vw] rounded-2xl border border-tg bg-tg-card text-tg-card">
         <div className="px-5 py-4 border-b border-tg flex justify-between">
           <h3 className="text-base font-medium">Crear usuario</h3>
@@ -109,6 +110,6 @@ export default function CreateUserModal({
           </button>
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 }

@@ -14,6 +14,7 @@ import { useDeleteBanco } from "@/hooks/bancos/useDeleteBanco";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 import SaldoForm from "@/features/bancos/SaldoForm";
 import BankCreateForm from "@/features/bancos/BankCreateForm";
+import ModalOverlay from "@/components/ui/ModalOverlay";
 
 const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 const LS_KEY = "tg-hide-balance";
@@ -263,13 +264,8 @@ export default function BancosPage() {
 
             {/* Modal crear banco */}
             {openCreate && (
-                <div
-                    role="dialog"
-                    aria-modal="true"
-                    className="fixed inset-0 z-50 grid place-items-center bg-black/50"
-                    onClick={(e) => { if (e.target === e.currentTarget) setOpenCreate(false); }}
-                >
-                    <div className="w-[420px] rounded-lg border border-tg bg-[var(--panel-bg)] shadow-xl p-4">
+                <ModalOverlay open onClose={() => setOpenCreate(false)}>
+                    <div className="w-full max-w-[420px] rounded-lg border border-tg bg-[var(--panel-bg)] shadow-xl p-4">
                         <h3 className="text-base font-semibold mb-3">Nuevo banco</h3>
                         <BankCreateForm
                             onCreated={() => {
@@ -280,18 +276,13 @@ export default function BancosPage() {
                             onCancel={() => setOpenCreate(false)}
                         />
                     </div>
-                </div>
+                </ModalOverlay>
             )}
 
             {/* Modal editar saldo */}
             {editBanco && (
-                <div
-                    role="dialog"
-                    aria-modal="true"
-                    className="fixed inset-0 z-50 grid place-items-center bg-black/50"
-                    onClick={(e) => { if (e.target === e.currentTarget) setEditBanco(null); }}
-                >
-                    <div className="w-[420px] rounded-lg border border-tg bg-[var(--panel-bg)] shadow-xl p-4">
+                <ModalOverlay open onClose={() => setEditBanco(null)}>
+                    <div className="w-full max-w-[420px] rounded-lg border border-tg bg-[var(--panel-bg)] shadow-xl p-4">
                         <h3 className="text-base font-semibold mb-3">Actualizar saldo — {editBanco.name}</h3>
                         <SaldoForm
                             banco={editBanco}
@@ -302,18 +293,13 @@ export default function BancosPage() {
                             }}
                         />
                     </div>
-                </div>
+                </ModalOverlay>
             )}
 
             {/* Modal eliminar */}
             {delBanco && (
-                <div
-                    role="dialog"
-                    aria-modal="true"
-                    className="fixed inset-0 z-50 grid place-items-center bg-black/50"
-                    onClick={(e) => { if (e.target === e.currentTarget) setDelBanco(null); }}
-                >
-                    <div className="w-[420px] rounded-lg border border-tg bg-[var(--panel-bg)] shadow-xl">
+                <ModalOverlay open onClose={() => setDelBanco(null)}>
+                    <div className="w-full max-w-[420px] rounded-lg border border-tg bg-[var(--panel-bg)] shadow-xl">
                         <div className="px-4 py-3 border-b border-tg">
                             <h3 className="text-base font-semibold">Eliminar banco</h3>
                         </div>
@@ -329,7 +315,7 @@ export default function BancosPage() {
                             </button>
                         </div>
                     </div>
-                </div>
+                </ModalOverlay>
             )}
         </div>
     );

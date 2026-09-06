@@ -20,6 +20,7 @@ import type { DateRange } from "react-day-picker";
 import DateRangePicker from "@/components/ui/DateRangePicker/DateRangePicker";
 import { toApiDate } from "@/lib/period/period";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
+import ModalOverlay from "@/components/ui/ModalOverlay";
 const FRAME_BG = "color-mix(in srgb, var(--tg-bg) 90%, #fff 3%)";
 const OUTER_BG = "color-mix(in srgb, var(--tg-bg) 55%, #000 45%)";
 const INNER_BG = "color-mix(in srgb, var(--tg-bg) 95%, #fff 2%)";
@@ -315,10 +316,8 @@ export default function VentasPage() {
         success("Venta actualizada");
     }
 
-    const frameVars: CSSProperties = { ["--content-x" as any]: "8px" };
-
     return (
-        <div className="app-shell__frame overflow-hidden" style={frameVars}>
+        <div className="h-full flex flex-col min-h-0">
             {/* DESKTOP TOOLBAR */}
             <div className="hidden sm:flex mb-3 items-center justify-between gap-3">
                 <div className="flex items-center gap-3 w-full max-w-[440px]">
@@ -619,15 +618,8 @@ export default function VentasPage() {
             )}
 
             {openDelete && (
-                <div
-                    role="dialog"
-                    aria-modal="true"
-                    className="fixed inset-0 z-50 grid place-items-center bg-black/50"
-                    onClick={(e) => {
-                        if (e.target === e.currentTarget && !deleting) setOpenDelete(false);
-                    }}
-                >
-                    <div className="w-[420px] rounded-lg border bg-[var(--panel-bg)] shadow-xl" style={{ borderColor: BORDER }}>
+                <ModalOverlay open onClose={() => setOpenDelete(false)} locked={deleting}>
+                    <div className="w-full max-w-[420px] rounded-lg border bg-[var(--panel-bg)] shadow-xl" style={{ borderColor: BORDER }}>
                         <div className="px-4 py-3 border-b flex items-center gap-2" style={{ borderColor: BORDER }}>
                             <MaterialIcon name="warning" size={18} />
                             <h3 className="text-base font-semibold">Confirmar eliminación</h3>
@@ -665,7 +657,7 @@ export default function VentasPage() {
                             </button>
                         </div>
                     </div>
-                </div>
+                </ModalOverlay>
             )}
         </div>
     );

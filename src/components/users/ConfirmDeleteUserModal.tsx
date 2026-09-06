@@ -1,5 +1,6 @@
 "use client";
 import type { AdminUserOut } from "@/types/user";
+import ModalOverlay from "@/components/ui/ModalOverlay";
 
 export default function ConfirmDeleteUserModal({
     open,
@@ -20,7 +21,7 @@ export default function ConfirmDeleteUserModal({
     const name = ((user.user_metadata ?? {}) as any)?.full_name || user.email.split("@")[0];
 
     return (
-        <div className="fixed inset-0 bg-black/30 grid place-items-center z-50">
+        <ModalOverlay open scrim="rgba(0,0,0,0.3)">
             <div className="w-[460px] max-w-[95vw] rounded-2xl border border-tg bg-tg-card text-tg-card">
                 <div className="px-5 py-4 border-b border-tg flex justify-between">
                     <h3 className="text-base font-medium">Eliminar usuario</h3>
@@ -47,6 +48,6 @@ export default function ConfirmDeleteUserModal({
                     </button>
                 </div>
             </div>
-        </div>
+        </ModalOverlay>
     );
 }

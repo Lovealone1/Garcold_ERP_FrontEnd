@@ -130,14 +130,12 @@ export default function UtilidadesPage() {
         return [s, s + (win - 1)] as const;
     }, [safePage, totalPages]);
 
-    const frameVars: CSSProperties = { ["--content-x" as any]: "16px" };
-
     function handleClearFilters() { setQ(""); setRange(undefined); }
     function onView(ventaId: number) { setVentaToView(ventaId); setOpenView(true); }
 
     return (
         <>
-            <div className="app-shell__frame" style={frameVars}>
+            <div className="h-full flex flex-col min-h-0">
                 {/* Toolbar */}
                 <div className="mb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
                     {/* Izquierda: buscador + total */}

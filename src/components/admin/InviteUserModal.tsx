@@ -3,6 +3,7 @@ import { useState } from "react";
 import { inviteUser } from "@/services/user.api";
 import type { InviteUserIn } from "@/types/user";
 import { useNotifications } from "@/components/providers/NotificationsProvider"; 
+import ModalOverlay from "@/components/ui/ModalOverlay";
 
 export default function InviteUserModal({
     open, onClose, onSaved,
@@ -29,7 +30,7 @@ export default function InviteUserModal({
     };
 
     return (
-        <div className="fixed inset-0 bg-black/30 grid place-items-center z-50">
+        <ModalOverlay open scrim="rgba(0,0,0,0.3)">
             <div className="w-[520px] max-w-[95vw] rounded-2xl border border-tg bg-tg-card text-tg-card">
                 <div className="px-5 py-4 border-b border-tg flex justify-between">
                     <h3 className="text-base font-medium">Invitar usuario</h3>
@@ -55,6 +56,6 @@ export default function InviteUserModal({
                     </button>
                 </div>
             </div>
-        </div>
+        </ModalOverlay>
     );
 }

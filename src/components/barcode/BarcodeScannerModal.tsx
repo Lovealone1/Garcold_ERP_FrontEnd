@@ -6,6 +6,7 @@ import {
     IScannerControls,
 } from "@zxing/browser";
 import { BarcodeFormat, DecodeHintType } from "@zxing/library";
+import ModalOverlay from "@/components/ui/ModalOverlay";
 
 type Props = {
     open: boolean;
@@ -106,9 +107,11 @@ export function BarcodeScannerModal({
     if (!open) return null;
 
     return (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70">
+        <ModalOverlay open={open} onClose={onClose} scrim="rgba(0,0,0,0.7)">
             <div
-                className="relative w-full max-w-sm h-[80vh] rounded-2xl flex flex-col"
+                // 80dvh y no 80vh: en móvil, `vh` mide el viewport con la barra
+                // de URL retraída, así que el panel sobresalía por abajo.
+                className="relative w-full max-w-sm h-[80dvh] rounded-2xl flex flex-col"
                 style={{
                     backgroundColor: "var(--tg-bg)",
                     color: "var(--tg-fg)",
@@ -177,6 +180,6 @@ export function BarcodeScannerModal({
                     </div>
                 )}
             </div>
-        </div>
+        </ModalOverlay>
     );
 }

@@ -10,6 +10,7 @@ import { useCreateExpense } from "@/hooks/gastos/useCreateGasto";
 import type { ExpenseCreate, Expense } from "@/types/expense";
 
 import DateInput from "@/components/ui/DateRangePicker/DateInput";
+import ModalOverlay from "@/components/ui/ModalOverlay";
 
 type Props = { open: boolean; onClose: () => void; onCreated?: (e: Expense) => void };
 
@@ -73,17 +74,7 @@ export default function CreateExpenseModal({ open, onClose, onCreated }: Props) 
     if (!open) return null;
 
     return (
-        <div
-            role="dialog"
-            aria-modal="true"
-            className="fixed inset-0 z-50 grid place-items-center bg-black/50"
-            onClick={e => {
-                if (e.target === e.currentTarget && !loading) onClose();
-            }}
-            onKeyDown={e => {
-                if (e.key === "Escape" && !loading) onClose();
-            }}
-        >
+        <ModalOverlay open onClose={onClose} locked={loading}>
             <form
                 onSubmit={handleSubmit}
                 className="w-[560px] max-w-[95vw] rounded-lg border border-tg bg-[var(--panel-bg)] shadow-xl"
@@ -166,6 +157,6 @@ export default function CreateExpenseModal({ open, onClose, onCreated }: Props) 
                     </button>
                 </div>
             </form>
-        </div>
+        </ModalOverlay>
     );
 }

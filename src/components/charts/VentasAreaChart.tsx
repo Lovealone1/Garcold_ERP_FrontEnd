@@ -50,7 +50,12 @@ export default function VentasAreaChart({
     const maxY = Math.max(1, ...ventasData, ...utilidadesData);
 
     const pct = Math.min(100, Math.max(10, widthPercent));
-    const widthPx = Math.max(360, Math.round((wrapW || 0) * (pct / 100)));
+    // El mínimo de 360px mantiene la gráfica legible, pero antes desbordaba la
+    // página entera en un móvil de 360px (la card ya se come ~48px de padding).
+    // Ahora ese exceso se queda dentro del contenedor, que hace scroll propio.
+    // Hasta la primera medición no se dibuja nada: si no, la gráfica salía al
+    // ancho mínimo y daba un salto visible al reacomodarse.
+    const widthPx = wrapW > 0 ? Math.max(360, Math.round(wrapW * (pct / 100))) : 0;
 
     const AXIS_TEXT = "var(--tg-muted)";
     const AXIS_LINE = "var(--tg-muted)";
@@ -58,7 +63,8 @@ export default function VentasAreaChart({
     const LEGEND_FG = "var(--tg-fg)";
 
     return (
-        <div ref={wrapRef} className="w-full">
+        <div ref={wrapRef} className="w-full overflow-x-auto overscroll-x-contain">
+            {widthPx > 0 && (
             <LineChart
                 width={widthPx}
                 height={height}
@@ -121,6 +127,7 @@ export default function VentasAreaChart({
                     "& .MuiChartsLegend-series": { gap: 1 },
                 }}
             />
+            )}
         </div>
     );
 }

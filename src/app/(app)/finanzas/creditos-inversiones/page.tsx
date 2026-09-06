@@ -19,6 +19,7 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import CloseIcon from "@mui/icons-material/Close";
 import type { Investment } from "@/types/investment";
 import type { Loan } from "@/types/loan";
+import ModalOverlay from "@/components/ui/ModalOverlay";
 
 function inRange(d: string, range?: DateRange) {
     if (!range?.from || !range?.to) return true;
@@ -388,14 +389,8 @@ export default function LoansInvestmentsPage() {
 
             {/* confirmación eliminar */}
             {confirmKind && (
-                <div
-                    role="dialog"
-                    aria-modal="true"
-                    className="fixed inset-0 z-50 grid place-items-center bg-black/50"
-                    onKeyDown={(e) => { if (e.key === "Escape") closeConfirm(); }}
-                    onClick={(e) => { if (e.target === e.currentTarget && !deletingNow) closeConfirm(); }}
-                >
-                    <div className="w-[420px] rounded-lg border border-tg bg-[var(--panel-bg)] shadow-xl">
+                <ModalOverlay open onClose={closeConfirm} locked={deletingNow}>
+                    <div className="w-full max-w-[420px] rounded-lg border border-tg bg-[var(--panel-bg)] shadow-xl">
                         <div className="px-4 py-3 border-b border-tg flex items-center gap-2">
                             <span className="text-sm font-semibold">Confirmar eliminación</span>
                         </div>
@@ -421,7 +416,7 @@ export default function LoansInvestmentsPage() {
                             </button>
                         </div>
                     </div>
-                </div>
+                </ModalOverlay>
             )}
         </div>
     );

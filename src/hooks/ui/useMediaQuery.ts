@@ -1,11 +1,16 @@
-import { useState, useLayoutEffect } from "react";
+import { useState, useEffect, useLayoutEffect } from "react";
+
+// useLayoutEffect avisa por consola cuando se ejecuta en el servidor; en SSR
+// no hay layout que medir, así que allí basta con useEffect.
+const useIsomorphicLayoutEffect =
+    typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 export function useMediaQuery(query: string) {
     const [match, setMatch] = useState<boolean>(() =>
         typeof window !== "undefined" ? window.matchMedia(query).matches : false
     );
 
-    useLayoutEffect(() => {
+    useIsomorphicLayoutEffect(() => {
         if (typeof window === "undefined") return;
         const mql = window.matchMedia(query);
         const handler = () => setMatch(mql.matches);

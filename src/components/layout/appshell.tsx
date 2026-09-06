@@ -38,28 +38,45 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <PeriodProvider>
     <NotificationsProvider>
-      <div className="app-shell min-h-screen flex">
+      {/*
+        Altura acotada al viewport en lugar de `min-h`. Es lo que convierte la
+        app en una pantalla de aplicación —header fijo, una única región que
+        hace scroll— en vez de un documento largo. También es lo que hace que
+        el `flex-1 min-h-0 overflow-auto` que las listas ya traían por dentro
+        funcione de verdad: antes su padre crecía sin límite, así que ese
+        scroll interno nunca se activaba y acababa desplazándose la página.
+      */}
+      <div className="app-shell flex h-dvh overflow-hidden">
         <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
-        <div
-          className="app-shell__frame flex-1"
-          style={{
-            // @ts-ignore
-            "--app-blur-mobile": isSidebarOpen ? "6px" : "0px",
-            filter: "blur(calc(var(--app-blur, 0px) + var(--app-blur-mobile, 0px)))",
-            transition: "filter 10ms ease",
-          }}
-        >
+        {/*
+          Este contenedor NO puede llevar `filter`.
+
+          Cualquier valor de `filter` distinto de `none` — incluido
+          `blur(0px)` — convierte al elemento en containing block de todos sus
+          descendientes `position: fixed`. Con el blur que había aquí, los ~25
+          overlays `fixed inset-0` de la app se posicionaban contra este frame
+          (de alto igual al documento) en vez de contra el viewport: en una
+          lista larga el modal se centraba fuera de pantalla y había que hacer
+          scroll para encontrarlo. El desenfoque del sidebar ahora lo hace un
+          overlay con `backdrop-filter` dentro de Sidebar, que consigue el
+          mismo efecto sin tocar el flujo de posicionamiento.
+        */}
+        <div className="app-shell__frame flex-1 min-w-0 flex flex-col min-h-0">
           {/* Topbar */}
           <header
-            className="sticky top-0 z-30 border-b border-tg py-1 sm:py-1.5 mb-1 sm:mb-2 md:mb-1"
+            className="shrink-0 z-30 border-b border-tg py-1 sm:py-1.5
+                       pt-[env(safe-area-inset-top)]"
             style={{ background: "var(--tg-bg)" }}
           >
-            <div className="h-11 px-2 sm:px-3 lg:pl-20 flex items-center gap-2 min-w-0">
+            {/* Mismo inset que el <main>: el selector de periodo vive aquí y
+                las tarjetas que controla viven ahí abajo, así que sus bordes
+                tienen que arrancar en el mismo punto. */}
+            <div className="app-inset-x h-11 flex items-center gap-2 min-w-0">
               {/* Hamburguesa móvil */}
               <button
                 onClick={() => setIsSidebarOpen(true)}
-                className="lg:hidden inline-flex h-9 w-9 items-center justify-center rounded-md
+                className="lg:hidden inline-flex h-11 w-11 items-center justify-center rounded-md
              bg-[rgba(255,255,255,0.04)]
              border border-[rgba(255,255,255,0.18)]
              hover:bg-[rgba(255,255,255,0.08)]
@@ -78,7 +95,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               {/* Back móvil */}
               <button
                 onClick={() => (history.length > 1 ? history.back() : null)}
-                className="lg:hidden inline-flex h-9 w-9 items-center justify-center rounded-md
+                className="lg:hidden inline-flex h-11 w-11 items-center justify-center rounded-md
              bg-transparent
              hover:bg-[rgba(255,255,255,0.06)]
              focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tg-primary)]"
@@ -108,8 +125,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           </header>
 
-          {/* Contenido: mismo safe-inset que el header en lg */}
-          <main className="app-shell__content px-2 sm:px-4 lg:px-6 lg:pl-20 py-2 sm:py-3">
+          {/* Única región con scroll de la app. `overscroll-contain` evita que
+              al llegar al final arrastre el scroll del documento (el rebote
+              que en móvil se siente como que la pantalla “se va”). */}
+          <main className="app-shell__content app-inset-x flex-1 min-h-0 overflow-y-auto overscroll-contain">
             {children}
           </main>
         </div>

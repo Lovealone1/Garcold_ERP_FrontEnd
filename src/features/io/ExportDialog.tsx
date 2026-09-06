@@ -2,6 +2,7 @@
 import { useState, useMemo } from "react";
 import { MaterialIcon } from "@/components/ui/material-icon";
 import type { Entity, Fmt } from "@/services/sales/export.api";
+import ModalOverlay from "@/components/ui/ModalOverlay";
 
 type Props = {
     open: boolean;
@@ -41,10 +42,6 @@ export default function ExportDialog({
 
     if (!open) return null;
 
-    const handleBackdrop = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (e.target === e.currentTarget && !loading) onClose();
-    };
-
     const safeBaseName = (s: string) => s.replace(/\.(csv|xlsx)$/i, "");
 
     const handleDownload = () => {
@@ -53,17 +50,8 @@ export default function ExportDialog({
     };
 
     return (
-        <div
-            role="dialog"
-            aria-modal="true"
-            aria-busy={loading || undefined}
-            className="fixed inset-0 z-50 grid place-items-center bg-black/50"
-            onKeyDown={(e) => {
-                if (e.key === "Escape" && !loading) onClose();
-            }}
-            onClick={handleBackdrop}
-        >
-            <div className="relative w-[480px] rounded-lg border border-tg bg-[var(--panel-bg)] shadow-xl">
+        <ModalOverlay open onClose={onClose} locked={loading}>
+            <div className="relative w-full max-w-[480px] rounded-lg border border-tg bg-[var(--panel-bg)] shadow-xl">
                 {loading && (
                     <div
                         className="absolute left-0 top-0 h-[2px] w-full overflow-hidden"
@@ -155,6 +143,6 @@ export default function ExportDialog({
                     </button>
                 </div>
             </div>
-        </div>
+        </ModalOverlay>
     );
 }

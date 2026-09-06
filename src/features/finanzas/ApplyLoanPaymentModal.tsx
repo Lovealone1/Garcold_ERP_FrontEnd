@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { Loan, LoanApplyPaymentIn } from "@/types/loan";
 import { useBancos } from "@/hooks/bancos/useBancos";
 import { useApplyLoanPayment } from "@/hooks/creditos/useApplyLoanPayment";
+import ModalOverlay from "@/components/ui/ModalOverlay";
 
 type ApplyPaymentResult = Loan | { deleted: true; loan_id: number };
 
@@ -61,14 +62,8 @@ export default function ApplyLoanPaymentModal({
     if (!open) return null;
 
     return (
-        <div
-            role="dialog"
-            aria-modal="true"
-            className="fixed inset-0 z-50 grid place-items-center bg-black/50"
-            onClick={(e) => { if (e.target === e.currentTarget && !loading) onClose(); }}
-            onKeyDown={(e) => { if (e.key === "Escape" && !loading) onClose(); }}
-        >
-            <div className="w-[420px] rounded-lg border border-tg bg-[var(--panel-bg)] shadow-xl">
+        <ModalOverlay open onClose={onClose} locked={loading}>
+            <div className="w-full max-w-[420px] rounded-lg border border-tg bg-[var(--panel-bg)] shadow-xl">
                 {/* Header */}
                 <div className="px-4 py-3 border-b border-tg flex items-center justify-between">
                     <span className="text-sm font-semibold">Aplicar pago a crédito</span>
@@ -166,6 +161,6 @@ export default function ApplyLoanPaymentModal({
                     </button>
                 </div>
             </div>
-        </div>
+        </ModalOverlay>
     );
 }

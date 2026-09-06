@@ -10,6 +10,7 @@ import NavCollapsed from "@/components/sidebar/NavCollapsed";
 import NavExpanded from "@/components/sidebar/NavExpanded";
 import UserModule from "../sidebar/UserModule";
 import UserTile from "@/components/sidebar/UserTile";
+import { useMediaQuery } from "@/hooks/ui/useMediaQuery";
 
 interface SidebarProps { isOpen: boolean; onClose: () => void; }
 
@@ -20,9 +21,20 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const [animating, setAnimating] = useState(false);
   const TRANS_MS = 200;
 
+  /**
+   * El despliegue por hover solo tiene sentido con un ratón.
+   *
+   * Antes esto colgaba de onPointerEnter/onPointerLeave sin filtrar el tipo de
+   * puntero. En una pantalla táctil `pointerenter` se dispara al tocar y
+   * `pointerleave` a menudo no llega nunca, así que el sidebar se quedaba
+   * abierto y —peor— dejaba la app entera desenfocada de forma permanente.
+   * En táctil el menú se abre solo con el botón de hamburguesa.
+   */
+  const canHover = useMediaQuery("(hover: hover) and (pointer: fine)");
+
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
   const sections: NavSection[] = useMemo(() => getNavSections(), []);
-  const expanded = hovered || isOpen;
+  const expanded = (canHover && hovered) || isOpen;
 
   useEffect(() => {
     const saved = localStorage.getItem("theme");
@@ -30,6 +42,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     setIsDark(nextIsDark);
     document.documentElement.classList.toggle("dark", nextIsDark);
   }, []);
+
+  // Si el dispositivo deja de admitir hover (p. ej. se desconecta el ratón de
+  // una 2-en-1), no dejes el estado colgado en abierto.
+  useEffect(() => {
+    if (!canHover) setHovered(false);
+  }, [canHover]);
 
   const toggleTheme = () => {
     const next = !isDark;
@@ -56,22 +74,28 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     };
   }, [animating]);
 
-  useEffect(() => {
-    const enable = !isOpen && expanded && !animating;
-    document.documentElement.style.setProperty("--app-blur", enable ? "6px" : "0px");
-    return () => { document.documentElement.style.removeProperty("--app-blur"); };
-  }, [isOpen, expanded, animating]);
+  // Desenfoque de fondo: `backdrop-filter` sobre un overlay propio.
+  // Se hacía con `filter` sobre .app-shell__frame, lo que convertía al frame en
+  // containing block de todo `position: fixed` y descolocaba cada modal.
+  const showScrim = isOpen || (canHover && expanded && !animating);
 
   return (
     <>
-      {isOpen && (
-        <button
-          type="button"
-          aria-label="Cerrar menú lateral"
-          className="fixed inset-0 bg-black/50 backdrop-blur-[10px] z-40"
-          onClick={onClose}
-          onKeyDown={(e) => { if (e.key === "Escape" || e.key === "Enter") onClose(); }}
-        />
+      {showScrim && (
+        isOpen ? (
+          <button
+            type="button"
+            aria-label="Cerrar menú lateral"
+            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-[10px]"
+            onClick={onClose}
+            onKeyDown={(e) => { if (e.key === "Escape" || e.key === "Enter") onClose(); }}
+          />
+        ) : (
+          <div
+            aria-hidden
+            className="fixed inset-0 z-40 pointer-events-none backdrop-blur-[6px]"
+          />
+        )
       )}
 
       <aside
@@ -80,11 +104,13 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         className={`fixed inset-y-0 left-0 z-50 flex flex-col bg-tg-sidebar text-tg-fg
                     border-r border-tg shadow-xl
                     transform-gpu overflow-hidden [contain:layout_paint]
+                    pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]
+                    ps-[env(safe-area-inset-left)]
                     transition-[width,transform] duration-200 ease-in-out
                     ${isOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0
                     ${expanded ? "w-72" : "w-16"}`}
-        onPointerEnter={() => setHovered(true)}
-        onPointerLeave={() => setHovered(false)}
+        onPointerEnter={(e) => { if (e.pointerType === "mouse") setHovered(true); }}
+        onPointerLeave={(e) => { if (e.pointerType === "mouse") setHovered(false); }}
       >
         <SidebarHeader expanded={expanded} basePath={basePath} />
 

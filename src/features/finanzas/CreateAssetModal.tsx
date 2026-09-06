@@ -4,6 +4,7 @@ import { useCreateLoan } from "@/hooks/creditos/useCreateCreditos";
 import { useCreateInvestment } from "@/hooks/inversiones/useCreateInversion";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 import { useBancos } from "@/hooks/bancos/useBancos";
+import ModalOverlay from "@/components/ui/ModalOverlay";
 
 type Kind = "loan" | "investment";
 
@@ -79,7 +80,7 @@ export default function CreateAssetModal({
     if (!open) return null;
 
     return (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/40">
+        <ModalOverlay open scrim="rgba(0,0,0,0.4)">
             <div className="w-[92vw] max-w-[520px] rounded-2xl border border-tg bg-[var(--panel-bg,white)] p-5 shadow-xl">
                 <h3 className="text-lg font-semibold mb-4">
                     {kind === "loan" ? "Nuevo crédito" : "Nueva inversión"}
@@ -154,6 +155,6 @@ export default function CreateAssetModal({
                     </button>
                 </div>
             </div>
-        </div>
+        </ModalOverlay>
     );
 }

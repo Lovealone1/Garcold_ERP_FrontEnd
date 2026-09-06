@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { MaterialIcon } from "@/components/ui/material-icon";
 import type { Entity, Delimiter } from "@/services/sales/import.api";
+import ModalOverlay from "@/components/ui/ModalOverlay";
 
 type Props = {
     open: boolean;
@@ -46,10 +47,6 @@ export default function ImportDialog({
 
     if (!open) return null;
 
-    const handleBackdrop = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (e.target === e.currentTarget && !loading) onClose();
-    };
-
     const handleImport = () => {
         if (!file) return;
         onRun({
@@ -63,17 +60,8 @@ export default function ImportDialog({
     };
 
     return (
-        <div
-            role="dialog"
-            aria-modal="true"
-            aria-busy={loading || undefined}
-            className="fixed inset-0 z-50 grid place-items-center bg-black/50"
-            onKeyDown={(e) => {
-                if (e.key === "Escape") onClose();
-            }}
-            onClick={handleBackdrop}
-        >
-            <div className="relative w-[560px] rounded-lg border border-tg bg-[var(--panel-bg)] shadow-xl">
+        <ModalOverlay open onClose={onClose} locked={loading}>
+            <div className="relative w-full max-w-[560px] rounded-lg border border-tg bg-[var(--panel-bg)] shadow-xl">
                 {loading && (
                     <div
                         className="absolute left-0 top-0 h-[2px] w-full overflow-hidden"
@@ -189,6 +177,6 @@ export default function ImportDialog({
                     </button>
                 </div>
             </div>
-        </div>
+        </ModalOverlay>
     );
 }

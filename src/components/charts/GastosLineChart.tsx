@@ -44,13 +44,17 @@ export default function GastosLineChart({
 
     const maxY = Math.max(1, ...valores);
     const pct = Math.min(100, Math.max(10, widthPercent));
-    const widthPx = Math.max(320, Math.round((wrapW || 0) * (pct / 100)));
+    // Mismo criterio que en VentasAreaChart: el mínimo legible se conserva,
+    // pero el exceso se queda dentro del contenedor con scroll propio en vez de
+    // desbordar la página en móvil. Sin medida todavía, no se dibuja.
+    const widthPx = wrapW > 0 ? Math.max(320, Math.round(wrapW * (pct / 100))) : 0;
 
     const AXIS = "var(--tg-muted)";
     const GRID = "color-mix(in srgb, var(--tg-muted) 25%, transparent)";
 
     return (
-        <div ref={wrapRef} className="w-full">
+        <div ref={wrapRef} className="w-full overflow-x-auto overscroll-x-contain">
+            {widthPx > 0 && (
             <LineChart
                 width={widthPx}
                 height={height}
@@ -82,6 +86,7 @@ export default function GastosLineChart({
                     [`& .${lineElementClasses.root}`]: { strokeWidth: 2 },
                 }}
             />
+            )}
         </div>
     );
 }

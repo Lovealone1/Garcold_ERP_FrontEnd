@@ -6,6 +6,7 @@ import { listBanks } from "@/services/sales/bank.api";
 import type { Bank } from "@/types/bank";
 import type { TransactionCreate } from "@/types/transaction";
 import DateInput from "@/components/ui/DateRangePicker/DateInput";
+import ModalOverlay from "@/components/ui/ModalOverlay";
 
 type Props = {
     open: boolean;
@@ -89,18 +90,7 @@ export default function NewTransactionModal({
     if (!open) return null;
 
     return (
-        <div
-            role="dialog"
-            aria-modal="true"
-            // fullscreen, centrado real en móvil, con padding
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-4"
-            onKeyDown={(e) => {
-                if (e.key === "Escape" && !loading) onClose();
-            }}
-            onClick={(e) => {
-                if (e.target === e.currentTarget && !loading) onClose();
-            }}
-        >
+        <ModalOverlay open onClose={onClose} locked={loading}>
             {/* card responsivo */}
             <div className="w-full max-w-[440px] rounded-lg border border-tg bg-[var(--panel-bg)] shadow-xl">
                 <div className="flex items-center gap-2 border-b border-tg px-4 py-3">
@@ -218,6 +208,6 @@ export default function NewTransactionModal({
                     -moz-appearance: textfield;
                 }
             `}</style>
-        </div>
+        </ModalOverlay>
     );
 }

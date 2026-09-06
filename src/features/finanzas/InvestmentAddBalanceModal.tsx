@@ -6,6 +6,7 @@ import type { InvestmentAddBalanceIn } from "@/types/investment";
 import { useAddInversionBalance } from "@/hooks/inversiones/useAddInversionBalance";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 import { useBancos } from "@/hooks/bancos/useBancos";
+import ModalOverlay from "@/components/ui/ModalOverlay";
 
 type Props = {
     open: boolean;
@@ -60,13 +61,8 @@ export default function InvestmentAddBalanceModal({ open, investment, onClose, o
     if (!canShow) return null;
 
     return (
-        <div
-            role="dialog"
-            aria-modal="true"
-            className="fixed inset-0 z-50 grid place-items-center bg-black/50"
-            onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-        >
-            <form onSubmit={handleSubmit} className="w-[520px] rounded-xl border border-[var(--tg-border)] bg-[var(--panel-bg)] shadow-xl">
+        <ModalOverlay open onClose={onClose}>
+            <form onSubmit={handleSubmit} className="w-full max-w-[520px] rounded-xl border border-[var(--tg-border)] bg-[var(--panel-bg)] shadow-xl">
                 <div className="px-5 pt-4 pb-3 border-b border-[var(--tg-border)]">
                     <h3 className="text-base font-semibold">Agregar saldo a inversión</h3>
                     <div className="text-xs text-[var(--tg-muted)] mt-1">{investment?.name}</div>
@@ -137,6 +133,6 @@ export default function InvestmentAddBalanceModal({ open, investment, onClose, o
                     </button>
                 </div>
             </form>
-        </div>
+        </ModalOverlay>
     );
 }

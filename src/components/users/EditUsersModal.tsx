@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import type { AdminUserOut, UserDTO, SetUserActiveIn, UpdateUserIn } from "@/types/user";
 import { updateUser, setUserRoleBySub, setUserActiveBySub } from "@/services/user.api";
 import { useNotifications } from "@/components/providers/NotificationsProvider"; 
+import ModalOverlay from "@/components/ui/ModalOverlay";
 
 export type RoleDTO = { id: number; code: string };
 
@@ -72,7 +73,7 @@ export default function EditUserModal({
     if (!open) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/30 grid place-items-center z-50">
+        <ModalOverlay open scrim="rgba(0,0,0,0.3)">
             <div className="w-[520px] max-w-[95vw] rounded-2xl border border-tg bg-[var(--tg-card-bg)] text-[var(--tg-card-fg)] shadow-lg">
                 <div className="px-5 py-4 border-b border-tg flex items-center justify-between">
                     <h3 className="text-base font-medium">Editar usuario</h3>
@@ -126,6 +127,6 @@ export default function EditUserModal({
                     </button>
                 </div>
             </div>
-        </div>
+        </ModalOverlay>
     );
 }

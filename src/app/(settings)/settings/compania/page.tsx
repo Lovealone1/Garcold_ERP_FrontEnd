@@ -77,7 +77,7 @@ export default function CompanySettingsPage() {
     setForm((s) => ({ ...s, [key]: val }));
 
   return (
-    <div className="app-shell__content">
+    <div>
       <div className="mb-3">
         <h1 className="text-xl font-semibold">Compañía</h1>
       </div>

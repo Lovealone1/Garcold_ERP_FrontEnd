@@ -31,12 +31,10 @@
   --table-head-bg: #0b0b0d;
   --table-head-fg: #ffffff;
   --tg-placeholder: #5c5c5c;
-  /* layout */
-  --topbar-h: 64px;
-  --gap-top: 14px;
-  --content-l: 84px;
-  --content-r: 24px;
-  --content-b: 24px;
+
+  /* Ancho del riel del sidebar colapsado (w-16 en sidebar.tsx). El contenido
+     se aparta de él a partir de lg, que es donde el riel deja de estar oculto. */
+  --sidebar-rail: 64px;
 }
 
 /* TG tokens – dark */
@@ -141,64 +139,22 @@ body {
   color: var(--tg-card-fg)
 }
 
-.app-shell {
-  min-height: 100vh;
-}
+/*
+  Aquí vivían .app-shell__topbar (con sus dos declaraciones y sus variantes
+  -left/-right), el margin-left de .app-shell__frame y las duplicaciones de
+  --panel-bg. Nada de eso se usaba:
 
-@media (min-width:1024px) {
-  .app-shell__frame {
-    margin-left: var(--sidebar-w-current);
-    transition: margin-left 20ms ease;
-  }
-}
+    - El topbar real es el <header> de appshell.tsx, con clases de Tailwind.
+      La clase .app-shell__topbar no aparecía en ningún JSX.
+    - --sidebar-w-current no estaba definida en ninguna parte, así que
+      `margin-left: var(--sidebar-w-current)` era una declaración inválida y
+      el margen valía 0.
+    - --content-x lo fijaban las páginas, pero solo lo leía el topbar muerto.
 
-.app-shell__topbar {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  height: var(--topbar-h);
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  padding: var(--gap-top) var(--content-x) 0 var(--content-x);
-  background: var(--hera-bg);
-}
-
-.app-shell__topbar-left {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-}
-
-.app-shell__topbar-right {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.app-shell__topbar {
-  padding: var(--gap-top) var(--content-r) 0 var(--content-l);
-}
-
-.app-shell__content {
-  padding: 0 var(--content-r) var(--content-b) var(--content-l);
-}
-
-:root {
-  --panel-bg: color-mix(in srgb, var(--tg-card-bg) 92%, black 8%);
-  --panel-border: var(--tg-border);
-  --table-head-bg: #0b0b0d;
-  --table-head-fg: #ffffff;
-}
-
-html.dark {
-  --panel-bg: color-mix(in srgb, var(--tg-card-bg) 85%, black 15%);
-  --panel-border: var(--tg-border);
-  --table-head-bg: #1b1b1f;
-  --table-head-fg: #e5e7eb;
-}
+  El alto lo pone ahora appshell.tsx con `h-dvh` (dvh y no vh: en móvil, vh
+  mide con la barra de URL retraída, así que 100vh siempre sobresalía y dejaba
+  un scroll residual imposible de eliminar).
+*/
 
 .phone-field .PhoneInput {
   display: flex;
@@ -415,9 +371,66 @@ html:not(.dark) .tg-country-item:hover {
 }
 .animate-importbar { animation: importbar 1.1s ease-in-out infinite; }
 
-.app-shell__content { padding: 8px 12px 16px; }
-@media (min-width: 640px){ .app-shell__content { padding: 12px 16px 20px; } }
-@media (min-width:1024px){ .app-shell__content { padding: 16px 24px 24px; } }
+/*
+  Fuente única del padding del contenido.
+
+  Antes esta regla vivía fuera de toda capa y, por tanto, después de
+  `@tailwind utilities`. Con la misma especificidad (0,1,0) ganaba la última,
+  así que anulaba en silencio el `lg:pl-20` que llevaba el <main>: en escritorio
+  el contenido se quedaba con 24px de padding izquierdo por debajo de un riel
+  de sidebar de 64px, mientras el header —que solo usaba Tailwind— sí
+  respetaba los 80px. De ahí que header y contenido no cuadrasen.
+
+  Al meterla en @layer components pasa por debajo de las utilidades, que es
+  donde debe estar: ahora una clase de Tailwind en el <main> vuelve a poder
+  sobreescribir esto.
+*/
+@layer components {
+  /*
+    Un único inset horizontal para el header y para el contenido.
+
+    Antes cada uno llevaba el suyo (el header con px-2/sm:px-3, el contenido
+    con su propio padding), así que sus bordes no coincidían: en móvil el
+    selector de periodo quedaba a 8px del borde y las KpiCard que controla a
+    12px. Ese desfase de 4px es lo que se veía descuadrado. Compartiendo la
+    clase, no pueden volver a separarse.
+  */
+  .app-inset-x {
+    padding-inline:
+      max(12px, env(safe-area-inset-left))
+      max(12px, env(safe-area-inset-right));
+  }
+
+  .app-shell__content {
+    padding-block: 8px 16px;
+  }
+
+  @media (min-width: 640px) {
+    .app-inset-x {
+      padding-inline:
+        max(16px, env(safe-area-inset-left))
+        max(16px, env(safe-area-inset-right));
+    }
+
+    .app-shell__content {
+      padding-block: 12px 20px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    /* Aparta del riel del sidebar. Al ser la misma clase, header y contenido
+       arrancan exactamente en el mismo punto. */
+    .app-inset-x {
+      padding-inline:
+        calc(var(--sidebar-rail) + 16px)
+        max(24px, env(safe-area-inset-right));
+    }
+
+    .app-shell__content {
+      padding-block: 16px 24px;
+    }
+  }
+}
 
 input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }
 input[type="search"]::-ms-clear { display: none; width: 0; height: 0; }
@@ -425,5 +438,21 @@ input[type="search"]::-ms-clear { display: none; width: 0; height: 0; }
 @supports (-webkit-touch-callout: none) {
   @media (max-width: 640px) {
     input, select, textarea { font-size: 16px !important; }
+  }
+}
+/* Comportamiento táctil: sin destello gris al tocar y sin la espera de ~300ms
+   que el navegador reserva para detectar un doble toque de zoom. */
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  a,
+  button,
+  label,
+  select,
+  summary,
+  [role="button"] {
+    touch-action: manipulation;
   }
 }

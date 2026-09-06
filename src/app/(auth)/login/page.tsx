@@ -114,8 +114,12 @@ export default function LoginPage() {
 
     return (
         <div
-            className="min-h-screen w-full bg-[var(--tg-bg)] text-[var(--tg-fg)] relative flex items-center justify-center"
-            style={{ overflow: "hidden" }}
+            // `overflow: hidden` recortaba la página con el teclado abierto en
+            // móvil: el formulario se desplazaba hacia arriba y el botón de
+            // entrar quedaba fuera, sin barra con la que volver. Ahora el
+            // recorte se limita a los halos decorativos, que es lo único que
+            // se salía. min-h-dvh en vez de min-h-screen por la barra de URL.
+            className="relative flex min-h-dvh w-full items-center justify-center overflow-x-clip bg-[var(--tg-bg)] py-8 text-[var(--tg-fg)]"
         >
             {/* Logo */}
             <header className="absolute left-4 top-4 md:left-6 md:top-6 z-20 flex items-center gap-3">

@@ -6,6 +6,7 @@ import type { InvestmentWithdrawIn } from "@/types/investment";
 import { useWithdrawInversion } from "@/hooks/inversiones/useWithdrawInversion";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 import { useBancos } from "@/hooks/bancos/useBancos";
+import ModalOverlay from "@/components/ui/ModalOverlay";
 
 type Props = {
     open: boolean;
@@ -82,20 +83,10 @@ export default function InvestmentWithdrawModal({ open, onClose, investment, onD
     if (!open || !investment) return null;
 
     return (
-        <div
-            role="dialog"
-            aria-modal="true"
-            className="fixed inset-0 z-50 grid place-items-center bg-black/50"
-            onClick={(e) => {
-                if (e.target === e.currentTarget && !loading) onClose();
-            }}
-            onKeyDown={(e) => {
-                if (e.key === "Escape" && !loading) onClose();
-            }}
-        >
+        <ModalOverlay open onClose={onClose} locked={loading}>
             <form
                 onSubmit={handleSubmit}
-                className="w-[520px] rounded-xl border border-[var(--tg-border)] bg-[var(--panel-bg)] shadow-xl"
+                className="w-full max-w-[520px] rounded-xl border border-[var(--tg-border)] bg-[var(--panel-bg)] shadow-xl"
             >
                 <div className="px-5 pt-4 pb-3 border-b border-[var(--tg-border)]">
                     <h3 className="text-base font-semibold">Retirar de inversión</h3>
@@ -206,6 +197,6 @@ export default function InvestmentWithdrawModal({ open, onClose, investment, onD
                     </button>
                 </div>
             </form>
-        </div>
+        </ModalOverlay>
     );
 }

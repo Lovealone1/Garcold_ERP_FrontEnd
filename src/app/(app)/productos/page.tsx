@@ -35,7 +35,7 @@ const ACTION_BG = "color-mix(in srgb, var(--tg-primary) 28%, transparent)";
 const pill =
   "min-w-[90px] h-8 px-2.5 rounded-md grid place-items-center text-[13px] text-white/90 border border-[var(--tg-border)]";
 const actionBtn =
-  "h-8 w-8 grid place-items-center rounded-full text-[var(--tg-primary)] hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary";
+  "tap-target h-8 w-8 grid place-items-center rounded-full text-[var(--tg-primary)] hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary";
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
@@ -106,7 +106,7 @@ function ProductRow({
             <button className={actionBtn} style={{ background: ACTION_BG }} aria-label={p.is_active ? "desactivar" : "activar"} onClick={() => onToggle(p.id, !!p.is_active)}>
               <MaterialIcon name={p.is_active ? "toggle_on" : "toggle_off"} size={18} />
             </button>
-            <button className="h-8 w-8 grid place-items-center rounded-full" style={{ background: "#7a1010" }} aria-label="eliminar" onClick={() => onDelete(p.id)} title="Eliminar">
+            <button className="tap-target h-8 w-8 grid place-items-center rounded-full" style={{ background: "#7a1010" }} aria-label="eliminar" onClick={() => onDelete(p.id)} title="Eliminar">
               <MaterialIcon name="delete" size={16} className="text-[#ff4d4f]" />
             </button>
           </div>
@@ -135,7 +135,7 @@ function ProductRow({
             <button className={actionBtn} style={{ background: ACTION_BG }} aria-label={p.is_active ? "desactivar" : "activar"} onClick={() => onToggle(p.id, !!p.is_active)}>
               <MaterialIcon name={p.is_active ? "toggle_on" : "toggle_off"} size={18} />
             </button>
-            <button className="h-8 w-8 grid place-items-center rounded-full" style={{ background: "#7a1010" }} aria-label="eliminar" onClick={() => onDelete(p.id)}>
+            <button className="tap-target h-8 w-8 grid place-items-center rounded-full" style={{ background: "#7a1010" }} aria-label="eliminar" onClick={() => onDelete(p.id)}>
               <MaterialIcon name="delete" size={16} className="text-[#ff4d4f]" />
             </button>
           </div>
@@ -389,10 +389,10 @@ export default function ProductosPage() {
           </div>
 
           <nav className="flex items-center gap-1">
-            <button disabled={page <= 1} onClick={() => setPage(1)} className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
+            <button disabled={page <= 1} onClick={() => setPage(1)} className="tap-target h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
               <MaterialIcon name="first_page" size={16} />
             </button>
-            <button disabled={page <= 1} onClick={onPrev} className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
+            <button disabled={page <= 1} onClick={onPrev} className="tap-target h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
               <MaterialIcon name="chevron_left" size={16} />
             </button>
 
@@ -410,10 +410,10 @@ export default function ProductosPage() {
               );
             })}
 
-            <button disabled={page >= (total_pages || 1)} onClick={onNext} className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
+            <button disabled={page >= (total_pages || 1)} onClick={onNext} className="tap-target h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
               <MaterialIcon name="chevron_right" size={16} />
             </button>
-            <button disabled={page >= (total_pages || 1)} onClick={onLast} className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
+            <button disabled={page >= (total_pages || 1)} onClick={onLast} className="tap-target h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
               <MaterialIcon name="last_page" size={16} />
             </button>
 

@@ -17,7 +17,7 @@ export default function ThemeToggle({
                     type="button"
                     onClick={onToggle}
                     aria-pressed={isDark}
-                    className="h-9 w-9 inline-flex items-center justify-center rounded-md
+                    className="tap-target h-9 w-9 inline-flex items-center justify-center rounded-md
                                hover:bg-black/10 dark:hover:bg-white/10
                                focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tg-primary)]"
                 >

@@ -405,6 +405,39 @@ html:not(.dark) .tg-country-item:hover {
     padding-block: 8px 16px;
   }
 
+  /*
+    Amplía el área táctil hasta 44px sin tocar el tamaño visible.
+
+    Las filas de acciones de las listas llevan hasta cuatro botones de 32px
+    seguidos; subirlos a 44px de verdad desbordaría la fila en móvil. Este
+    pseudo-elemento transparente se centra sobre el botón y crece hasta el
+    mínimo recomendado, así que el dedo acierta y el diseño no se mueve.
+
+    Va en el propio botón, de modo que los clics sobre la zona ampliada
+    siguen siendo clics del botón.
+  */
+  .tap-target {
+    position: relative;
+  }
+
+  .tap-target::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    translate: -50% -50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+  }
+
+  /* En puntero fino el ratón ya es preciso y un área invisible que se solapa
+     con la del vecino solo estorba. */
+  @media (hover: hover) and (pointer: fine) {
+    .tap-target::after {
+      content: none;
+    }
+  }
+
   @media (min-width: 640px) {
     .app-inset-x {
       padding-inline:
@@ -435,9 +468,15 @@ html:not(.dark) .tg-country-item:hover {
 input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }
 input[type="search"]::-ms-clear { display: none; width: 0; height: 0; }
 
+/* Safari en iOS hace zoom al enfocar cualquier campo con menos de 16px, y
+   después no vuelve solo: la pantalla queda desplazada. Esto afectaba también
+   a los iPad, donde los campos `size="small"` de MUI son de 14px, así que la
+   regla ya no se limita a móviles. */
 @supports (-webkit-touch-callout: none) {
-  @media (max-width: 640px) {
-    input, select, textarea { font-size: 16px !important; }
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
   }
 }
 /* Comportamiento táctil: sin destello gris al tocar y sin la espera de ~300ms

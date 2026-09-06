@@ -147,7 +147,7 @@ export default function LoansInvestmentsPage() {
                                 </span>
                                 <div className="flex items-center">
                                     <button
-                                        className="h-9 w-9 grid place-items-center rounded border border-tg text-sm disabled:opacity-50"
+                                        className="tap-target h-9 w-9 grid place-items-center rounded border border-tg text-sm disabled:opacity-50"
                                         onClick={() => setPageLoan(p => Math.max(1, p - 1))}
                                         disabled={!loanData?.has_prev}
                                         aria-label="Página anterior créditos"
@@ -156,7 +156,7 @@ export default function LoansInvestmentsPage() {
                                     </button>
                                     <span className="mx-2 text-sm">{loanData?.page ?? pageLoan} / {loanData?.total_pages ?? 1}</span>
                                     <button
-                                        className="h-9 w-9 grid place-items-center rounded border border-tg text-sm disabled:opacity-50"
+                                        className="tap-target h-9 w-9 grid place-items-center rounded border border-tg text-sm disabled:opacity-50"
                                         onClick={() => setPageLoan(p => p + 1)}
                                         disabled={!loanData?.has_next}
                                         aria-label="Página siguiente créditos"
@@ -226,9 +226,9 @@ export default function LoansInvestmentsPage() {
                             Total: <span className="font-semibold">{money.format(totalLoans)}</span>
                         </span>
                         <div className="flex items-center">
-                            <button className="h-9 w-9 grid place-items-center rounded border border-tg disabled:opacity-50" onClick={() => setPageLoan(p => Math.max(1, p - 1))} disabled={!loanData?.has_prev}><ChevronLeftIcon fontSize="small" /></button>
+                            <button className="tap-target h-9 w-9 grid place-items-center rounded border border-tg disabled:opacity-50" onClick={() => setPageLoan(p => Math.max(1, p - 1))} disabled={!loanData?.has_prev}><ChevronLeftIcon fontSize="small" /></button>
                             <span className="mx-2 text-sm">{loanData?.page ?? pageLoan} / {loanData?.total_pages ?? 1}</span>
-                            <button className="h-9 w-9 grid place-items-center rounded border border-tg disabled:opacity-50" onClick={() => setPageLoan(p => p + 1)} disabled={!loanData?.has_next}><ChevronRightIcon fontSize="small" /></button>
+                            <button className="tap-target h-9 w-9 grid place-items-center rounded border border-tg disabled:opacity-50" onClick={() => setPageLoan(p => p + 1)} disabled={!loanData?.has_next}><ChevronRightIcon fontSize="small" /></button>
                         </div>
                     </div>
                 </section>
@@ -249,7 +249,7 @@ export default function LoansInvestmentsPage() {
                                 </span>
                                 <div className="flex items-center">
                                     <button
-                                        className="h-9 w-9 grid place-items-center rounded border border-tg disabled:opacity-50"
+                                        className="tap-target h-9 w-9 grid place-items-center rounded border border-tg disabled:opacity-50"
                                         onClick={() => setPageInv(p => Math.max(1, p - 1))}
                                         disabled={!invData?.has_prev}
                                         aria-label="Página anterior inversiones"
@@ -258,7 +258,7 @@ export default function LoansInvestmentsPage() {
                                     </button>
                                     <span className="mx-2 text-sm">{invData?.page ?? pageInv} / {invData?.total_pages ?? 1}</span>
                                     <button
-                                        className="h-9 w-9 grid place-items-center rounded border border-tg disabled:opacity-50"
+                                        className="tap-target h-9 w-9 grid place-items-center rounded border border-tg disabled:opacity-50"
                                         onClick={() => setPageInv(p => p + 1)}
                                         disabled={!invData?.has_next}
                                         aria-label="Página siguiente inversiones"
@@ -338,9 +338,9 @@ export default function LoansInvestmentsPage() {
                             Total: <span className="font-semibold">{money.format(totalInvestments)}</span>
                         </span>
                         <div className="flex items-center">
-                            <button className="h-9 w-9 grid place-items-center rounded border border-tg disabled:opacity-50" onClick={() => setPageInv(p => Math.max(1, p - 1))} disabled={!invData?.has_prev}><ChevronLeftIcon fontSize="small" /></button>
+                            <button className="tap-target h-9 w-9 grid place-items-center rounded border border-tg disabled:opacity-50" onClick={() => setPageInv(p => Math.max(1, p - 1))} disabled={!invData?.has_prev}><ChevronLeftIcon fontSize="small" /></button>
                             <span className="mx-2 text-sm">{invData?.page ?? pageInv} / {invData?.total_pages ?? 1}</span>
-                            <button className="h-9 w-9 grid place-items-center rounded border border-tg disabled:opacity-50" onClick={() => setPageInv(p => p + 1)} disabled={!invData?.has_next}><ChevronRightIcon fontSize="small" /></button>
+                            <button className="tap-target h-9 w-9 grid place-items-center rounded border border-tg disabled:opacity-50" onClick={() => setPageInv(p => p + 1)} disabled={!invData?.has_next}><ChevronRightIcon fontSize="small" /></button>
                         </div>
                     </div>
                 </section>

@@ -92,7 +92,7 @@ export default function BalanceKpi({ banks, total }: Props) {
                 <button
                     type="button"
                     onClick={toggleHidden}
-                    className="flex h-7 w-7 items-center justify-center rounded-md hover:bg-[var(--tg-hover)]"
+                    className="tap-target flex h-7 w-7 items-center justify-center rounded-md hover:bg-[var(--tg-hover)]"
                     title={mounted ? (hidden ? "Mostrar saldo" : "Ocultar saldo") : undefined}
                     aria-pressed={mounted ? hidden : undefined}
                     aria-label={mounted ? (hidden ? "Mostrar saldo" : "Ocultar saldo") : "Saldo"}

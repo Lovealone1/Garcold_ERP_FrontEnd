@@ -20,7 +20,7 @@ const PILL_BG = "color-mix(in srgb, var(--tg-card-bg) 60%, #000 40%)";
 const ACTION_BG = "color-mix(in srgb, var(--tg-primary) 28%, transparent)";
 const BORDER = "var(--tg-border)";
 const actionBtn =
-    "h-8 w-8 grid place-items-center rounded-full text-[var(--tg-primary)] hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary";
+    "tap-target h-8 w-8 grid place-items-center rounded-full text-[var(--tg-primary)] hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary";
 const DPR_SOLID =
     "inline-flex items-stretch h-10 w-full rounded-md border border-tg bg-tg-card " +
     "[&>input]:flex-1 [&>input]:h-10 [&>input]:bg-transparent [&>input]:border-0 [&>input]:px-3 [&>input]:text-tg-card " +
@@ -220,10 +220,10 @@ export default function UtilidadesPage() {
                         </div>
 
                         <nav className="flex items-center gap-1">
-                            <button disabled={page <= 1} onClick={() => setPage(1)} className="h-8 w-8 rounded grid place-items-center disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary" aria-label="Primera página">
+                            <button disabled={page <= 1} onClick={() => setPage(1)} className="tap-target h-8 w-8 rounded grid place-items-center disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary" aria-label="Primera página">
                                 <MaterialIcon name="first_page" size={18} />
                             </button>
-                            <button disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))} className="h-8 w-8 rounded grid place-items-center disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary" aria-label="Anterior">
+                            <button disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))} className="tap-target h-8 w-8 rounded grid place-items-center disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary" aria-label="Anterior">
                                 <MaterialIcon name="chevron_left" size={18} />
                             </button>
 
@@ -241,10 +241,10 @@ export default function UtilidadesPage() {
                                 );
                             })}
 
-                            <button disabled={page >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))} className="h-8 w-8 rounded grid place-items-center disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary" aria-label="Próximo">
+                            <button disabled={page >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))} className="tap-target h-8 w-8 rounded grid place-items-center disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary" aria-label="Próximo">
                                 <MaterialIcon name="chevron_right" size={18} />
                             </button>
-                            <button disabled={page >= totalPages} onClick={() => setPage(totalPages)} className="h-8 w-8 rounded grid place-items-center disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary" aria-label="Última página">
+                            <button disabled={page >= totalPages} onClick={() => setPage(totalPages)} className="tap-target h-8 w-8 rounded grid place-items-center disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary" aria-label="Última página">
                                 <MaterialIcon name="last_page" size={18} />
                             </button>
                         </nav>

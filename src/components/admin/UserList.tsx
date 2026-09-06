@@ -81,7 +81,7 @@ export default function UsersList({
                                             <button
                                                 type="button"
                                                 aria-label="Editar usuario"
-                                                className="h-8 w-8 rounded-md grid place-items-center border border-tg hover:bg-[color-mix(in_srgb,var(--tg-muted)_10%,transparent)]"
+                                                className="tap-target h-8 w-8 rounded-md grid place-items-center border border-tg hover:bg-[color-mix(in_srgb,var(--tg-muted)_10%,transparent)]"
                                                 onClick={() => onEdit?.(u)}
                                             >
                                                 <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
@@ -91,7 +91,7 @@ export default function UsersList({
                                             <button
                                                 type="button"
                                                 aria-label="Eliminar usuario"
-                                                className="h-8 w-8 rounded-md grid place-items-center border border-tg hover:bg-[color-mix(in_srgb,red_12%,transparent)]"
+                                                className="tap-target h-8 w-8 rounded-md grid place-items-center border border-tg hover:bg-[color-mix(in_srgb,red_12%,transparent)]"
                                                 onClick={() => onDelete?.(u)}
                                             >
                                                 <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">

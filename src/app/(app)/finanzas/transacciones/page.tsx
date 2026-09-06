@@ -27,7 +27,7 @@ const BORDER = "var(--tg-border)";
 const pill = "min-w-[90px] h-8 px-2.5 rounded-md grid place-items-center text-[13px] text-white/90 border";
 
 const actionBtn =
-    "h-8 w-8 grid place-items-center rounded-full text-[var(--tg-primary)] hover:opacity-90 focus:outline-none focus-visible:ring-0";
+    "tap-target h-8 w-8 grid place-items-center rounded-full text-[var(--tg-primary)] hover:opacity-90 focus:outline-none focus-visible:ring-0";
 
 const datePickerSxDesktop = "w-[130px] md:w-[210px]";
 const datePickerSxMobile = "flex-1";
@@ -467,12 +467,12 @@ export default function TransactionsPage() {
 
                     <nav className="flex items-center gap-1">
                         <button disabled={page <= 1} onClick={() => setPage(1)}
-                            className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
+                            className="tap-target h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
                             <MaterialIcon name="first_page" size={16} />
                         </button>
 
                         <button disabled={page <= 1} onClick={() => setPage(page - 1)}
-                            className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
+                            className="tap-target h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
                             <MaterialIcon name="chevron_left" size={16} />
                         </button>
 
@@ -488,12 +488,12 @@ export default function TransactionsPage() {
                         })}
 
                         <button disabled={!hasNextPage} onClick={onNext}
-                            className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
+                            className="tap-target h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
                             <MaterialIcon name="chevron_right" size={16} />
                         </button>
 
                         <button disabled={page >= total_pages} onClick={() => goToPage(total_pages)}
-                            className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
+                            className="tap-target h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
                             <MaterialIcon name="last_page" size={16} />
                         </button>
 

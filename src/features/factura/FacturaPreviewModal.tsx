@@ -168,7 +168,7 @@ export default function FacturaPreviewModal({
                     </a>
                     <button
                         onClick={onClose}
-                        className="h-9 w-9 grid place-items-center rounded-md"
+                        className="tap-target h-9 w-9 grid place-items-center rounded-md"
                         style={{ background: "var(--tg-card-bg)", color: "var(--tg-card)" }}
                         aria-label="Cerrar"
                     >

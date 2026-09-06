@@ -364,7 +364,7 @@ export default function VentaCrearPage() {
         }
     };
     return (
-        <div className="app-shell__frame overflow-hidden">
+        <div className="h-full min-h-0">
             <div className="bg-[var(--page-bg)] rounded-xl h-full flex flex-col px-3 sm:px-4 md:px-5 pb-5 pt-3 sm:pt-4 gap-2">
                 <Typography
                     variant="h5"
@@ -380,8 +380,8 @@ export default function VentaCrearPage() {
                         gap: 1.2,
                         gridTemplateColumns: {
                             xs: "1fr 1fr",
-                            md: "minmax(260px,1.2fr) 0.8fr 0.8fr 0.7fr minmax(320px,1.3fr)",
-                            lg: "minmax(320px,1.2fr) 0.8fr 0.8fr 0.7fr minmax(420px,1.4fr)",
+                            lg: "minmax(260px,1.2fr) 0.8fr 0.8fr 0.7fr minmax(320px,1.3fr)",
+                            xl: "minmax(320px,1.2fr) 0.8fr 0.8fr 0.7fr minmax(420px,1.4fr)",
                         },
                         gridTemplateAreas: {
                             xs: `
@@ -390,13 +390,13 @@ export default function VentaCrearPage() {
                 "fecha   fecha"
                 "producto producto"
               `,
-                            md: `"cliente banco estado fecha producto"`,
+                            lg: `"cliente banco estado fecha producto"`,
                         },
                         alignItems: "end",
                         maxWidth: 1800,
                     }}
                 >
-                    <Box sx={{ gridArea: "cliente", minWidth: { xs: 220, md: 260 } }}>
+                    <Box sx={{ gridArea: "cliente", minWidth: { xs: 220, lg: 260 } }}>
                         <Typography
                             variant="caption"
                             sx={{ color: "var(--tg-muted)", fontWeight: 600 }}
@@ -419,7 +419,7 @@ export default function VentaCrearPage() {
                         />
                     </Box>
 
-                    <Box sx={{ gridArea: "banco", minWidth: { xs: 0, md: 180 } }}>
+                    <Box sx={{ gridArea: "banco", minWidth: { xs: 0, lg: 180 } }}>
                         <Typography
                             variant="caption"
                             sx={{ color: "var(--tg-muted)", fontWeight: 600 }}
@@ -443,7 +443,7 @@ export default function VentaCrearPage() {
                         />
                     </Box>
 
-                    <Box sx={{ gridArea: "estado", minWidth: { xs: 0, md: 180 } }}>
+                    <Box sx={{ gridArea: "estado", minWidth: { xs: 0, lg: 180 } }}>
                         <Typography
                             variant="caption"
                             sx={{ color: "var(--tg-muted)", fontWeight: 600 }}
@@ -471,7 +471,7 @@ export default function VentaCrearPage() {
                         />
                     </Box>
 
-                    <Box sx={{ gridArea: "fecha", minWidth: { xs: 0, md: 170 } }}>
+                    <Box sx={{ gridArea: "fecha", minWidth: { xs: 0, lg: 170 } }}>
                         <Typography
                             variant="caption"
                             sx={{ color: "var(--tg-muted)", fontWeight: 600 }}
@@ -838,7 +838,7 @@ export default function VentaCrearPage() {
                             alignItems="center"
                             justifyContent="space-between"
                             gap={1.0}
-                            sx={{ mt: 1, display: { xs: "flex", md: "none" } }}
+                            sx={{ mt: 1, display: { xs: "flex", lg: "none" } }}
                         >
                             <Pagination
                                 page={page}
@@ -869,7 +869,7 @@ export default function VentaCrearPage() {
                         alignItems="center"
                         justifyContent="flex-end"
                         gap={1.25}
-                        sx={{ mt: 1, display: { xs: "none", md: "flex" } }}
+                        sx={{ mt: 1, display: { xs: "none", lg: "flex" } }}
                     >
                         <Pagination
                             page={page}

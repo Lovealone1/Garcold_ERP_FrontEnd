@@ -57,7 +57,10 @@ export default function DashboardPage() {
   return (
     <div>
       {/* KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3">
+      {/* Faltaba un escalón entre 640 y 1280: en toda esa franja —tablets y
+          portátiles pequeños— los cinco KPI se quedaban en dos columnas y
+          luego saltaban directos a cinco. */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <KpiCard
           title="Ventas"
           value={loading ? "—" : money.format(ventasTotal)}

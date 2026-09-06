@@ -386,29 +386,48 @@ html:not(.dark) .tg-country-item:hover {
   sobreescribir esto.
 */
 @layer components {
-  .app-shell__content {
-    padding-block: 8px 16px;
+  /*
+    Un único inset horizontal para el header y para el contenido.
+
+    Antes cada uno llevaba el suyo (el header con px-2/sm:px-3, el contenido
+    con su propio padding), así que sus bordes no coincidían: en móvil el
+    selector de periodo quedaba a 8px del borde y las KpiCard que controla a
+    12px. Ese desfase de 4px es lo que se veía descuadrado. Compartiendo la
+    clase, no pueden volver a separarse.
+  */
+  .app-inset-x {
     padding-inline:
       max(12px, env(safe-area-inset-left))
       max(12px, env(safe-area-inset-right));
   }
 
+  .app-shell__content {
+    padding-block: 8px 16px;
+  }
+
   @media (min-width: 640px) {
-    .app-shell__content {
-      padding-block: 12px 20px;
+    .app-inset-x {
       padding-inline:
         max(16px, env(safe-area-inset-left))
         max(16px, env(safe-area-inset-right));
     }
+
+    .app-shell__content {
+      padding-block: 12px 20px;
+    }
   }
 
   @media (min-width: 1024px) {
-    .app-shell__content {
-      padding-block: 16px 24px;
-      /* Aparta el contenido del riel del sidebar, igual que hace el header. */
+    /* Aparta del riel del sidebar. Al ser la misma clase, header y contenido
+       arrancan exactamente en el mismo punto. */
+    .app-inset-x {
       padding-inline:
         calc(var(--sidebar-rail) + 16px)
         max(24px, env(safe-area-inset-right));
+    }
+
+    .app-shell__content {
+      padding-block: 16px 24px;
     }
   }
 }

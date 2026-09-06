@@ -69,17 +69,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                        pt-[env(safe-area-inset-top)]"
             style={{ background: "var(--tg-bg)" }}
           >
-            {/* Solo propiedades físicas (pl/pr). Mezclarlas con las lógicas
-                (ps/pe) es una trampa: ambas resuelven a padding-left y gana la
-                que Tailwind emita más tarde, no la que se escriba después. */}
-            <div
-              className="h-11 flex items-center gap-2 min-w-0
-                         pl-[max(0.5rem,env(safe-area-inset-left))]
-                         pr-[max(0.5rem,env(safe-area-inset-right))]
-                         sm:pl-[max(0.75rem,env(safe-area-inset-left))]
-                         sm:pr-[max(0.75rem,env(safe-area-inset-right))]
-                         lg:pl-20"
-            >
+            {/* Mismo inset que el <main>: el selector de periodo vive aquí y
+                las tarjetas que controla viven ahí abajo, así que sus bordes
+                tienen que arrancar en el mismo punto. */}
+            <div className="app-inset-x h-11 flex items-center gap-2 min-w-0">
               {/* Hamburguesa móvil */}
               <button
                 onClick={() => setIsSidebarOpen(true)}
@@ -135,7 +128,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           {/* Única región con scroll de la app. `overscroll-contain` evita que
               al llegar al final arrastre el scroll del documento (el rebote
               que en móvil se siente como que la pantalla “se va”). */}
-          <main className="app-shell__content flex-1 min-h-0 overflow-y-auto overscroll-contain">
+          <main className="app-shell__content app-inset-x flex-1 min-h-0 overflow-y-auto overscroll-contain">
             {children}
           </main>
         </div>

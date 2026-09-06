@@ -12,6 +12,7 @@ import type { DateRange } from "react-day-picker";
 import { toApiDate } from "@/lib/period/period";
 import CreateExpenseModal from "@/features/gastos/CreateGastoModal";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
+import ModalOverlay from "@/components/ui/ModalOverlay";
 
 export default function GastosPage() {
     // The date range filters the table on this screen; the header period
@@ -285,17 +286,8 @@ export default function GastosPage() {
 
             {/* Modal eliminar */}
             {confirmDelete && (
-                <div
-                    role="dialog"
-                    aria-modal="true"
-                    className="fixed inset-0 z-50 grid place-items-center bg-black/50"
-                    onClick={(e) => {
-                        if (e.target === e.currentTarget && !deleting) {
-                            setConfirmDelete(false);
-                        }
-                    }}
-                >
-                    <div className="w-[420px] rounded-lg border border-tg bg-[var(--panel-bg)] shadow-xl">
+                <ModalOverlay open onClose={() => setConfirmDelete(false)} locked={deleting}>
+                    <div className="w-full max-w-[420px] rounded-lg border border-tg bg-[var(--panel-bg)] shadow-xl">
                         <div className="px-4 py-3 border-b border-tg">
                             <h3 className="text-base font-semibold">
                                 Confirmar eliminación
@@ -323,7 +315,7 @@ export default function GastosPage() {
                             </button>
                         </div>
                     </div>
-                </div>
+                </ModalOverlay>
             )}
 
             {/* Modal crear */}

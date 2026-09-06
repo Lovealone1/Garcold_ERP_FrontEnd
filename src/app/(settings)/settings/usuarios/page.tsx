@@ -61,7 +61,7 @@ export default function RolesPermisosPage() {
     };
 
     return (
-        <div className="app-shell__content">
+        <div>
             <div className="mb-3">
                 <h1 className="text-xl font-semibold">Miembros del equipo</h1>
             </div>

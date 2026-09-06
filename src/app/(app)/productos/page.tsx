@@ -22,6 +22,7 @@ import { useExport } from "@/hooks/io/useExport";
 import ImportDialog from "@/features/io/ImportDialog";
 import ExportDialog from "@/features/io/ExportDialog";
 import { useProductsCache } from "@/hooks/productos/useProductsCache";
+import ModalOverlay from "@/components/ui/ModalOverlay";
 const money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 
 const GRID_COLS = "30px 156px 1fr 112px 142px 142px 208px";
@@ -196,8 +197,6 @@ export default function ProductosPage() {
   const imp = useImport();
   const exp = useExport();
 
-  const frameVars: CSSProperties = { ["--content-x" as any]: "8px" };
-
   const from = useMemo(() => (total === 0 ? 0 : (page - 1) * (page_size || pageSizeWanted) + 1), [page, page_size, pageSizeWanted, total]);
   const to = useMemo(() => Math.min(page * (page_size || pageSizeWanted), total || 0), [page, page_size, pageSizeWanted, total]);
   const { insertOptimistic, removeOptimistic, patchOptimistic, invalidateAll } = useProductsCache();
@@ -278,7 +277,7 @@ export default function ProductosPage() {
   }
 
   return (
-    <div className="app-shell__frame overflow-hidden" style={frameVars}>
+    <div className="h-full flex flex-col min-h-0">
       <div className="hidden sm:flex mb-3 items-center justify-between gap-3">
         <label className="relative flex h-10 w-full max-w-[440px]">
           <span className="absolute inset-y-0 left-3 flex items-center text-tg-muted pointer-events-none">
@@ -497,14 +496,8 @@ export default function ProductosPage() {
         <ProductImagesModal open={openMedia} productId={mediaProductId!} onClose={() => setOpenMedia(false)} />
       )}
       {openDelete && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-50 grid place-items-center bg-black/50"
-          onKeyDown={(e) => { if (e.key === "Escape") setOpenDelete(false); }}
-          onClick={(e) => { if (e.target === e.currentTarget && !deleting) setOpenDelete(false); }}
-        >
-          <div className="w-[420px] rounded-lg border bg-[var(--panel-bg)] shadow-xl" style={{ borderColor: "var(--tg-border)" }}>
+        <ModalOverlay open onClose={() => setOpenDelete(false)} locked={deleting}>
+          <div className="w-full max-w-[420px] rounded-lg border bg-[var(--panel-bg)] shadow-xl" style={{ borderColor: "var(--tg-border)" }}>
             <div className="px-4 py-3 border-b flex items-center gap-2" style={{ borderColor: "var(--tg-border)" }}>
               <MaterialIcon name="warning" size={18} />
               <h3 className="text-base font-semibold">Confirmar eliminación</h3>
@@ -517,7 +510,7 @@ export default function ProductosPage() {
               </button>
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );

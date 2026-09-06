@@ -15,6 +15,7 @@ import DateRangePicker from "@/components/ui/DateRangePicker/DateRangePicker";
 import type { DateRange } from "react-day-picker";
 import type { TransactionCreate, TransactionView } from "@/types/transaction";
 import ExtractoBancarioModal from "@/features/transacciones/ExtractoBancarioModal";
+import ModalOverlay from "@/components/ui/ModalOverlay";
 
 const FRAME_BG = "color-mix(in srgb, var(--tg-bg) 90%, #fff 3%)";
 const OUTER_BG = "color-mix(in srgb, var(--tg-bg) 55%, #000 45%)";
@@ -155,8 +156,7 @@ function ConfirmDeleteModal({
 }) {
     if (!open || !tx) return null;
     return (
-        <div className="fixed inset-0 z-50 grid place-items-center">
-            <div className="absolute inset-0 bg-black/50" onClick={onCancel} />
+        <ModalOverlay open={open} onClose={onCancel}>
             <div className="relative w-[92vw] max-w-md rounded-xl border shadow-xl p-4 sm:p-5"
                 style={{ background: "var(--tg-card-bg)", borderColor: "var(--tg-border)" }}
                 role="dialog" aria-modal="true">
@@ -194,7 +194,7 @@ function ConfirmDeleteModal({
                     </button>
                 </div>
             </div>
-        </div>
+        </ModalOverlay>
     );
 }
 
@@ -233,8 +233,6 @@ export default function TransactionsPage() {
         }
         return { ingresos: i, retiros: r, saldo: i - r };
     }, [summaryByType, filters.bank]);
-
-    const frameVars: CSSProperties = { ["--content-x" as any]: "8px" };
 
     const [start, end] = useMemo(() => {
         const win = 5;
@@ -287,7 +285,7 @@ export default function TransactionsPage() {
     const selectNoGlowStyle = { boxShadow: "none" } as const;
 
     return (
-        <div className="app-shell__frame overflow-visible min-h-screen" style={frameVars as any}>
+        <div className="h-full flex flex-col min-h-0">
             {/* filtros desktop */}
             <div className="hidden sm:flex mb-3 gap-3 flex-wrap">
                 <label className="relative flex h-10 flex-1 min-w-[200px] max-w-[440px]">

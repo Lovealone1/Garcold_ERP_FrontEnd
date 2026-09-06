@@ -22,6 +22,7 @@ import type { Purchase } from "@/types/purchase";
 import type { DateRange } from "react-day-picker";
 import DateRangePicker from "@/components/ui/DateRangePicker/DateRangePicker";
 import { toApiDate } from "@/lib/period/period";
+import ModalOverlay from "@/components/ui/ModalOverlay";
 /* -------- Tokens visuales (alineado con Ventas) -------- */
 const FRAME_BG = "color-mix(in srgb, var(--tg-bg) 90%, #fff 3%)";
 const OUTER_BG = "color-mix(in srgb, var(--tg-bg) 55%, #000 45%)";
@@ -303,8 +304,6 @@ function PurchaseRow({
 
 /* ----------------- Página ----------------- */
 
-type FrameVars = CSSProperties & { ["--content-x"]?: string };
-
 export default function ComprasPage() {
     const router = useRouter();
     const { success, error } = useNotifications();
@@ -423,12 +422,9 @@ export default function ComprasPage() {
         setOpenDelete(true);
     }
 
-    const frameVars: FrameVars = { ["--content-x" as any]: "8px" };
-
     return (
         <div
-            className="app-shell__frame overflow-hidden"
-            style={frameVars}
+            className="h-full flex flex-col min-h-0"
         >
             {/* Toolbar DESKTOP */}
             <div className="hidden sm:flex mb-3 items-center justify-between gap-3">
@@ -713,20 +709,9 @@ export default function ComprasPage() {
 
             {/* Eliminar */}
             {openDelete && (
-                <div
-                    role="dialog"
-                    aria-modal="true"
-                    className="fixed inset-0 z-50 grid place-items-center bg-black/50"
-                    onKeyDown={(e) => {
-                        if (e.key === "Escape") setOpenDelete(false);
-                    }}
-                    onClick={(e) => {
-                        if (e.target === e.currentTarget && !deleting)
-                            setOpenDelete(false);
-                    }}
-                >
+                <ModalOverlay open onClose={() => setOpenDelete(false)} locked={deleting}>
                     <div
-                        className="w-[420px] rounded-lg border bg-[var(--panel-bg)] shadow-xl"
+                        className="w-full max-w-[420px] rounded-lg border bg-[var(--panel-bg)] shadow-xl"
                         style={{ borderColor: BORDER }}
                     >
                         <div
@@ -776,7 +761,7 @@ export default function ComprasPage() {
                             </button>
                         </div>
                     </div>
-                </div>
+                </ModalOverlay>
             )}
         </div>
     );

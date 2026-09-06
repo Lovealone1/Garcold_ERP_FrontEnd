@@ -16,6 +16,7 @@ import { useUpdateSupplier } from "@/hooks/proveedores/useUpdateSupplier";
 import { useDeleteSupplier } from "@/hooks/proveedores/useDeleteSupplier";
 import ImportDialog from "@/features/io/ImportDialog";
 import ExportDialog from "@/features/io/ExportDialog";
+import ModalOverlay from "@/components/ui/ModalOverlay";
 
 const FRAME_BG = "color-mix(in srgb, var(--tg-bg) 90%, #fff 3%)";
 const OUTER_BG = "color-mix(in srgb, var(--tg-bg) 55%, #000 45%)";
@@ -213,8 +214,6 @@ export default function ProveedoresPage() {
   const imp = useImport();
   const exp = useExport();
 
-  const frameVars: CSSProperties = { ["--content-x" as any]: "8px" };
-
   const [citiesOpen, setCitiesOpen] = useState(false);
   useEffect(() => {
     setCitiesOpen(false);
@@ -281,7 +280,7 @@ export default function ProveedoresPage() {
     setFilters((f) => (allSelected ? { ...f, cities: undefined } : { ...f, cities: [...allCities] }));
 
   return (
-    <div className="app-shell__frame overflow-hidden" style={frameVars}>
+    <div className="h-full flex flex-col min-h-0">
       <div className="hidden sm:flex mb-3 items-center justify-between gap-3">
         <label className="relative flex h-10 w-full max-w-[440px]">
           <span className="absolute inset-y-0 left-3 flex items-center text-tg-muted pointer-events-none">
@@ -625,18 +624,8 @@ export default function ProveedoresPage() {
       )}
 
       {openDelete && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-50 grid place-items-center bg-black/50"
-          onKeyDown={(e) => {
-            if (e.key === "Escape") setOpenDelete(false);
-          }}
-          onClick={(e) => {
-            if (e.target === e.currentTarget && !deleting) setOpenDelete(false);
-          }}
-        >
-          <div className="w-[420px] rounded-lg border bg-[var(--panel-bg)] shadow-xl" style={{ borderColor: BORDER }}>
+        <ModalOverlay open onClose={() => setOpenDelete(false)} locked={deleting}>
+          <div className="w-full max-w-[420px] rounded-lg border bg-[var(--panel-bg)] shadow-xl" style={{ borderColor: BORDER }}>
             <div className="px-4 py-3 border-b flex items-center gap-2" style={{ borderColor: BORDER }}>
               <MaterialIcon name="warning" size={18} />
               <h3 className="text-base font-semibold">Confirmar eliminación</h3>
@@ -656,7 +645,7 @@ export default function ProveedoresPage() {
               </button>
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );

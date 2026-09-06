@@ -80,7 +80,7 @@ export default function ProductosExploracionPage() {
     } as const;
 
     return (
-        <div className="app-shell__frame">
+        <div className="h-full min-h-0">
             <div className="bg-[var(--page-bg)] rounded-xl h-full flex flex-col px-4 md:px-5 pb-5 pt-4">
                 <Typography variant="h5" sx={{ mb: 1.25, fontWeight: 700 }}>
                     Exploración de productos

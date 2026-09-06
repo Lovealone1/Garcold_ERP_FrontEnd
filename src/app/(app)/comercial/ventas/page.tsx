@@ -33,7 +33,7 @@ const pill =
     "min-w-[90px] h-8 px-2.5 rounded-md grid place-items-center text-[13px] text-white/90 border";
 
 const actionBtn =
-    "h-8 w-8 grid place-items-center rounded-full text-[var(--tg-primary)] hover:opacity-90 focus:outline-none";
+    "tap-target h-8 w-8 grid place-items-center rounded-full text-[var(--tg-primary)] hover:opacity-90 focus:outline-none";
 
 const DPR_MOBILE =
     "[&_input]:h-10 [&_input]:w-full [&_input]:rounded-l-md [&_input]:border [&_input]:border-tg " +
@@ -151,7 +151,7 @@ function SaleRow({
                         </button>
 
                         <button
-                            className="h-8 w-8 grid place-items-center rounded-full"
+                            className="tap-target h-8 w-8 grid place-items-center rounded-full"
                             style={{ background: "#7a1010" }}
                             onClick={() => onDelete(v)}
                         >
@@ -217,7 +217,7 @@ function SaleRow({
                         </button>
 
                         <button
-                            className="h-8 w-8 grid place-items-center rounded-full"
+                            className="tap-target h-8 w-8 grid place-items-center rounded-full"
                             style={{ background: "#7a1010" }}
                             onClick={() => onDelete(v)}
                         >
@@ -545,7 +545,7 @@ export default function VentasPage() {
                         <button
                             disabled={page <= 1}
                             onClick={() => handlePageChange(1)}
-                            className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40"
+                            className="tap-target h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40"
                         >
                             <MaterialIcon name="first_page" size={16} />
                         </button>
@@ -553,7 +553,7 @@ export default function VentasPage() {
                         <button
                             disabled={page <= 1}
                             onClick={() => handlePageChange(page - 1)}
-                            className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40"
+                            className="tap-target h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40"
                         >
                             <MaterialIcon name="chevron_left" size={16} />
                         </button>
@@ -577,7 +577,7 @@ export default function VentasPage() {
                         <button
                             disabled={page >= totalPages}
                             onClick={() => handlePageChange(page + 1)}
-                            className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40"
+                            className="tap-target h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40"
                         >
                             <MaterialIcon name="chevron_right" size={16} />
                         </button>
@@ -585,7 +585,7 @@ export default function VentasPage() {
                         <button
                             disabled={page >= totalPages}
                             onClick={() => handlePageChange(totalPages)}
-                            className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40"
+                            className="tap-target h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40"
                         >
                             <MaterialIcon name="last_page" size={16} />
                         </button>

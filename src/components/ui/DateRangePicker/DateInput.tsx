@@ -95,7 +95,7 @@ export default function DateInput({
                     aria-haspopup="dialog"
                     aria-expanded={open}
                     aria-controls={id}
-                    className="ml-1 inline-grid h-8 w-8 place-items-center rounded hover:bg-black/10 dark:hover:bg-white/10 disabled:opacity-50"
+                    className="tap-target ml-1 inline-grid h-8 w-8 place-items-center rounded hover:bg-black/10 dark:hover:bg-white/10 disabled:opacity-50"
                     title="Abrir calendario"
                 >
                     <CalendarMonthOutlinedIcon fontSize="small" />

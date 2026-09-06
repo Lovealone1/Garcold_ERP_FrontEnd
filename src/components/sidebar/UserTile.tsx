@@ -252,7 +252,7 @@ export default function UserTile({
                         onMouseLeave={() => setLogoutHover(false)}
                         title="Cerrar sesión"
                         aria-label="Cerrar sesión"
-                        className="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-md focus:outline-none focus:ring-2"
+                        className="tap-target ml-auto inline-flex h-8 w-8 items-center justify-center rounded-md focus:outline-none focus:ring-2"
                         style={{
                             color: "var(--tg-fg)",
                             background: logoutHover ? "var(--tg-primary)" : "transparent",

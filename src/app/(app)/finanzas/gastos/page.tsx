@@ -181,7 +181,7 @@ export default function GastosPage() {
                     {/* Paginación (visible en móvil y desktop) */}
                     <div className="flex items-center justify-center gap-2">
                         <button
-                            className="h-9 w-9 grid place-items-center rounded border border-tg disabled:opacity-50"
+                            className="tap-target h-9 w-9 grid place-items-center rounded border border-tg disabled:opacity-50"
                             onClick={() => handlePageChange(page - 1)}
                             disabled={!hasPrev || loading}
                             type="button"
@@ -192,7 +192,7 @@ export default function GastosPage() {
                             {page} / {totalPages || 1}
                         </span>
                         <button
-                            className="h-9 w-9 grid place-items-center rounded border border-tg disabled:opacity-50"
+                            className="tap-target h-9 w-9 grid place-items-center rounded border border-tg disabled:opacity-50"
                             onClick={() => handlePageChange(page + 1)}
                             disabled={!hasNext || loading}
                             type="button"

@@ -697,7 +697,7 @@ export default function CompraCrearPage() {
                                                 <div className="flex items-center justify-center gap-2">
                                                     <button
                                                         type="button"
-                                                        className="h-8 w-8 rounded border"
+                                                        className="tap-target h-8 w-8 rounded border"
                                                         style={{
                                                             borderColor: "var(--tg-border)",
                                                             color: "var(--tg-card-fg)",
@@ -721,7 +721,7 @@ export default function CompraCrearPage() {
                                                     />
                                                     <button
                                                         type="button"
-                                                        className="h-8 w-8 rounded border"
+                                                        className="tap-target h-8 w-8 rounded border"
                                                         style={{
                                                             borderColor: "var(--tg-border)",
                                                             color: "var(--tg-card-fg)",
@@ -825,7 +825,7 @@ export default function CompraCrearPage() {
                                             <div className="flex items-center justify-end gap-2">
                                                 <button
                                                     type="button"
-                                                    className="h-8 w-8 rounded border"
+                                                    className="tap-target h-8 w-8 rounded border"
                                                     style={{ borderColor: "var(--tg-border)" }}
                                                     onClick={() => decQty(it.idTmp)}
                                                 >
@@ -843,7 +843,7 @@ export default function CompraCrearPage() {
                                                 />
                                                 <button
                                                     type="button"
-                                                    className="h-8 w-8 rounded border"
+                                                    className="tap-target h-8 w-8 rounded border"
                                                     style={{ borderColor: "var(--tg-border)" }}
                                                     onClick={() => incQty(it.idTmp)}
                                                 >

@@ -28,7 +28,7 @@ const BORDER = "var(--tg-border)";
 const pill =
   "min-w-[90px] h-8 px-2.5 rounded-md grid place-items-center text-[13px] text-white/90 border";
 const actionBtn =
-  "h-8 w-8 grid place-items-center rounded-full text-[var(--tg-primary)] hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary";
+  "tap-target h-8 w-8 grid place-items-center rounded-full text-[var(--tg-primary)] hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary";
 
 const clip = (s?: string | null, n = 22) =>
   (s ?? "—").length > n ? (s as string).slice(0, n).trimEnd() + "…" : (s ?? "—");
@@ -109,7 +109,7 @@ function SupplierRow({
               <MaterialIcon name="edit" size={18} />
             </button>
             <button
-              className="h-8 w-8 grid place-items-center rounded-full"
+              className="tap-target h-8 w-8 grid place-items-center rounded-full"
               style={{ background: "#7a1010" }}
               aria-label="eliminar"
               onClick={() => onDelete(s.id)}
@@ -155,7 +155,7 @@ function SupplierRow({
               <MaterialIcon name="edit" size={18} />
             </button>
             <button
-              className="h-8 w-8 grid place-items-center rounded-full"
+              className="tap-target h-8 w-8 grid place-items-center rounded-full"
               style={{ background: "#7a1010" }}
               aria-label="eliminar"
               onClick={() => onDelete(s.id)}
@@ -484,14 +484,14 @@ export default function ProveedoresPage() {
             <button
               disabled={!hasPrev}
               onClick={() => setPage(1)}
-              className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40"
+              className="tap-target h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40"
             >
               <MaterialIcon name="first_page" size={16} />
             </button>
             <button
               disabled={!hasPrev}
               onClick={() => setPage(page - 1)}
-              className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40"
+              className="tap-target h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40"
             >
               <MaterialIcon name="chevron_left" size={16} />
             </button>
@@ -516,14 +516,14 @@ export default function ProveedoresPage() {
             <button
               disabled={!hasNext}
               onClick={() => setPage(page + 1)}
-              className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40"
+              className="tap-target h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40"
             >
               <MaterialIcon name="chevron_right" size={16} />
             </button>
             <button
               disabled={!hasNext}
               onClick={() => setPage(totalPages)}
-              className="h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40"
+              className="tap-target h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40"
             >
               <MaterialIcon name="last_page" size={16} />
             </button>

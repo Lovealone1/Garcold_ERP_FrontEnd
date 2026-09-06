@@ -80,7 +80,7 @@ export default function CreateAssetModal({
     if (!open) return null;
 
     return (
-        <ModalOverlay open scrim="rgba(0,0,0,0.4)">
+        <ModalOverlay open onClose={onClose} locked={loading} dismissOnBackdrop={false} scrim="rgba(0,0,0,0.4)">
             <div className="w-[92vw] max-w-[520px] rounded-2xl border border-tg bg-[var(--panel-bg,white)] p-5 shadow-xl">
                 <h3 className="text-lg font-semibold mb-4">
                     {kind === "loan" ? "Nuevo crédito" : "Nueva inversión"}

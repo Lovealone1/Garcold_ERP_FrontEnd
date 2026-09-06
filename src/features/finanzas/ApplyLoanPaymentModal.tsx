@@ -69,7 +69,7 @@ export default function ApplyLoanPaymentModal({
                     <span className="text-sm font-semibold">Aplicar pago a crédito</span>
                     <button
                         type="button"
-                        className="h-8 w-8 grid place-items-center rounded hover:bg-black/10 dark:hover:bg-white/10"
+                        className="tap-target h-8 w-8 grid place-items-center rounded hover:bg-black/10 dark:hover:bg-white/10"
                         onClick={onClose}
                         disabled={loading}
                         aria-label="Cerrar"

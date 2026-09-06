@@ -30,11 +30,11 @@ export default function InviteUserModal({
     };
 
     return (
-        <ModalOverlay open scrim="rgba(0,0,0,0.3)">
+        <ModalOverlay open onClose={onClose} locked={saving} dismissOnBackdrop={false} scrim="rgba(0,0,0,0.3)">
             <div className="w-[520px] max-w-[95vw] rounded-2xl border border-tg bg-tg-card text-tg-card">
                 <div className="px-5 py-4 border-b border-tg flex justify-between">
                     <h3 className="text-base font-medium">Invitar usuario</h3>
-                    <button onClick={onClose} className="h-8 w-8 grid place-items-center rounded hover:bg-black/5">✕</button>
+                    <button onClick={onClose} className="tap-target h-8 w-8 grid place-items-center rounded hover:bg-black/5">✕</button>
                 </div>
                 <div className="px-5 py-4 space-y-3">
                     <div className="grid grid-cols-3 items-center gap-3">

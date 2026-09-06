@@ -50,7 +50,7 @@ export default function ExportDialog({
     };
 
     return (
-        <ModalOverlay open onClose={onClose} locked={loading}>
+        <ModalOverlay open onClose={onClose} locked={loading} busy={loading} dismissOnBackdrop={false}>
             <div className="relative w-full max-w-[480px] rounded-lg border border-tg bg-[var(--panel-bg)] shadow-xl">
                 {loading && (
                     <div

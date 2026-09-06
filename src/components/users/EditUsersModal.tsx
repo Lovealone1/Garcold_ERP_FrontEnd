@@ -73,11 +73,11 @@ export default function EditUserModal({
     if (!open) return null;
 
     return (
-        <ModalOverlay open scrim="rgba(0,0,0,0.3)">
+        <ModalOverlay open onClose={onClose} locked={saving} dismissOnBackdrop={false} scrim="rgba(0,0,0,0.3)">
             <div className="w-[520px] max-w-[95vw] rounded-2xl border border-tg bg-[var(--tg-card-bg)] text-[var(--tg-card-fg)] shadow-lg">
                 <div className="px-5 py-4 border-b border-tg flex items-center justify-between">
                     <h3 className="text-base font-medium">Editar usuario</h3>
-                    <button onClick={onClose} className="h-8 w-8 grid place-items-center rounded hover:bg-black/5">✕</button>
+                    <button onClick={onClose} className="tap-target h-8 w-8 grid place-items-center rounded hover:bg-black/5">✕</button>
                 </div>
 
                 <div className="px-5 py-4 space-y-3">

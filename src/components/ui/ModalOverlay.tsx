@@ -8,6 +8,12 @@ type Props = {
   onClose?: () => void;
   /** Deshabilita cerrar con clic en el fondo y con Escape (p. ej. mientras se guarda). */
   locked?: boolean;
+  /**
+   * Si el clic en el fondo cierra. Ponlo en false en formularios: un toque
+   * accidental fuera no debería tirar lo que la persona lleva escrito. Escape
+   * sigue funcionando, así que el diálogo nunca queda sin salida.
+   */
+  dismissOnBackdrop?: boolean;
   /** Clases extra para el fondo (alineación, z-index…). */
   className?: string;
   /**
@@ -17,6 +23,8 @@ type Props = {
    * `class`, así que por clase no se puede sobreescribir de forma fiable.
    */
   scrim?: string;
+  /** Marca el diálogo como ocupado mientras hay una operación en curso. */
+  busy?: boolean;
   labelledBy?: string;
   children: React.ReactNode;
 };
@@ -46,8 +54,10 @@ export default function ModalOverlay({
   open,
   onClose,
   locked = false,
+  dismissOnBackdrop = true,
   className = "",
   scrim = "rgba(0,0,0,0.5)",
+  busy,
   labelledBy,
   children,
 }: Props) {
@@ -60,6 +70,11 @@ export default function ModalOverlay({
   const requestClose = useCallback(() => {
     if (!locked) onClose?.();
   }, [locked, onClose]);
+
+  /** Cierre por clic en el fondo: además, respeta dismissOnBackdrop. */
+  const requestBackdropClose = useCallback(() => {
+    if (dismissOnBackdrop) requestClose();
+  }, [dismissOnBackdrop, requestClose]);
 
   // Bloqueo del scroll de fondo.
   useEffect(() => {
@@ -112,10 +127,11 @@ export default function ModalOverlay({
       role="dialog"
       aria-modal="true"
       aria-labelledby={labelledBy}
+      aria-busy={busy || undefined}
       tabIndex={-1}
       ref={panelRef}
       onMouseDown={(e) => {
-        if (e.target === e.currentTarget) requestClose();
+        if (e.target === e.currentTarget) requestBackdropClose();
       }}
       style={{ backgroundColor: scrim }}
       className={
@@ -138,7 +154,7 @@ export default function ModalOverlay({
                    pl-[max(1rem,env(safe-area-inset-left))]
                    pr-[max(1rem,env(safe-area-inset-right))]"
         onMouseDown={(e) => {
-          if (e.target === e.currentTarget) requestClose();
+          if (e.target === e.currentTarget) requestBackdropClose();
         }}
       >
         {children}

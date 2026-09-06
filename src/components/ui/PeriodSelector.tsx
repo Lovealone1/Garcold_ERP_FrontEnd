@@ -100,7 +100,14 @@ export default function PeriodSelector({ className = "" }: { className?: string 
                 <div
                     role="dialog"
                     aria-label="Seleccionar periodo"
-                    className="absolute right-0 mt-1.5 z-50 w-[300px] rounded-lg p-3 shadow-xl"
+                    // El shell ahora acota su alto al viewport, así que un
+                    // panel más largo que la pantalla se recortaría en vez de
+                    // hacer crecer el documento. Con el día abierto esto pasa
+                    // de 400px, así que se le da scroll propio y un ancho que
+                    // no desborde a 360px.
+                    className="absolute right-0 mt-1.5 z-50 w-[300px] max-w-[calc(100vw-1.5rem)]
+                               max-h-[min(70dvh,32rem)] overflow-y-auto overscroll-contain
+                               rounded-lg p-3 shadow-xl"
                     style={{
                         background: "var(--tg-card-bg)",
                         border: "1px solid var(--tg-border)",

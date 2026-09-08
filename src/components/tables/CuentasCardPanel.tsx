@@ -42,20 +42,28 @@ export default function CuentasCardsPanel({
         if (!listRef.current) return;
         const first = listRef.current.querySelector("li");
         if (!first) return;
-        const h = first.getBoundingClientRect().height;
-        const calc = itemsBeforeScroll * h + (itemsBeforeScroll - 1) * gapPx;
-        setAutoMaxH(Math.ceil(calc));
+        const measure = () => {
+            const h = first.getBoundingClientRect().height;
+            const scroller = listRef.current?.parentElement;
+            const padding = scroller ? parseFloat(getComputedStyle(scroller).paddingBottom) || 0 : 0;
+            const calc = itemsBeforeScroll * h + (itemsBeforeScroll - 1) * gapPx + padding;
+            setAutoMaxH(Math.ceil(calc));
+        };
+        measure();
+        const observer = new ResizeObserver(measure);
+        observer.observe(first);
+        return () => observer.disconnect();
     }, [rows, itemsBeforeScroll, gapPx, kind]);
 
     const scrollerMaxH = maxHeight ?? autoMaxH ?? 420;
 
     return (
-        <section className={`rounded-xl border border-tg bg-[var(--panel-bg)] ${className ?? ""}`}>
+        <section className={`accounts-panel min-w-0 rounded-xl border border-tg bg-[var(--panel-bg)] ${className ?? ""}`}>
             <header className="flex items-center justify-between gap-3 px-4 pt-3 pb-2">
                 <h4 className="text-xm font-bold text-tg-primary">
                     {kind === "cobrar" ? "Cuentas por cobrar" : "Cuentas por pagar"}
                 </h4>
-                <div className="inline-flex overflow-hidden rounded-lg border border-tg">
+                <div className="inline-flex shrink-0 overflow-hidden rounded-lg border border-tg">
                     <button
                         type="button"
                         onClick={() => setKind("cobrar")}
@@ -82,7 +90,7 @@ export default function CuentasCardsPanel({
             </header>
 
             <div className="nice-scroll overflow-y-auto px-3 pb-3" style={{ maxHeight: scrollerMaxH ?? undefined }}>
-                <ul ref={listRef} className="space-y-2">
+                <ul ref={listRef} className="flex flex-col" style={{ gap: gapPx }}>
                     {rows.map((r, i) => {
                         const name = kind === "cobrar" ? (r as ARItemDTO).customer : (r as APItemDTO).supplier;
                         const date = r.date;
@@ -97,20 +105,20 @@ export default function CuentasCardsPanel({
                                 key={i}
                                 className="w-full rounded-lg border border-tg bg-[color-mix(in_srgb,var(--panel-bg) 94%,transparent)] p-3"
                             >
-                                <div className="flex items-start justify-between gap-3">
-                                    <div className="min-w-0">
-                                        <div className="truncate text-[var(--tg-fg)] text-sm font-medium">{name}</div>
+                                <div className="account-row grid items-start gap-3">
+                                    <div className="account-name min-w-0">
+                                        <div title={name} className="truncate text-[var(--tg-fg)] text-sm font-medium">{name}</div>
                                         <div className="text-[var(--tg-muted)] text-xs">{fmtFecha(date)}</div>
                                     </div>
-                                    <div className="text-right">
+                                    <div className="min-w-0 text-right tabular-nums">
                                         <div className="text-[var(--tg-muted)] text-[11px]">Total</div>
-                                        <div className="text-[var(--tg-fg)] text-sm font-semibold">{money.format(total)}</div>
+                                        <div className="break-words text-[var(--tg-fg)] text-sm font-semibold">{money.format(total)}</div>
                                     </div>
-                                    <div className="text-right">
+                                    <div className="min-w-0 text-right tabular-nums">
                                         <div className="text-[var(--tg-muted)] text-[11px]">
                                             {kind === "cobrar" ? "Saldo restante" : "Saldo"}
                                         </div>
-                                        <div className="text-[var(--tg-fg)] text-sm font-semibold">{money.format(balance)}</div>
+                                        <div className="break-words text-[var(--tg-fg)] text-sm font-semibold">{money.format(balance)}</div>
                                     </div>
                                 </div>
                             </li>
@@ -121,6 +129,12 @@ export default function CuentasCardsPanel({
             </div>
 
             <style jsx>{`
+        .accounts-panel{container-type:inline-size}
+        .account-row{grid-template-columns:minmax(0,1fr) repeat(2,minmax(0,8.5rem))}
+        @container (max-width:420px){
+          .account-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+          .account-name{grid-column:1 / -1}
+        }
         .nice-scroll::-webkit-scrollbar{width:10px}
         .nice-scroll::-webkit-scrollbar-track{background:color-mix(in srgb,var(--panel-bg) 85%,transparent);border-radius:10px}
         .nice-scroll::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--tg-muted) 70%,transparent);border-radius:10px;border:2px solid transparent;background-clip:content-box}

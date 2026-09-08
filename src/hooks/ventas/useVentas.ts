@@ -22,6 +22,9 @@ function toQueryParams(filters: Filters) {
         bank: filters.banco || undefined,
         date_from: filters.from || undefined,
         date_to: filters.to || undefined,
+        // Without an explicit period the API defaults to the current month.
+        // An empty range in this screen means all sales, including older debt.
+        ...(!filters.from && !filters.to ? { period: "all" as const } : {}),
     };
 }
 

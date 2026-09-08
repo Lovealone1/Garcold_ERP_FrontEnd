@@ -5,7 +5,7 @@ import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
-import Autocomplete from "@mui/material/Autocomplete";
+import { SearchDropdown } from "@/components/ui/Dropdown";
 import TextField from "@mui/material/TextField";
 import IconButton from "@mui/material/IconButton";
 import Pagination from "@mui/material/Pagination";
@@ -403,7 +403,7 @@ export default function VentaCrearPage() {
                         >
                             Cliente
                         </Typography>
-                        <Autocomplete
+                        <SearchDropdown
                             options={clienteOptions}
                             value={clienteSel}
                             onChange={(_, v) => setClienteSel(v)}
@@ -426,7 +426,7 @@ export default function VentaCrearPage() {
                         >
                             Banco
                         </Typography>
-                        <Autocomplete
+                        <SearchDropdown
                             options={bancoOptions}
                             value={bancoSel}
                             loading={loadingBancos}
@@ -450,7 +450,7 @@ export default function VentaCrearPage() {
                         >
                             Estado
                         </Typography>
-                        <Autocomplete
+                        <SearchDropdown
                             options={estadoOptionsFiltradas}
                             value={estadoSel}
                             onChange={(_, v) => {
@@ -505,7 +505,7 @@ export default function VentaCrearPage() {
                             }}
                         >
                             <Box sx={{ flex: 1 }}>
-                                <Autocomplete
+                                <SearchDropdown
                                     value={selProd}
                                     inputValue={queryProd}
                                     options={catalogo}

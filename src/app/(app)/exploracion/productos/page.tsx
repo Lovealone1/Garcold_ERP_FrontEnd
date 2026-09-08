@@ -4,7 +4,8 @@
 import { useMemo, useState } from "react";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
-import Autocomplete, { type AutocompleteRenderGetTagProps } from "@mui/material/Autocomplete";
+import { SearchDropdown } from "@/components/ui/Dropdown";
+import type { AutocompleteRenderGetTagProps } from "@mui/material/Autocomplete";
 import TextField from "@mui/material/TextField";
 import Checkbox from "@mui/material/Checkbox";
 import ListItemText from "@mui/material/ListItemText";
@@ -93,7 +94,7 @@ export default function ProductosExploracionPage() {
                         <Typography variant="body2" sx={{ color: "var(--tg-muted)", fontWeight: 600, mb: 0.25 }}>
                             Productos ({selProds.length}/{MAX_SELECT})
                         </Typography>
-                        <Autocomplete
+                        <SearchDropdown
                             size="small"
                             multiple
                             options={catalog}

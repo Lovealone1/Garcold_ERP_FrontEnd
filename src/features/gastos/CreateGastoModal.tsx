@@ -1,4 +1,6 @@
 "use client";
+import Dropdown, { DropdownOption } from "@/components/ui/Dropdown";
+
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 
@@ -92,34 +94,34 @@ export default function CreateExpenseModal({ open, onClose, onCreated }: Props) 
 
                     <div className="flex flex-col">
                         <label className="text-xs font-medium text-tg-muted mb-1">Categoría</label>
-                        <select
+                        <Dropdown aria-label="Categoría"
                             className="h-10 rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-card"
                             value={categoryId}
                             onChange={e => setCategoryId(e.target.value ? Number(e.target.value) : "")}
                         >
-                            <option value="">Selecciona categoría</option>
+                            <DropdownOption value="">Selecciona categoría</DropdownOption>
                             {categoryOpts.map(o => (
-                                <option key={o.id} value={o.id}>
+                                <DropdownOption key={o.id} value={o.id}>
                                     {o.label}
-                                </option>
+                                </DropdownOption>
                             ))}
-                        </select>
+                        </Dropdown>
                     </div>
 
                     <div className="flex flex-col">
                         <label className="text-xs font-medium text-tg-muted mb-1">Banco</label>
-                        <select
+                        <Dropdown aria-label="Banco"
                             className="h-10 rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-card"
                             value={bankId}
                             onChange={e => setBankId(e.target.value ? Number(e.target.value) : "")}
                         >
-                            <option value="">Selecciona banco</option>
+                            <DropdownOption value="">Selecciona banco</DropdownOption>
                             {bankOpts.map(o => (
-                                <option key={o.id} value={o.id}>
+                                <DropdownOption key={o.id} value={o.id}>
                                     {o.label}
-                                </option>
+                                </DropdownOption>
                             ))}
-                        </select>
+                        </Dropdown>
                     </div>
 
                     <div className="flex flex-col">

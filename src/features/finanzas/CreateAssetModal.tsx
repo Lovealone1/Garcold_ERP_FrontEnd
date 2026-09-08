@@ -1,4 +1,6 @@
 "use client";
+import Dropdown, { DropdownOption } from "@/components/ui/Dropdown";
+
 import { useMemo, useState, useEffect } from "react";
 import { useCreateLoan } from "@/hooks/creditos/useCreateCreditos";
 import { useCreateInvestment } from "@/hooks/inversiones/useCreateInversion";
@@ -121,7 +123,7 @@ export default function CreateAssetModal({
                     {kind === "investment" && (
                         <div className="flex flex-col gap-1">
                             <label className="text-sm">Banco</label>
-                            <select
+                            <Dropdown
                                 value={bankId === "" ? "" : String(bankId)}
                                 onChange={(e) => setBankId(e.target.value ? Number(e.target.value) : "")}
                                 className="h-10 w-full rounded-md border border-tg bg-tg-card px-3 text-sm outline-none"
@@ -129,15 +131,15 @@ export default function CreateAssetModal({
                                 aria-label="Seleccione un banco"
                                 style={{ colorScheme: "dark" }}
                             >
-                                <option value="" disabled>
+                                <DropdownOption value="" disabled>
                                     Selecciona un banco
-                                </option>
+                                </DropdownOption>
                                 {banks.map((b) => (
-                                    <option key={b.id} value={b.id}>
+                                    <DropdownOption key={b.id} value={b.id}>
                                         {b.name}
-                                    </option>
+                                    </DropdownOption>
                                 ))}
-                            </select>
+                            </Dropdown>
                         </div>
                     )}
                 </div>

@@ -1,4 +1,6 @@
 "use client";
+import Dropdown, { DropdownOption } from "@/components/ui/Dropdown";
+
 
 import { useEffect, useMemo, useState } from "react";
 import type { Investment } from "@/types/investment";
@@ -71,22 +73,22 @@ export default function InvestmentAddBalanceModal({ open, investment, onClose, o
                 <div className="px-5 py-4 space-y-3">
                     <label className="block text-sm text-[var(--tg-muted)]">
                         Tipo de movimiento
-                        <select
+                        <Dropdown aria-label="Tipo de aporte"
                             value={kind}
                             onChange={(e) => setKind(e.target.value as "interest" | "topup")}
                             className="mt-1 w-full h-10 rounded-md px-3 outline-none bg-[var(--tg-card-bg)] text-[var(--tg-card-fg)]
                          border border-[var(--tg-border)] focus:border-[var(--tg-primary)]
                          focus:ring-2 focus:ring-[color-mix(in_srgb,var(--tg-primary)40%,transparent)]"
                         >
-                            <option value="interest">Interés</option>
-                            <option value="topup">Agregar monto</option>
-                        </select>
+                            <DropdownOption value="interest">Interés</DropdownOption>
+                            <DropdownOption value="topup">Agregar monto</DropdownOption>
+                        </Dropdown>
                     </label>
 
                     {isTopup && (
                         <label className="block text-sm text-[var(--tg-muted)]">
                             Banco de origen
-                            <select
+                            <Dropdown aria-label="Banco"
                                 value={sourceBankId}
                                 onChange={(e) => setSourceBankId(e.target.value ? Number(e.target.value) : "")}
                                 disabled={loadingBanks}
@@ -94,11 +96,11 @@ export default function InvestmentAddBalanceModal({ open, investment, onClose, o
                            border border-[var(--tg-border)] focus:border-[var(--tg-primary)]
                            focus:ring-2 focus:ring-[color-mix(in_srgb,var(--tg-primary)40%,transparent)]"
                             >
-                                <option value="" disabled>{loadingBanks ? "Cargando bancos…" : "Seleccione un banco"}</option>
+                                <DropdownOption value="" disabled>{loadingBanks ? "Cargando bancos…" : "Seleccione un banco"}</DropdownOption>
                                 {bankOptions.map((b) => (
-                                    <option key={b.id} value={b.id}>{b.name}</option>
+                                    <DropdownOption key={b.id} value={b.id}>{b.name}</DropdownOption>
                                 ))}
-                            </select>
+                            </Dropdown>
                         </label>
                     )}
 

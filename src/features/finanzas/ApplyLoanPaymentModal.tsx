@@ -1,4 +1,6 @@
 "use client";
+import Dropdown, { DropdownOption } from "@/components/ui/Dropdown";
+
 
 import { useEffect, useMemo, useState } from "react";
 import type { Loan, LoanApplyPaymentIn } from "@/types/loan";
@@ -97,7 +99,7 @@ export default function ApplyLoanPaymentModal({
 
                     <label className="block text-sm">
                         <span className="mb-1 block text-tg-muted">Banco</span>
-                        <select
+                        <Dropdown
                             value={bankId === "" ? "" : String(bankId)}
                             onChange={(e) => setBankId(e.target.value ? Number(e.target.value) : "")}
                             className="w-full h-10 rounded-md border border-tg bg-[var(--panel-bg)] px-3
@@ -107,19 +109,19 @@ export default function ApplyLoanPaymentModal({
                             aria-label="Seleccione un banco"
                             style={{ colorScheme: "dark" }}           // ← corrige dropdown blanco en Chrome/Win
                         >
-                            <option value="" disabled className="bg-[var(--panel-bg)] text-[var(--tg-fg)]">
+                            <DropdownOption value="" disabled className="bg-[var(--panel-bg)] text-[var(--tg-fg)]">
                                 Selecciona un banco
-                            </option>
+                            </DropdownOption>
                             {banks.map((b) => (
-                                <option
+                                <DropdownOption
                                     key={b.id}
                                     value={b.id}
                                     className="bg-[var(--panel-bg)] text-[var(--tg-fg)]"
                                 >
                                     {b.name}
-                                </option>
+                                </DropdownOption>
                             ))}
-                        </select>
+                        </Dropdown>
                     </label>
 
                     <label className="block text-sm">

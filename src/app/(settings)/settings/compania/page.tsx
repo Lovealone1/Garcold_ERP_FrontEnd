@@ -1,4 +1,6 @@
 "use client";
+import Dropdown, { DropdownOption } from "@/components/ui/Dropdown";
+
 
 import { useEffect, useMemo, useState } from "react";
 import type { CompanyDTO } from "@/types/company";
@@ -183,16 +185,16 @@ function SelectField({
   return (
     <label className="flex flex-col gap-1">
       <span className="text-xs text-tg-muted">{label}</span>
-      <select
+      <Dropdown aria-label={label}
         className="px-3 py-2 rounded-lg border border-tg bg-tg-card text-tg-card text-sm disabled:opacity-60"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         disabled={readOnly}
       >
         {options.map((o) => (
-          <option key={o.value} value={o.value}>{o.label}</option>
+          <DropdownOption key={o.value} value={o.value}>{o.label}</DropdownOption>
         ))}
-      </select>
+      </Dropdown>
     </label>
   );
 }

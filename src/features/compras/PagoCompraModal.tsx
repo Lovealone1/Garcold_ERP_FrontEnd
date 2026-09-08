@@ -1,4 +1,6 @@
 "use client";
+import Dropdown, { DropdownOption } from "@/components/ui/Dropdown";
+
 
 import { useEffect, useMemo, useState } from "react";
 import Dialog from "@mui/material/Dialog";
@@ -144,14 +146,14 @@ export default function PagoCompraModal({ open, onClose, compra, onPaid }: Props
                         <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Registrar abono</Typography>
                         <Grid container spacing={2}>
                             <Grid size={{ xs: 12, md: 4 }}>
-                                <select
+                                <Dropdown aria-label="Banco"
                                     className="h-11 w-full rounded-md border border-tg bg-tg-card px-3 text-sm focus:outline-none"
                                     value={bancoId}
                                     onChange={(e) => setBancoId((e.target.value ? Number(e.target.value) : "") as any)}
                                 >
-                                    <option value="">Selecciona banco</option>
-                                    {bancos.map((b) => (<option key={b.id} value={b.id}>{b.name}</option>))}
-                                </select>
+                                    <DropdownOption value="">Selecciona banco</DropdownOption>
+                                    {bancos.map((b) => (<DropdownOption key={b.id} value={b.id}>{b.name}</DropdownOption>))}
+                                </Dropdown>
                             </Grid>
                             <Grid size={{ xs: 12, md: 3 }}>
                                 <input

@@ -1,5 +1,7 @@
 // hooks/transactions/TransactionsPage.tsx (o tu ruta actual)
 "use client";
+import Dropdown, { DropdownOption } from "@/components/ui/Dropdown";
+
 
 import { useEffect, useMemo, useState, CSSProperties } from "react";
 import { format } from "date-fns";
@@ -310,40 +312,40 @@ export default function TransactionsPage() {
                             Ver extracto
                         </button>
                     )}
-                    <select
+                    <Dropdown aria-label="Banco"
                         value={filters.bank ?? ""}
                         onChange={(e) => { setFilters((f: any) => ({ ...f, bank: e.target.value })); setPage(1); }}
                         className={`h-10 min-w-[180px] rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted ${selectNoGlow}`}
                         style={selectNoGlowStyle}
                     >
-                        <option value="">Banco</option>
+                        <DropdownOption value="">Banco</DropdownOption>
                         {bancos.map((b: any, i: number) => (
-                            <option key={`${b}-${i}`} value={b}>
+                            <DropdownOption key={`${b}-${i}`} value={b}>
                                 {b || "Sin nombre"}
-                            </option>
+                            </DropdownOption>
                         ))}
-                    </select>
+                    </Dropdown>
 
-                    <select
+                    <Dropdown aria-label="Tipo"
                         value={filters.type ?? ""}
                         onChange={(e) => { setFilters((f: any) => ({ ...f, type: e.target.value })); setPage(1); }}
                         className={`h-10 min-w-[160px] rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted ${selectNoGlow}`}
                         style={selectNoGlowStyle}
                     >
-                        <option value="">Tipo</option>
-                        {tipos.map((t: any) => (<option key={t} value={t}>{t}</option>))}
-                    </select>
+                        <DropdownOption value="">Tipo</DropdownOption>
+                        {tipos.map((t: any) => (<DropdownOption key={t} value={t}>{t}</DropdownOption>))}
+                    </Dropdown>
 
-                    <select
+                    <Dropdown aria-label="Origen"
                         value={filters.origin ?? "all"}
                         onChange={(e) => { setFilters((f: any) => ({ ...f, origin: e.target.value as "all" | "auto" | "manual" })); setPage(1); }}
                         className={`h-10 min-w-[140px] rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted ${selectNoGlow}`}
                         style={selectNoGlowStyle}
                     >
-                        <option value="all">Origen</option>
-                        <option value="manual">Manual</option>
-                        <option value="auto">Automática</option>
-                    </select>
+                        <DropdownOption value="all">Origen</DropdownOption>
+                        <DropdownOption value="manual">Manual</DropdownOption>
+                        <DropdownOption value="auto">Automática</DropdownOption>
+                    </Dropdown>
 
                     <DateRangePicker className={datePickerSxDesktop + " whitespace-nowrap"} value={range} onChange={(r) => { setRange(r); setPage(1); setFilters((f: any) => ({ ...f, dateRange: r })); }} />
 
@@ -393,25 +395,25 @@ export default function TransactionsPage() {
                 </div>
 
                 <div className="flex w-full gap-2">
-                    <select
+                    <Dropdown aria-label="Banco"
                         value={filters.bank ?? ""}
                         onChange={(e) => { setFilters((f: any) => ({ ...f, bank: e.target.value })); setPage(1); }}
                         className={`flex-1 h-9 rounded-md border border-tg bg-tg-card px-2 text-[13px] ${selectNoGlow}`}
                         style={selectNoGlowStyle}
                     >
-                        <option value="">Banco</option>
-                        {options.banks.map((b: any) => <option key={b} value={b}>{b}</option>)}
-                    </select>
+                        <DropdownOption value="">Banco</DropdownOption>
+                        {options.banks.map((b: any) => <DropdownOption key={b} value={b}>{b}</DropdownOption>)}
+                    </Dropdown>
 
-                    <select
+                    <Dropdown aria-label="Tipo"
                         value={filters.type ?? ""}
                         onChange={(e) => { setFilters((f: any) => ({ ...f, type: e.target.value })); setPage(1); }}
                         className={`flex-1 h-9 rounded-md border border-tg bg-tg-card px-2 text-[13px] ${selectNoGlow}`}
                         style={selectNoGlowStyle}
                     >
-                        <option value="">Tipo</option>
-                        {options.types.map((t: any) => <option key={t} value={t}>{t}</option>)}
-                    </select>
+                        <DropdownOption value="">Tipo</DropdownOption>
+                        {options.types.map((t: any) => <DropdownOption key={t} value={t}>{t}</DropdownOption>)}
+                    </Dropdown>
 
                     <DateRangePicker
                         className={datePickerSxMobile}
@@ -455,14 +457,14 @@ export default function TransactionsPage() {
                 <div className="shrink-0 px-3 pt-1 pb-2 flex flex-wrap gap-3 items-center justify-between">
                     <div className="flex items-center gap-2">
                         <span className="text-sm">Líneas por página</span>
-                        <select
+                        <Dropdown aria-label="Líneas por página"
                             value={page_size || 8}
                             disabled
                             className={`h-9 rounded-md border border-tg bg-[var(--panel-bg)] px-2 text-sm text-tg-muted ${selectNoGlow}`}
                             style={selectNoGlowStyle}
                         >
-                            <option value={page_size || 8}>{page_size || 8}</option>
-                        </select>
+                            <DropdownOption value={page_size || 8}>{page_size || 8}</DropdownOption>
+                        </Dropdown>
                     </div>
 
                     <nav className="flex items-center gap-1">

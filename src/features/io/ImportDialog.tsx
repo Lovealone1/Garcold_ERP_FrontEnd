@@ -1,4 +1,6 @@
 "use client";
+import Dropdown, { DropdownOption } from "@/components/ui/Dropdown";
+
 import { useState } from "react";
 import { MaterialIcon } from "@/components/ui/material-icon";
 import type { Entity, Delimiter } from "@/services/sales/import.api";
@@ -81,18 +83,18 @@ export default function ImportDialog({
                     {!fixedEntity && (
                         <div>
                             <label className="block text-xs text-tg-muted mb-1">Entidad</label>
-                            <select
+                            <Dropdown aria-label="Entidad"
                                 className="w-full rounded-md border border-tg bg-[var(--panel-bg)] px-2 py-2"
                                 value={entity}
                                 onChange={(e) => setEntity(e.target.value as Entity)}
                                 disabled={loading}
                             >
                                 {entities.map((e) => (
-                                    <option key={e} value={e}>
+                                    <DropdownOption key={e} value={e}>
                                         {e}
-                                    </option>
+                                    </DropdownOption>
                                 ))}
-                            </select>
+                            </Dropdown>
                         </div>
                     )}
 
@@ -109,16 +111,16 @@ export default function ImportDialog({
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <label className="block text-xs text-tg-muted mb-1">Delimitador</label>
-                            <select
+                            <Dropdown aria-label="Separador"
                                 className="w-full rounded-md border border-tg bg-[var(--panel-bg)] px-2 py-2"
                                 value={delimiter}
                                 onChange={(e) => setDelimiter(e.target.value as Delimiter)}
                                 disabled={loading}
                             >
-                                <option value=",">,</option>
-                                <option value=";">;</option>
-                                <option value={"\t"}>tab</option>
-                            </select>
+                                <DropdownOption value=",">,</DropdownOption>
+                                <DropdownOption value=";">;</DropdownOption>
+                                <DropdownOption value={"\t"}>tab</DropdownOption>
+                            </Dropdown>
                         </div>
                         <div>
                             <label className="block text-xs text-tg-muted mb-1">Fila encabezado</label>

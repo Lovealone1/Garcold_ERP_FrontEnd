@@ -1,5 +1,7 @@
 // app/(compras)/compras/page.tsx
 "use client";
+import Dropdown, { DropdownOption } from "@/components/ui/Dropdown";
+
 
 import { useMemo, useState, useEffect, CSSProperties } from "react";
 import { format } from "date-fns";
@@ -442,35 +444,35 @@ export default function ComprasPage() {
                 </label>
 
                 <div className="flex items-center gap-2">
-                    <select
+                    <Dropdown
                         value={filters.status ?? ""}
                         onChange={(e) => handleEstado(e.target.value)}
                         className="h-10 min-w-[160px] rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted"
                         aria-label="Filtro por estado"
                     >
-                        <option value="">Estado</option>
+                        <DropdownOption value="">Estado</DropdownOption>
                         {estadoOptions.map((nombre) => (
-                            <option key={nombre} value={nombre}>
+                            <DropdownOption key={nombre} value={nombre}>
                                 {nombre}
-                            </option>
+                            </DropdownOption>
                         ))}
-                    </select>
+                    </Dropdown>
 
-                    <select
+                    <Dropdown
                         value={filters.bank ?? ""}
                         onChange={(e) => handleBanco(e.target.value)}
                         className="h-10 min-w-[180px] rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted"
                         aria-label="Filtro por banco"
                     >
-                        <option value="">
+                        <DropdownOption value="">
                             {filters.bank ? "Banco" : "Método pago"}
-                        </option>
+                        </DropdownOption>
                         {bancos.map((nombre) => (
-                            <option key={nombre} value={nombre}>
+                            <DropdownOption key={nombre} value={nombre}>
                                 {nombre}
-                            </option>
+                            </DropdownOption>
                         ))}
-                    </select>
+                    </Dropdown>
 
                     <DateRangePicker value={range} onChange={handleRange} />
 
@@ -512,33 +514,33 @@ export default function ComprasPage() {
                 </label>
 
                 <div className="grid grid-cols-2 gap-2">
-                    <select
+                    <Dropdown aria-label="Estado"
                         value={filters.status ?? ""}
                         onChange={(e) => handleEstado(e.target.value)}
                         className="h-10 w-full rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted"
                     >
-                        <option value="">Estado</option>
+                        <DropdownOption value="">Estado</DropdownOption>
                         {estadoOptions.map((nombre) => (
-                            <option key={nombre} value={nombre}>
+                            <DropdownOption key={nombre} value={nombre}>
                                 {nombre}
-                            </option>
+                            </DropdownOption>
                         ))}
-                    </select>
+                    </Dropdown>
 
-                    <select
+                    <Dropdown aria-label="Banco"
                         value={filters.bank ?? ""}
                         onChange={(e) => handleBanco(e.target.value)}
                         className="h-10 w-full rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted"
                     >
-                        <option value="">
+                        <DropdownOption value="">
                             {filters.bank ? "Banco" : "Método pago"}
-                        </option>
+                        </DropdownOption>
                         {bancos.map((nombre) => (
-                            <option key={nombre} value={nombre}>
+                            <DropdownOption key={nombre} value={nombre}>
                                 {nombre}
-                            </option>
+                            </DropdownOption>
                         ))}
-                    </select>
+                    </Dropdown>
                 </div>
 
                 <div className="grid grid-cols-[1fr_auto] gap-2">
@@ -608,13 +610,13 @@ export default function ComprasPage() {
                 <div className="shrink-0 px-3 pt-1 pb-2 flex flex-wrap gap-3 items-center justify-between">
                     <div className="flex items-center gap-2">
                         <span className="text-sm">Líneas por página</span>
-                        <select
+                        <Dropdown aria-label="Líneas por página"
                             value={pageSize}
                             disabled
                             className="h-9 rounded-md border border-tg bg-[var(--panel-bg)] px-2 text-sm text-tg-muted"
                         >
-                            <option value={pageSize}>{pageSize}</option>
-                        </select>
+                            <DropdownOption value={pageSize}>{pageSize}</DropdownOption>
+                        </Dropdown>
                     </div>
 
                     <nav className="flex items-center gap-1">

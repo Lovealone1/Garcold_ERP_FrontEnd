@@ -1,4 +1,6 @@
 "use client";
+import Dropdown, { DropdownOption } from "@/components/ui/Dropdown";
+
 
 import { useEffect, useMemo, useState } from "react";
 
@@ -88,18 +90,18 @@ export default function RolesPermisosPage() {
                     <>
                         <div className="px-4 py-3 flex items-center gap-3">
                             <span className="text-sm">Rol</span>
-                            <select
+                            <Dropdown aria-label="Rol"
                                 className="px-2 py-1 rounded-lg border border-tg bg-tg-card text-tg-card text-sm"
                                 value={roleId}
                                 onChange={(e) => setRoleId(Number(e.target.value))}
                                 disabled={rolesLoading || !roles.length}
                             >
                                 {roles.map((r) => (
-                                    <option key={r.id} value={r.id}>
+                                    <DropdownOption key={r.id} value={r.id}>
                                         {r.code}
-                                    </option>
+                                    </DropdownOption>
                                 ))}
-                            </select>
+                            </Dropdown>
                         </div>
                         <RolesPermissionsContent perms={perms} saving={saving} setOne={setOne} setMany={setMany} />
                     </>

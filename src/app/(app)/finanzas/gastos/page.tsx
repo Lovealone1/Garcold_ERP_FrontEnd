@@ -1,4 +1,6 @@
 "use client";
+import Dropdown, { DropdownOption } from "@/components/ui/Dropdown";
+
 import { useMemo, useState } from "react";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
@@ -105,7 +107,7 @@ export default function GastosPage() {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     {/* Filtros */}
                     <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:flex-wrap">
-                        <select
+                        <Dropdown aria-label="Todas las categorías"
                             className="h-10 min-w-[220px] rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-card"
                             value={filters.category ?? ""}
                             onChange={(e) => {
@@ -115,15 +117,15 @@ export default function GastosPage() {
                             }}
                             disabled={loadingCats}
                         >
-                            <option value="">Todas las categorías</option>
+                            <DropdownOption value="">Todas las categorías</DropdownOption>
                             {categorias.map((c) => (
-                                <option key={c.id} value={c.name}>
+                                <DropdownOption key={c.id} value={c.name}>
                                     {c.name}
-                                </option>
+                                </DropdownOption>
                             ))}
-                        </select>
+                        </Dropdown>
 
-                        <select
+                        <Dropdown aria-label="Banco"
                             className="h-10 min-w-[200px] rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-card"
                             value={filters.bank ?? ""}
                             onChange={(e) => {
@@ -133,13 +135,13 @@ export default function GastosPage() {
                             }}
                             disabled={loading}
                         >
-                            <option value="">Todos los bancos</option>
+                            <DropdownOption value="">Todos los bancos</DropdownOption>
                             {bancos.map((b) => (
-                                <option key={b} value={b}>
+                                <DropdownOption key={b} value={b}>
                                     {b}
-                                </option>
+                                </DropdownOption>
                             ))}
-                        </select>
+                        </Dropdown>
 
                         {/* Date + Limpiar en la misma fila también en móvil */}
                         <div className="flex gap-2 w-full sm:w-auto">

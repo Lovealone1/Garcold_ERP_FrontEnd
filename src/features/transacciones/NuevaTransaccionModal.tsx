@@ -1,4 +1,6 @@
 "use client";
+import Dropdown, { DropdownOption } from "@/components/ui/Dropdown";
+
 
 import { useEffect, useMemo, useState } from "react";
 import { MaterialIcon } from "@/components/ui/material-icon";
@@ -102,23 +104,23 @@ export default function NewTransactionModal({
                     {/* Banco */}
                     <label className="block text-sm">
                         <span className="mb-1 block">Banco</span>
-                        <select
+                        <Dropdown aria-label="Banco"
                             className="h-10 w-full rounded-md border border-tg bg-tg-card px-3 text-sm"
                             value={bankId}
                             onChange={(e) => setBankId(e.target.value)}
                             disabled={loadingBanks}
                         >
-                            <option value="">
+                            <DropdownOption value="">
                                 {loadingBanks
                                     ? "Cargando bancos…"
                                     : "Selecciona un banco"}
-                            </option>
+                            </DropdownOption>
                             {banks.map((b) => (
-                                <option key={b.id} value={b.id}>
+                                <DropdownOption key={b.id} value={b.id}>
                                     {b.name}
-                                </option>
+                                </DropdownOption>
                             ))}
-                        </select>
+                        </Dropdown>
                     </label>
 
                     {/* Monto */}

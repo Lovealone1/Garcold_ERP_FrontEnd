@@ -1,10 +1,9 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import {
-    IconButton, Menu, MenuItem, Checkbox, ListItemIcon, ListItemText,
-} from "@mui/material";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import IconButton from "@mui/material/IconButton";
+import { MultipleDropdown } from "@/components/ui/Dropdown";
+
 import AddIcon from "@mui/icons-material/Add";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
@@ -57,27 +56,6 @@ export default function BancosPage() {
     const effectiveIds = visibleIds.length ? visibleIds : defaultFirst6;
     const visibles = useMemo(() => items.filter((b) => effectiveIds.includes(b.id)), [items, effectiveIds]);
     const totalVisible = useMemo(() => visibles.reduce((acc, b) => acc + (b.balance ?? 0), 0), [visibles]);
-
-    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-    const open = Boolean(anchorEl);
-    const handleOpen = (e: React.MouseEvent<HTMLButtonElement>) => setAnchorEl(e.currentTarget);
-    const handleClose = () => setAnchorEl(null);
-
-    function toggleDropdownId(id: number) {
-        setVisibleIds((curr) => {
-            const set = new Set(curr);
-            if (set.has(id)) { set.delete(id); return Array.from(set); }
-            if (set.size >= 6) return curr;
-            set.add(id); return Array.from(set);
-        });
-        setSelectedIds((sel) => {
-            if (!effectiveIds.includes(id)) return sel;
-            const next = new Set(sel);
-            if (!next.has(id)) return sel;
-            next.delete(id);
-            return next;
-        });
-    }
 
     function clearSelection() { setVisibleIds([]); }
 
@@ -154,41 +132,18 @@ export default function BancosPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <button
-                        type="button"
-                        onClick={handleOpen}
-                        className="h-10 rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-card inline-flex items-center gap-2"
-                        aria-haspopup="menu"
-                        aria-expanded={open ? "true" : undefined}
-                        title="Elegir bancos a mostrar (máx. 6)"
-                    >
-                        <span className="text-tg-muted">Elegir bancos a mostrar</span>
-                        <span className="text-tg-muted">({visibleIds.length || defaultFirst6.length}/6)</span>
-                        <ExpandMoreIcon fontSize="small" />
-                    </button>
-
-                    <Menu
-                        anchorEl={anchorEl}
-                        open={open}
-                        onClose={handleClose}
-                        slotProps={{ paper: { sx: { bgcolor: "var(--tg-card-bg)", color: "var(--tg-card-fg)", border: "1px solid var(--tg-border)", minWidth: 280, maxHeight: 360 } } }}
-                    >
-                        {items.map((b) => {
-                            const checked = visibleIds.includes(b.id);
-                            return (
-                                <MenuItem
-                                    key={b.id}
-                                    onClick={() => toggleDropdownId(b.id)}
-                                    sx={{ gap: 1, "&:hover": { bgcolor: "color-mix(in srgb, var(--tg-primary) 12%, transparent)" } }}
-                                >
-                                    <ListItemIcon sx={{ minWidth: 28 }}>
-                                        <Checkbox size="small" checked={checked} sx={{ color: "var(--tg-muted)", "&.Mui-checked": { color: "var(--tg-primary)" }, pointerEvents: "none" }} />
-                                    </ListItemIcon>
-                                    <ListItemText slotProps={{ primary: { sx: { color: "var(--tg-card-fg)" } } }} primary={b.name} />
-                                </MenuItem>
-                            );
-                        })}
-                    </Menu>
+                    <MultipleDropdown
+                        label="Elegir bancos a mostrar"
+                        options={items.map(bank => ({ value: bank.id, label: bank.name }))}
+                        value={effectiveIds}
+                        max={6}
+                        disabled={loading}
+                        onChange={ids => {
+                            setVisibleIds(ids);
+                            const nextVisible = ids.length ? ids : defaultFirst6;
+                            setSelectedIds(current => new Set([...current].filter(id => nextVisible.includes(id))));
+                        }}
+                    />
 
                     {visibleIds.length > 0 && (
                         <button

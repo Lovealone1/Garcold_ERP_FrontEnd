@@ -1,5 +1,7 @@
 // features/clientes/PagoClienteModalV2.tsx
 "use client";
+import Dropdown, { DropdownOption } from "@/components/ui/Dropdown";
+
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Dialog from "@mui/material/Dialog";
@@ -157,17 +159,17 @@ export default function PagoClienteModal({
                     <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Registrar pago</Typography>
                     <Grid container spacing={2}>
                         <Grid size={{ xs: 12 }}>
-                            <select
+                            <Dropdown aria-label="Banco"
                                 className="h-11 w-full rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-card"
                                 value={bankId}
                                 onChange={(e) => setBankId((e.target.value ? Number(e.target.value) : "") as any)}
                                 disabled={!open || loading}
                             >
-                                <option value="">{banks.length ? "Selecciona banco" : "Cargando bancos..."}</option>
+                                <DropdownOption value="">{banks.length ? "Selecciona banco" : "Cargando bancos..."}</DropdownOption>
                                 {banks.map((b) => (
-                                    <option key={b.id} value={b.id}>{b.name}</option>
+                                    <DropdownOption key={b.id} value={b.id}>{b.name}</DropdownOption>
                                 ))}
-                            </select>
+                            </Dropdown>
                         </Grid>
 
                         <Grid size={{ xs: 12 }}>

@@ -1,5 +1,7 @@
 // app/(ventas)/clientes/page.tsx
 "use client";
+import Dropdown, { DropdownOption } from "@/components/ui/Dropdown";
+
 
 import { useMemo, useState, useEffect, CSSProperties } from "react";
 import { MaterialIcon } from "@/components/ui/material-icon";
@@ -465,7 +467,7 @@ export default function ClientesPage() {
           </div>
 
           {/* Saldo */}
-          <select
+          <Dropdown aria-label="Saldo pendiente"
             className="h-10 w-[160px] rounded-md border border-tg bg-tg-card px-3 text-[16px] sm:text-sm text-tg-muted focus:outline-none"
             value={filters.pendingBalance ?? ""}
             onChange={(e) =>
@@ -475,10 +477,10 @@ export default function ClientesPage() {
               }))
             }
           >
-            <option value="">Saldo pendiente</option>
-            <option value="yes">Sí</option>
-            <option value="no">No</option>
-          </select>
+            <DropdownOption value="">Saldo pendiente</DropdownOption>
+            <DropdownOption value="yes">Sí</DropdownOption>
+            <DropdownOption value="no">No</DropdownOption>
+          </Dropdown>
 
           <button
             onClick={() => setOpenCreate(true)}
@@ -565,7 +567,7 @@ export default function ClientesPage() {
             )}
           </div>
 
-          <select
+          <Dropdown aria-label="Saldo pendiente"
             className="h-10 w-full rounded-md border border-tg bg-tg-card px-3 text-[16px] sm:text-sm text-tg-muted focus:outline-none"
             value={filters.pendingBalance ?? ""}
             onChange={(e) =>
@@ -575,10 +577,10 @@ export default function ClientesPage() {
               }))
             }
           >
-            <option value="">Saldo pendiente</option>
-            <option value="yes">Sí</option>
-            <option value="no">No</option>
-          </select>
+            <DropdownOption value="">Saldo pendiente</DropdownOption>
+            <DropdownOption value="yes">Sí</DropdownOption>
+            <DropdownOption value="no">No</DropdownOption>
+          </Dropdown>
         </div>
       </div>
 
@@ -631,13 +633,13 @@ export default function ClientesPage() {
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="flex items-center gap-2">
               <span className="text-sm">Líneas por página</span>
-              <select
+              <Dropdown aria-label="Líneas por página"
                 value={pageSize}
                 disabled
                 className="h-9 rounded-md border border-tg bg-[var(--panel-bg)] px-2 text-sm text-tg-muted"
               >
-                <option value={pageSize}>{pageSize}</option>
-              </select>
+                <DropdownOption value={pageSize}>{pageSize}</DropdownOption>
+              </Dropdown>
             </div>
 
             <button

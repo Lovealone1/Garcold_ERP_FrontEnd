@@ -47,7 +47,7 @@ describe("sales UI consumption", () => {
     beforeEach(() => {
         mock = new MockAdapter(api);
         mock.onGet("/api/v1/sales/filter-options").reply(200, {
-            banks: ["Caja"], statuses: ["Venta Contado", "Venta Credito"],
+            banks: ["Caja"], statuses: ["Venta Contado", "Venta Credito", "Compra Credito"],
         });
         mock.onGet("/api/v1/sales").reply(config => {
             const items = filtered(config);
@@ -78,9 +78,12 @@ describe("sales UI consumption", () => {
 
     it("uses sales status options and shows older credit sales with matching totals", async () => {
         mount();
+        await screen.findAllByText(olderCredit.customer);
         const select = screen.getAllByRole("combobox", { name: "Estado de venta" })[0];
-        await within(select).findByRole("option", { name: olderCredit.status });
-        fireEvent.change(select, { target: { value: olderCredit.status } });
+        fireEvent.mouseDown(select);
+        const listbox = await screen.findByRole("listbox");
+        expect(within(listbox).queryByRole("option", { name: "Compra Credito" })).not.toBeInTheDocument();
+        fireEvent.click(within(listbox).getByRole("option", { name: olderCredit.status }));
         await waitFor(() => expect(screen.queryAllByText(currentSale.customer)).toHaveLength(0));
         expect(screen.getAllByText(olderCredit.customer)).toHaveLength(2);
         await waitFor(() => expect(screen.getByTitle("Total ventas filtradas")).toHaveTextContent("900"));

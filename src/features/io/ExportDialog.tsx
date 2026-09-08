@@ -1,4 +1,6 @@
 "use client";
+import Dropdown, { DropdownOption } from "@/components/ui/Dropdown";
+
 import { useState, useMemo } from "react";
 import { MaterialIcon } from "@/components/ui/material-icon";
 import type { Entity, Fmt } from "@/services/sales/export.api";
@@ -75,7 +77,7 @@ export default function ExportDialog({
                             <label className="block text-xs text-tg-muted mb-1">
                                 Entidad
                             </label>
-                            <select
+                            <Dropdown aria-label="Entidad"
                                 className="w-full rounded-md border border-tg bg-[var(--panel-bg)] px-2 py-2"
                                 value={entity}
                                 onChange={(e) => {
@@ -86,11 +88,11 @@ export default function ExportDialog({
                                 disabled={loading}
                             >
                                 {entities.map((e) => (
-                                    <option key={e} value={e}>
+                                    <DropdownOption key={e} value={e}>
                                         {e}
-                                    </option>
+                                    </DropdownOption>
                                 ))}
-                            </select>
+                            </Dropdown>
                         </div>
                     )}
 
@@ -99,15 +101,15 @@ export default function ExportDialog({
                             <label className="block text-xs text-tg-muted mb-1">
                                 Formato
                             </label>
-                            <select
+                            <Dropdown aria-label="Formato"
                                 className="w-full rounded-md border border-tg bg-[var(--panel-bg)] px-2 py-2"
                                 value={fmt}
                                 onChange={(e) => setFmt(e.target.value as Fmt)}
                                 disabled={loading}
                             >
-                                <option value="csv">CSV</option>
-                                <option value="xlsx">XLSX</option>
-                            </select>
+                                <DropdownOption value="csv">CSV</DropdownOption>
+                                <DropdownOption value="xlsx">XLSX</DropdownOption>
+                            </Dropdown>
                         </div>
                         <div>
                             <label className="block text-xs text-tg-muted mb-1">

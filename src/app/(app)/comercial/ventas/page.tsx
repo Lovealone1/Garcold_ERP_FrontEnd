@@ -1,4 +1,6 @@
 "use client";
+import Dropdown, { DropdownOption } from "@/components/ui/Dropdown";
+
 
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
@@ -18,6 +20,7 @@ import type { Sale } from "@/types/sale";
 import type { DateRange } from "react-day-picker";
 import DateRangePicker from "@/components/ui/DateRangePicker/DateRangePicker";
 import { toApiDate } from "@/lib/period/period";
+import { saleStatusOptions } from "@/lib/saleStatuses";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 import ModalOverlay from "@/components/ui/ModalOverlay";
 const FRAME_BG = "color-mix(in srgb, var(--tg-bg) 90%, #fff 3%)";
@@ -258,7 +261,7 @@ export default function VentasPage() {
     // selector belongs to the dashboard and does not reach here.
     const [range, setRange] = useState<DateRange | undefined>();
     // Use the exact names present in sales, including legacy credit statuses.
-    const estadoOptions = saleOptions.statuses;
+    const estadoOptions = saleStatusOptions(saleOptions.statuses);
     const bancos: string[] = saleOptions.banks;
 
     const handleSearch = (v: string) => setFilters((f) => ({ ...f, q: v }));
@@ -351,32 +354,32 @@ export default function VentasPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <select
+                    <Dropdown
                         aria-label="Estado de venta"
                         value={filters.estado ?? ""}
                         onChange={(e) => handleEstado(e.target.value)}
                         className="h-10 min-w-[160px] rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted focus:outline-none"
                     >
-                        <option value="">Estado</option>
+                        <DropdownOption value="">Estado</DropdownOption>
                         {estadoOptions.map((nombre) => (
-                            <option key={nombre} value={nombre}>
+                            <DropdownOption key={nombre} value={nombre}>
                                 {nombre}
-                            </option>
+                            </DropdownOption>
                         ))}
-                    </select>
+                    </Dropdown>
 
-                    <select
+                    <Dropdown aria-label="Banco"
                         value={filters.banco ?? ""}
                         onChange={(e) => handleBanco(e.target.value)}
                         className="h-10 min-w-[180px] rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted focus:outline-none"
                     >
-                        <option value="">{filters.banco ? "Banco" : "Método pago"}</option>
+                        <DropdownOption value="">{filters.banco ? "Banco" : "Método pago"}</DropdownOption>
                         {bancos.map((nombre) => (
-                            <option key={nombre} value={nombre}>
+                            <DropdownOption key={nombre} value={nombre}>
                                 {nombre}
-                            </option>
+                            </DropdownOption>
                         ))}
-                    </select>
+                    </Dropdown>
 
                     <DateRangePicker value={range} onChange={handleRange} />
 
@@ -425,7 +428,7 @@ export default function VentasPage() {
 
                 {/* Estado + Banco */}
                 <div className="grid grid-cols-2 gap-2">
-                    <select
+                    <Dropdown
                         aria-label="Estado de venta"
                         value={filters.estado ?? ""}
                         onChange={(e) => {
@@ -434,15 +437,15 @@ export default function VentasPage() {
                         }}
                         className="h-10 w-full rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted focus:outline-none"
                     >
-                        <option value="">Estado</option>
+                        <DropdownOption value="">Estado</DropdownOption>
                         {estadoOptions.map((nombre) => (
-                            <option key={nombre} value={nombre}>
+                            <DropdownOption key={nombre} value={nombre}>
                                 {nombre}
-                            </option>
+                            </DropdownOption>
                         ))}
-                    </select>
+                    </Dropdown>
 
-                    <select
+                    <Dropdown aria-label="Banco"
                         value={filters.banco ?? ""}
                         onChange={(e) => {
                             handleBanco(e.target.value);
@@ -450,13 +453,13 @@ export default function VentasPage() {
                         }}
                         className="h-10 w-full rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted focus:outline-none"
                     >
-                        <option value="">{filters.banco ? "Banco" : "Método pago"}</option>
+                        <DropdownOption value="">{filters.banco ? "Banco" : "Método pago"}</DropdownOption>
                         {bancos.map((nombre) => (
-                            <option key={nombre} value={nombre}>
+                            <DropdownOption key={nombre} value={nombre}>
                                 {nombre}
-                            </option>
+                            </DropdownOption>
                         ))}
-                    </select>
+                    </Dropdown>
                 </div>
 
                 {/* Fecha + Limpiar */}
@@ -541,13 +544,13 @@ export default function VentasPage() {
                 <div className="shrink-0 px-3 pt-1 pb-2 flex flex-wrap gap-3 items-center justify-between">
                     <div className="flex items-center gap-2">
                         <span className="text-sm">Líneas por página</span>
-                        <select
+                        <Dropdown aria-label="Líneas por página"
                             value={pageSize}
                             disabled
                             className="h-9 rounded-md border border-tg bg-[var(--panel-bg)] px-2 text-sm text-tg-muted focus:outline-none"
                         >
-                            <option value={pageSize}>{pageSize}</option>
-                        </select>
+                            <DropdownOption value={pageSize}>{pageSize}</DropdownOption>
+                        </Dropdown>
                     </div>
 
                     <nav className="flex items-center gap-1">

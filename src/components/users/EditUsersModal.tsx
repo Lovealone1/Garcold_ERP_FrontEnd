@@ -1,4 +1,6 @@
 "use client";
+import Dropdown, { DropdownOption } from "@/components/ui/Dropdown";
+
 import { useEffect, useState } from "react";
 import type { AdminUserOut, UserDTO, SetUserActiveIn, UpdateUserIn } from "@/types/user";
 import { updateUser, setUserRoleBySub, setUserActiveBySub } from "@/services/user.api";
@@ -98,15 +100,15 @@ export default function EditUserModal({
                     </div>
                     <div className="grid grid-cols-3 items-center gap-3">
                         <label className="text-sm">Rol</label>
-                        <select className="col-span-2 px-3 py-2 rounded-lg border border-tg bg-tg-card text-sm"
+                        <Dropdown aria-label="Rol" className="col-span-2 px-3 py-2 rounded-lg border border-tg bg-tg-card text-sm"
                             value={roleId === "" ? "" : String(roleId)}
                             onChange={(e) => setRoleId(e.target.value === "" ? "" : Number(e.target.value))}
                             disabled={!roles.length}>
-                            <option value="">—</option>
+                            <DropdownOption value="">—</DropdownOption>
                             {roles.map((r) => (
-                                <option key={r.id} value={r.id}>{r.code}</option>
+                                <DropdownOption key={r.id} value={r.id}>{r.code}</DropdownOption>
                             ))}
-                        </select>
+                        </Dropdown>
                     </div>
                     <div className="grid grid-cols-3 items-center gap-3">
                         <label className="text-sm">Estado</label>

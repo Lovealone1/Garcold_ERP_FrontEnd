@@ -1,5 +1,7 @@
 // app/(comercial)/utilidades/page.tsx
 "use client";
+import Dropdown, { DropdownOption } from "@/components/ui/Dropdown";
+
 
 import { useEffect, useMemo, useState, CSSProperties } from "react";
 import { format } from "date-fns";
@@ -214,9 +216,9 @@ export default function UtilidadesPage() {
                     <div className="shrink-0 px-3 pb-2 pt-1 flex flex-wrap gap-3 items-center justify-between">
                         <div className="flex items-center gap-2">
                             <span className="text-sm">Líneas por página</span>
-                            <select value={pageSize} disabled className="h-9 rounded-md border border-tg bg-[var(--panel-bg)] px-2 text-sm text-tg-muted">
-                                <option value={pageSize}>{pageSize}</option>
-                            </select>
+                            <Dropdown aria-label="Líneas por página" value={pageSize} disabled className="h-9 rounded-md border border-tg bg-[var(--panel-bg)] px-2 text-sm text-tg-muted">
+                                <DropdownOption value={pageSize}>{pageSize}</DropdownOption>
+                            </Dropdown>
                         </div>
 
                         <nav className="flex items-center gap-1">

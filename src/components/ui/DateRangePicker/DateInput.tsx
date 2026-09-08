@@ -7,6 +7,7 @@ import { es } from "date-fns/locale";
 import { format, parse, isValid, startOfDay } from "date-fns";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
 import styles from "./DateRangePicker.module.css";
+import { CalendarMonthDropdown, CalendarYearDropdown } from "./CalendarDropdown";
 
 /**
  * Emite strings para backend en formato: yyyy-MM-dd'T'HH:mm:ss
@@ -118,6 +119,7 @@ export default function DateInput({
                         showOutsideDays
                         pagedNavigation
                         captionLayout="dropdown"
+                        components={{ MonthsDropdown: CalendarMonthDropdown, YearsDropdown: CalendarYearDropdown }}
                         startMonth={new Date(fromYear, 0)}
                         endMonth={new Date(toYear, 11)}
                         classNames={{

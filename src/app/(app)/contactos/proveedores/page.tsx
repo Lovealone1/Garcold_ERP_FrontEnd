@@ -1,4 +1,6 @@
 "use client";
+import Dropdown, { DropdownOption } from "@/components/ui/Dropdown";
+
 
 import { useMemo, useState, useEffect, CSSProperties } from "react";
 import { MaterialIcon } from "@/components/ui/material-icon";
@@ -459,9 +461,9 @@ export default function ProveedoresPage() {
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <span className="text-sm">Líneas por página</span>
-              <select value={pageSize} disabled className="h-9 rounded-md border border-tg bg-[var(--panel-bg)] px-2 text-sm text-tg-muted">
-                <option value={pageSize}>{pageSize}</option>
-              </select>
+              <Dropdown aria-label="Líneas por página" value={pageSize} disabled className="h-9 rounded-md border border-tg bg-[var(--panel-bg)] px-2 text-sm text-tg-muted">
+                <DropdownOption value={pageSize}>{pageSize}</DropdownOption>
+              </Dropdown>
             </div>
 
             <button

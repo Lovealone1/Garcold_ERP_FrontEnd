@@ -1,6 +1,8 @@
 
 
 "use client";
+import Dropdown, { DropdownOption } from "@/components/ui/Dropdown";
+
 
 import { useMemo, useState, useEffect, CSSProperties } from "react";
 import { MaterialIcon } from "@/components/ui/material-icon";
@@ -375,9 +377,9 @@ export default function ProductosPage() {
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <span className="text-sm">Líneas por página</span>
-              <select value={page_size || pageSizeWanted} disabled className="h-9 rounded-md border border-tg bg-[var(--panel-bg)] px-2 text-sm text-tg-muted">
-                <option value={page_size || pageSizeWanted}>{page_size || pageSizeWanted}</option>
-              </select>
+              <Dropdown aria-label="Líneas por página" value={page_size || pageSizeWanted} disabled className="h-9 rounded-md border border-tg bg-[var(--panel-bg)] px-2 text-sm text-tg-muted">
+                <DropdownOption value={page_size || pageSizeWanted}>{page_size || pageSizeWanted}</DropdownOption>
+              </Dropdown>
             </div>
 
             <button type="button" onClick={() => setOpenImport(true)} className="h-9 rounded-md border border-tg bg-[var(--panel-bg)] px-3 text-sm text-tg-muted inline-flex items-center gap-2">

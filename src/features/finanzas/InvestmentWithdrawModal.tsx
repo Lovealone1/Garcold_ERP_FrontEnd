@@ -1,4 +1,6 @@
 "use client";
+import Dropdown, { DropdownOption } from "@/components/ui/Dropdown";
+
 
 import { useEffect, useMemo, useState } from "react";
 import type { Investment } from "@/types/investment";
@@ -97,7 +99,7 @@ export default function InvestmentWithdrawModal({ open, onClose, investment, onD
                     {/* Tipo de retiro */}
                     <label className="block text-sm text-[var(--tg-muted)]">
                         Tipo de retiro
-                        <select
+                        <Dropdown aria-label="Tipo de retiro"
                             value={kind}
                             onChange={(e) => setKind(e.target.value as "partial" | "full")}
                             className="mt-1 w-full h-10 rounded-md px-3 outline-none
@@ -106,9 +108,9 @@ export default function InvestmentWithdrawModal({ open, onClose, investment, onD
                          focus:border-[var(--tg-primary)]
                          focus:ring-2 focus:ring-[color-mix(in_srgb,var(--tg-primary)40%,transparent)]"
                         >
-                            <option value="partial">Parcial</option>
-                            <option value="full">Valor total</option>
-                        </select>
+                            <DropdownOption value="partial">Parcial</DropdownOption>
+                            <DropdownOption value="full">Valor total</DropdownOption>
+                        </Dropdown>
                     </label>
 
                     {/* Monto si es parcial */}
@@ -153,7 +155,7 @@ export default function InvestmentWithdrawModal({ open, onClose, investment, onD
                     {/* Banco destino opcional */}
                     <label className="block text-sm text-[var(--tg-muted)]">
                         Banco destino (opcional)
-                        <select
+                        <Dropdown aria-label="Banco"
                             value={destBankId}
                             onChange={(e) => setDestBankId(e.target.value ? Number(e.target.value) : "")}
                             disabled={loadingBanks}
@@ -163,18 +165,18 @@ export default function InvestmentWithdrawModal({ open, onClose, investment, onD
                          focus:border-[var(--tg-primary)]
                          focus:ring-2 focus:ring-[color-mix(in_srgb,var(--tg-primary)40%,transparent)]"
                         >
-                            <option value="">
+                            <DropdownOption value="">
                                 {loadingBanks ? "Cargando bancos…" : "Seleccione un banco"}
-                            </option>
+                            </DropdownOption>
                             {banks
                                 .slice()
                                 .sort((a, b) => a.name.localeCompare(b.name))
                                 .map((b) => (
-                                    <option key={b.id} value={b.id}>
+                                    <DropdownOption key={b.id} value={b.id}>
                                         {b.name}
-                                    </option>
+                                    </DropdownOption>
                                 ))}
-                        </select>
+                        </Dropdown>
                     </label>
                 </div>
 

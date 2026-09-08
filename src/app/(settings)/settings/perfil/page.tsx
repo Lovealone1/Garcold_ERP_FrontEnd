@@ -1,6 +1,7 @@
 "use client";
+import CountryDropdown from "@/components/ui/CountryDropdown";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   loadProfile,
   saveProfile as saveProfileAPI,
@@ -8,7 +9,7 @@ import {
   verifyPassword as verifyPasswordAPI,
   updatePassword as updatePasswordAPI,
 } from "@/services/profile.api";
-import PhoneInput, { isValidPhoneNumber, getCountryCallingCode } from "react-phone-number-input";
+import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
 import { parsePhoneNumberFromString, type CountryCode } from "libphonenumber-js";
 
 /* ====================== utils ====================== */
@@ -73,80 +74,6 @@ function PasswordField({
           </span>
         </button>
       </div>
-    </div>
-  );
-}
-
-/* ========== Compact themable country selector ========= */
-function CountrySelect(props: any) {
-  const { value, onChange, options, disabled, iconComponent: Icon } = props;
-  const [open, setOpen] = useState(false);
-  const [q, setQ] = useState("");
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const onDown = (e: MouseEvent) => {
-      if (!ref.current || ref.current.contains(e.target as Node)) return;
-      setOpen(false);
-    };
-    window.addEventListener("pointerdown", onDown);
-    return () => window.removeEventListener("pointerdown", onDown);
-  }, []);
-
-  const filtered = q
-    ? options.filter((o: any) => {
-      const label = String(o.label ?? "").toLowerCase();
-      const cc = String(getCountryCallingCode(o.value as CountryCode));
-      const qq = q.toLowerCase().trim();
-      return label.includes(qq) || cc.includes(q.replace(/\D/g, ""));
-    })
-    : options;
-
-  return (
-    <div ref={ref} className="tg-country relative" data-open={open ? "true" : "false"}>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => setOpen((v) => !v)}
-        className="tg-country-btn"
-        aria-haspopup="listbox"
-        aria-expanded={open}
-      >
-        {Icon && value ? <Icon country={value} /> : <span className="tg-flag-fallback" />}
-        <span className="material-symbols-rounded text-[14px]" style={{ color: "var(--tg-muted)" }}>
-          expand_more
-        </span>
-      </button>
-
-      {open && (
-        <div className="tg-country-menu" role="listbox">
-          <input
-            autoFocus
-            placeholder="Buscar país o código"
-            className="tg-country-search"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
-          <ul className="tg-country-list">
-            {filtered.map((o: any) => (
-              <li key={o.value}>
-                <button
-                  type="button"
-                  className={`tg-country-item ${o.value === value ? "is-active" : ""}`}
-                  onClick={() => {
-                    onChange?.(o.value);
-                    setOpen(false);
-                  }}
-                >
-                  {Icon ? <Icon country={o.value} /> : <span className="tg-flag-fallback" />}
-                  <span className="tg-country-label">{o.label}</span>
-                  <span className="tg-cc">+{getCountryCallingCode(o.value as CountryCode)}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
     </div>
   );
 }
@@ -411,7 +338,7 @@ export default function ProfileSettingsPage() {
                 }}
                 placeholder="Número de celular"
                 countryCallingCodeEditable={false}
-                countrySelectComponent={CountrySelect}
+                countrySelectComponent={CountryDropdown}
                 className="w-full"
               />
             </div>

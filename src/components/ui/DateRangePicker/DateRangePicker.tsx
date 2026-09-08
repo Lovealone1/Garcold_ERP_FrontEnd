@@ -8,6 +8,7 @@ import { format, parse, isValid, startOfDay, endOfDay, isAfter } from "date-fns"
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
 import { useMediaQuery } from "@/hooks/ui/useMediaQuery";
 import styles from "./DateRangePicker.module.css";
+import { CalendarMonthDropdown, CalendarYearDropdown } from "./CalendarDropdown";
 
 /** Ancho del panel en escritorio; en móvil ocupa el ancho de la pantalla. */
 const PANEL_W = 360;
@@ -221,6 +222,7 @@ export default function DateRangeInput({
             showOutsideDays
             pagedNavigation
             captionLayout="dropdown"
+            components={{ MonthsDropdown: CalendarMonthDropdown, YearsDropdown: CalendarYearDropdown }}
             /* ✅ sustituye fromYear/toYear (deprecado) */
             startMonth={new Date(fromYear, 0)}
             endMonth={new Date(toYear, 11)}

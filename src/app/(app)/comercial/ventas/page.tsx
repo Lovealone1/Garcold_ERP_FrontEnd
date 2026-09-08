@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect, CSSProperties } from "react";
+import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useRouter } from "next/navigation";
@@ -12,7 +12,6 @@ import FacturaPreviewModal from "@/features/factura/FacturaPreviewModal";
 
 import { useVentas } from "@/hooks/ventas/useVentas";
 import { useDeleteVenta } from "@/hooks/ventas/useDeleteVenta";
-import { useVentaEstados } from "@/hooks/estados/useEstados";
 import { getSaleById } from "@/services/sales/sale.api";
 
 import type { Sale } from "@/types/sale";
@@ -238,7 +237,6 @@ export default function VentasPage() {
 
     const router = useRouter();
     const { success, error } = useNotifications();
-    const { options: estadoOptions } = useVentaEstados();
 
     const {
         items,
@@ -248,6 +246,7 @@ export default function VentasPage() {
         total,
         totalPages,
         loading,
+        error: loadError,
         reload,
         filters,
         setFilters,
@@ -258,7 +257,8 @@ export default function VentasPage() {
     // The date range filters the table on this screen; the header period
     // selector belongs to the dashboard and does not reach here.
     const [range, setRange] = useState<DateRange | undefined>();
-    // Bank names arrive with the other filter options, from the same request.
+    // Use the exact names present in sales, including legacy credit statuses.
+    const estadoOptions = saleOptions.statuses;
     const bancos: string[] = saleOptions.banks;
 
     const handleSearch = (v: string) => setFilters((f) => ({ ...f, q: v }));
@@ -352,6 +352,7 @@ export default function VentasPage() {
 
                 <div className="flex items-center gap-2">
                     <select
+                        aria-label="Estado de venta"
                         value={filters.estado ?? ""}
                         onChange={(e) => handleEstado(e.target.value)}
                         className="h-10 min-w-[160px] rounded-md border border-tg bg-tg-card px-3 text-sm text-tg-muted focus:outline-none"
@@ -425,6 +426,7 @@ export default function VentasPage() {
                 {/* Estado + Banco */}
                 <div className="grid grid-cols-2 gap-2">
                     <select
+                        aria-label="Estado de venta"
                         value={filters.estado ?? ""}
                         onChange={(e) => {
                             handleEstado(e.target.value);
@@ -500,6 +502,13 @@ export default function VentasPage() {
                         Array.from({ length: 8 }).map((_, i) => (
                             <div key={`sk-${i}`} className="h-[60px] rounded-xl border bg-black/10 animate-pulse" />
                         ))
+                    ) : loadError ? (
+                        <div role="alert" className="py-6 text-center text-sm text-tg-muted">
+                            <p>No se pudieron cargar las ventas.</p>
+                            <button type="button" onClick={() => void reload()} className="mt-2 rounded-md border border-tg px-3 py-2">
+                                Reintentar
+                            </button>
+                        </div>
                     ) : items.length === 0 ? (
                         <div className="h-full grid place-items-center text-tg-muted text-sm">Sin registros</div>
                     ) : (

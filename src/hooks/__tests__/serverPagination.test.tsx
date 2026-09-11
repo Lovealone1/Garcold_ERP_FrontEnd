@@ -62,6 +62,29 @@ describe("usePurchases", () => {
         expect(listPurchases).toHaveBeenCalledTimes(1);
     });
 
+    it("requests all purchase history when no date range is selected", async () => {
+        const { result } = mount();
+        await waitFor(() => expect(result.current.loading).toBe(false));
+
+        const args = listPurchases.mock.calls[0][1] as Record<string, unknown>;
+        expect(args.period).toBe("all");
+        expect(args.date_from).toBeUndefined();
+        expect(args.date_to).toBeUndefined();
+    });
+
+    it("does not mix period=all with an explicit purchase range", async () => {
+        const { result } = mount();
+        await waitFor(() => expect(result.current.loading).toBe(false));
+
+        act(() => result.current.setFilters({ from: "2026-01-01", to: "2026-01-31" }));
+        await waitFor(() => expect(listPurchases).toHaveBeenCalledTimes(2));
+
+        const args = listPurchases.mock.calls[1][1] as Record<string, unknown>;
+        expect(args.period).toBeUndefined();
+        expect(args.date_from).toBe("2026-01-01");
+        expect(args.date_to).toBe("2026-01-31");
+    });
+
     it("takes pagination from the server", async () => {
         const { result } = mount();
         await waitFor(() => expect(result.current.loading).toBe(false));

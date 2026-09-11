@@ -27,6 +27,10 @@ function toQueryParams(filters: Filters) {
     supplier: filters.supplier || undefined,
     date_from: filters.from || undefined,
     date_to: filters.to || undefined,
+    // The purchases screen has no period selector of its own. An empty date
+    // range means the complete history, while an explicit range remains
+    // bounded by those dates. The API otherwise defaults to the current month.
+    ...(!filters.from && !filters.to ? { period: "all" as const } : {}),
   };
 }
 

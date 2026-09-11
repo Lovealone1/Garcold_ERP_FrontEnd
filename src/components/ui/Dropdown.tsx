@@ -1,6 +1,6 @@
 "use client";
 
-import { Children, cloneElement, isValidElement, useCallback, useState, type ReactElement, type ReactNode, type CSSProperties } from "react";
+import { Children, cloneElement, forwardRef, isValidElement, useCallback, useState, type ReactElement, type ReactNode, type CSSProperties } from "react";
 import Select, { type SelectChangeEvent } from "@mui/material/Select";
 import MenuItem, { type MenuItemProps } from "@mui/material/MenuItem";
 import Autocomplete, { type AutocompleteProps } from "@mui/material/Autocomplete";
@@ -35,13 +35,13 @@ const surfaceStyles = {
     "& .MuiMenuItem-root, & .MuiAutocomplete-option": optionStyles,
 };
 
-function DropdownSurface(props: PaperProps) {
-    return <Paper {...props} onPointerDown={event => {
+const DropdownSurface = forwardRef<HTMLDivElement, PaperProps>(function DropdownSurface(props, ref) {
+    return <Paper {...props} ref={ref} onPointerDown={event => {
         // A portalled option still belongs to its calendar/form popover.
         event.stopPropagation();
         props.onPointerDown?.(event);
     }} />;
-}
+});
 
 const DropdownPaper = styled(DropdownSurface)(surfaceStyles);
 const DropdownMenuPaper = styled(DropdownSurface)({
@@ -88,7 +88,8 @@ export default function Dropdown({ children, value = "", onChange, ...props }: P
     const selected = normalized.find(option => option.props.value === String(value));
     const handleOpen = useCallback((event: React.SyntheticEvent) => {
         const trigger = event.currentTarget as HTMLElement;
-        const width = trigger.getBoundingClientRect().width;
+        const anchor = trigger.parentElement ?? trigger;
+        const width = anchor.getBoundingClientRect().width || trigger.getBoundingClientRect().width;
         if (width > 0) setMenuWidth(Math.ceil(width));
     }, []);
     return (
@@ -202,6 +203,9 @@ export function SearchDropdown<
                     ...(typeof props.slotProps?.popper === "object" ? props.slotProps.popper : {}),
                     placement: "bottom-start",
                     modifiers: [
+                        ...(typeof props.slotProps?.popper === "object" && Array.isArray(props.slotProps.popper.modifiers)
+                            ? props.slotProps.popper.modifiers
+                            : []),
                         { name: "flip", enabled: false },
                         { name: "preventOverflow", options: { padding: 8, altAxis: true } },
                     ],

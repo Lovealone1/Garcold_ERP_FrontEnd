@@ -1,6 +1,7 @@
 // components/DateInput.tsx
 "use client";
-import { useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
 import { es } from "date-fns/locale";
@@ -8,6 +9,7 @@ import { format, parse, isValid, startOfDay } from "date-fns";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
 import styles from "./DateRangePicker.module.css";
 import { CalendarMonthDropdown, CalendarYearDropdown } from "./CalendarDropdown";
+import { useMediaQuery } from "@/hooks/ui/useMediaQuery";
 
 /**
  * Emite strings para backend en formato: yyyy-MM-dd'T'HH:mm:ss
@@ -23,6 +25,10 @@ export interface DateInputProps {
 
 const UI_FMT = "dd/MM/yyyy";
 const BE_FMT = "yyyy-MM-dd'T'HH:mm:ss";
+const PANEL_W = 330;
+const PANEL_H = 420;
+const GAP = 4;
+const MARGIN = 8;
 
 function uiText(d?: Date) {
     return d ? format(d, UI_FMT) : "";
@@ -55,11 +61,95 @@ export default function DateInput({
     const [text, setText] = useState(uiText(initialDate));
     const id = useId();
 
+    const anchorRef = useRef<HTMLDivElement>(null);
+    const panelRef = useRef<HTMLDivElement>(null);
+    const [mounted, setMounted] = useState(false);
+    const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
+    const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+    const asSheet = !useMediaQuery("(min-width: 640px)");
+
+    useEffect(() => setMounted(true), []);
+    useLayoutEffect(() => {
+        if (!mounted) return;
+        // Keep a calendar opened from an MUI Dialog in that modal's stacking
+        // context. Standalone forms still use body as their portal host.
+        setPortalTarget(
+            anchorRef.current?.closest<HTMLElement>(".MuiDialog-root") ?? document.body
+        );
+    }, [mounted]);
+
     useEffect(() => {
         const d = fromBackendString(value);
         setText(uiText(d));
     }, [value]);
     useEffect(() => { if (open) setTemp(fromBackendString(value)); }, [open, value]);
+
+    const place = useCallback(() => {
+        const anchor = anchorRef.current?.getBoundingClientRect();
+        if (!anchor) return;
+
+        const viewportWidth = document.documentElement.clientWidth;
+        const viewportHeight = document.documentElement.clientHeight;
+        const width = Math.min(PANEL_W, Math.max(0, viewportWidth - MARGIN * 2));
+        const height = Math.min(PANEL_H, Math.max(0, viewportHeight - MARGIN * 2));
+
+        let left = anchor.right - width;
+        left = Math.min(Math.max(MARGIN, left), Math.max(MARGIN, viewportWidth - width - MARGIN));
+
+        let top = anchor.bottom + GAP;
+        if (top + height > viewportHeight - MARGIN) {
+            top = anchor.top - height - GAP;
+            if (top < MARGIN) top = Math.max(MARGIN, viewportHeight - height - MARGIN);
+        }
+
+        setPos({ top, left, width });
+    }, []);
+
+    useLayoutEffect(() => {
+        if (!open || asSheet) return;
+
+        place();
+        const viewport = window.visualViewport;
+        const resizeObserver = typeof ResizeObserver !== "undefined"
+            ? new ResizeObserver(place)
+            : undefined;
+        if (anchorRef.current) resizeObserver?.observe(anchorRef.current);
+        if (panelRef.current) resizeObserver?.observe(panelRef.current);
+
+        window.addEventListener("resize", place);
+        window.addEventListener("scroll", place, true);
+        viewport?.addEventListener("resize", place);
+        viewport?.addEventListener("scroll", place);
+        return () => {
+            resizeObserver?.disconnect();
+            window.removeEventListener("resize", place);
+            window.removeEventListener("scroll", place, true);
+            viewport?.removeEventListener("resize", place);
+            viewport?.removeEventListener("scroll", place);
+        };
+    }, [open, asSheet, place]);
+
+    useEffect(() => {
+        if (!open) return;
+        const onDown = (event: PointerEvent) => {
+            const target = event.target as Node;
+            if (panelRef.current?.contains(target) || anchorRef.current?.contains(target)) return;
+            setOpen(false);
+            setText(uiText(fromBackendString(value)));
+        };
+        const onKey = (event: KeyboardEvent) => {
+            if (event.key === "Escape") {
+                setOpen(false);
+                setText(uiText(fromBackendString(value)));
+            }
+        };
+        document.addEventListener("pointerdown", onDown);
+        document.addEventListener("keydown", onKey);
+        return () => {
+            document.removeEventListener("pointerdown", onDown);
+            document.removeEventListener("keydown", onKey);
+        };
+    }, [open, value]);
 
     function commitFromInput() {
         const d = fromUiText(text);
@@ -72,7 +162,7 @@ export default function DateInput({
     const toYear = now.getFullYear() + 2;
 
     return (
-        <div className={`relative ${className ?? ""}`}>
+        <div ref={anchorRef} className={`relative ${className ?? ""}`}>
             <div className="h-full min-h-10 w-full rounded-md border border-tg bg-tg-card pl-3 pr-1 flex items-center focus-within:ring-2 focus-within:ring-[var(--tg-primary)]">
                 <input
                     type="text"
@@ -103,13 +193,25 @@ export default function DateInput({
                 </button>
             </div>
 
-            {open && (
+            {open && mounted && createPortal(
+                <>
+                {asSheet && <div aria-hidden className="fixed inset-0 z-[1399] bg-black/50" />}
                 <div
                     id={id}
                     role="dialog"
-                    className="absolute right-0 top-full mt-1 z-50 w-[330px] max-w-[90vw] rounded-xl border border-tg bg-[var(--panel-bg)] p-3 shadow-xl"
-                    onMouseDown={(e) => e.preventDefault()}
+                    aria-modal={asSheet || undefined}
+                    aria-label="Fecha"
+                    ref={panelRef}
+                    style={asSheet ? undefined : {
+                        top: pos?.top ?? -9999,
+                        left: pos?.left ?? -9999,
+                        width: pos?.width ?? PANEL_W,
+                    }}
+                    className={asSheet
+                        ? "fixed inset-x-0 bottom-0 z-[1400] max-h-[85dvh] overflow-y-auto overscroll-contain rounded-t-2xl border-t border-tg bg-[var(--panel-bg,white)] p-3 shadow-2xl pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+                        : "fixed z-[1400] max-h-[min(85dvh,32rem)] overflow-y-auto overscroll-contain rounded-xl border border-tg bg-[var(--panel-bg,white)] p-3 shadow-xl"}
                 >
+                    {asSheet && <div aria-hidden className="mx-auto mb-2 h-1 w-10 rounded-full bg-[var(--tg-muted)] opacity-40" />}
                     <DayPicker
                         mode="single"
                         weekStartsOn={1}
@@ -167,6 +269,8 @@ export default function DateInput({
                         </div>
                     </div>
                 </div>
+                </>,
+                portalTarget ?? document.body
             )}
         </div>
     );

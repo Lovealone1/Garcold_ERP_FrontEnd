@@ -30,7 +30,7 @@ export interface PurchasePayment {
   id: number;
   purchase_id: number;
   bank: string;           
-  balance: number;      
+  remaining_balance: number;
   amount_paid: number;         
   created_at: string;    
 }

@@ -11,7 +11,6 @@ import { MaterialIcon } from "@/components/ui/material-icon";
 
 import { usePurchases } from "@/hooks/compras/usePurchases";
 import { useDeletePurchase } from "@/hooks/compras/useDeletePurchase";
-import { useCompraEstados } from "@/hooks/estados/useEstados";
 import { useNotifications } from "@/components/providers/NotificationsProvider";
 
 import { getPurchaseById } from "@/services/sales/purchase.api";
@@ -309,7 +308,6 @@ function PurchaseRow({
 export default function ComprasPage() {
     const router = useRouter();
     const { success, error } = useNotifications();
-    const { options: estadoOptions } = useCompraEstados();
 
     const {
         items,
@@ -323,6 +321,8 @@ export default function ComprasPage() {
         filters,
         setFilters,
         options: purchaseOptions,
+        optionsError,
+        retryOptions,
     } = usePurchases({}, 8);
 
     // The date range filters the table on this screen; the header period
@@ -330,6 +330,9 @@ export default function ComprasPage() {
     const [range, setRange] = useState<DateRange | undefined>();
     // Bank names arrive with the other filter options, in the same request.
     const bancos: string[] = purchaseOptions.banks;
+    // Status names must come from the same purchase dataset as the list. The
+    // global status catalog can contain sale states that the API rejects here.
+    const estadoOptions: string[] = purchaseOptions.statuses;
 
     // Handlers filtros -> se envían al hook (server-side)
     const handleSearch = (value: string) =>
@@ -570,6 +573,15 @@ export default function ComprasPage() {
                     Nueva compra
                 </button>
             </div>
+
+            {optionsError && (
+                <div role="alert" className="mb-3 flex items-center justify-between gap-3 rounded-md border border-red-400/40 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+                    <span>No se pudieron cargar los filtros de compras.</span>
+                    <button type="button" onClick={() => void retryOptions()} className="font-semibold underline">
+                        Reintentar
+                    </button>
+                </div>
+            )}
 
             {/* Marco + lista */}
             <div

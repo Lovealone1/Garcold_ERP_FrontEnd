@@ -1,6 +1,6 @@
 "use client";
 
-import { Children, cloneElement, isValidElement, type ReactElement, type ReactNode, type CSSProperties } from "react";
+import { Children, cloneElement, forwardRef, isValidElement, useCallback, useState, type ReactElement, type ReactNode, type CSSProperties } from "react";
 import Select, { type SelectChangeEvent } from "@mui/material/Select";
 import MenuItem, { type MenuItemProps } from "@mui/material/MenuItem";
 import Autocomplete, { type AutocompleteProps } from "@mui/material/Autocomplete";
@@ -35,14 +35,28 @@ const surfaceStyles = {
     "& .MuiMenuItem-root, & .MuiAutocomplete-option": optionStyles,
 };
 
-const DropdownPaper = styled(function DropdownSurface(props: PaperProps) {
-    return <Paper {...props} onPointerDown={event => {
+const DropdownSurface = forwardRef<HTMLDivElement, PaperProps>(function DropdownSurface(props, ref) {
+    return <Paper {...props} ref={ref} onPointerDown={event => {
         // A portalled option still belongs to its calendar/form popover.
         event.stopPropagation();
         props.onPointerDown?.(event);
     }} />;
-})(surfaceStyles);
-const DropdownPopper = styled(Popper)({ zIndex: 1400, minWidth: 240, maxWidth: "calc(100vw - 24px)" });
+});
+
+const DropdownPaper = styled(DropdownSurface)(surfaceStyles);
+const DropdownMenuPaper = styled(DropdownSurface)({
+    ...surfaceStyles,
+    boxSizing: "border-box",
+    position: "absolute",
+    overflowY: "auto",
+    overflowX: "hidden",
+    minWidth: 16,
+    minHeight: 16,
+    maxWidth: "calc(100% - 32px)",
+    maxHeight: "calc(100% - 32px)",
+    outline: 0,
+});
+const DropdownPopper = styled(Popper)({ zIndex: 1400, maxWidth: "calc(100vw - 24px)" });
 
 export function DropdownOption(props: MenuItemProps) {
     return <MenuItem {...props} />;
@@ -67,19 +81,28 @@ type Props = {
 
 /** The application select: a themed, portalled listbox, never a native select. */
 export default function Dropdown({ children, value = "", onChange, ...props }: Props) {
+    const [menuWidth, setMenuWidth] = useState<number>();
     const options = Children.toArray(children).filter(isValidElement) as ReactElement<MenuItemProps>[];
     const normalized = options.map(option => cloneElement(option, { value: String(option.props.value ?? "") }));
     // Options may arrive after the current value. Avoid an out-of-range control.
     const selected = normalized.find(option => option.props.value === String(value));
+    const handleOpen = useCallback((event: React.SyntheticEvent) => {
+        const trigger = event.currentTarget as HTMLElement;
+        const anchor = trigger.parentElement ?? trigger;
+        const width = anchor.getBoundingClientRect().width || trigger.getBoundingClientRect().width;
+        if (width > 0) setMenuWidth(Math.ceil(width));
+    }, []);
     return (
         <Select<string>
             {...props}
             disabled={props.disabled || normalized.length === 0}
             value={selected ? String(value) : ""}
             onChange={onChange}
+            onOpen={handleOpen}
             native={false}
             variant="standard"
             disableUnderline
+            autoWidth={false}
             displayEmpty
             renderValue={() => selected?.props.children ?? "Seleccionar"}
             inputProps={{
@@ -99,9 +122,19 @@ export default function Dropdown({ children, value = "", onChange, ...props }: P
             MenuProps={{
                 transitionDuration: 0,
                 marginThreshold: 12,
-                slots: { paper: DropdownPaper },
+                anchorOrigin: { vertical: "bottom", horizontal: "left" },
+                transformOrigin: { vertical: "top", horizontal: "left" },
+                anchorReference: "anchorEl",
+                slots: { paper: DropdownMenuPaper },
                 slotProps: {
-                    paper: { sx: { maxHeight: "min(360px, calc(100dvh - 24px))", maxWidth: "calc(100vw - 24px)" } },
+                    paper: {
+                        sx: {
+                            width: menuWidth ? `${menuWidth}px` : undefined,
+                            minWidth: menuWidth ? `${menuWidth}px` : undefined,
+                            maxHeight: "min(360px, calc(100dvh - 24px))",
+                            maxWidth: "calc(100vw - 24px)",
+                        },
+                    },
                     list: { sx: { padding: "4px" }, "aria-label": props["aria-label"] },
                 },
             }}
@@ -164,6 +197,20 @@ export function SearchDropdown<
             {...props}
             disablePortal={false}
             slots={{ ...props.slots, paper: DropdownPaper, popper: DropdownPopper }}
+            slotProps={{
+                ...props.slotProps,
+                popper: {
+                    ...(typeof props.slotProps?.popper === "object" ? props.slotProps.popper : {}),
+                    placement: "bottom-start",
+                    modifiers: [
+                        ...(typeof props.slotProps?.popper === "object" && Array.isArray(props.slotProps.popper.modifiers)
+                            ? props.slotProps.popper.modifiers
+                            : []),
+                        { name: "flip", enabled: false },
+                        { name: "preventOverflow", options: { padding: 8, altAxis: true } },
+                    ],
+                },
+            }}
         />
     );
 }

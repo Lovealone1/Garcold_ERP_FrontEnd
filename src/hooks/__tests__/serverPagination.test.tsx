@@ -62,6 +62,29 @@ describe("usePurchases", () => {
         expect(listPurchases).toHaveBeenCalledTimes(1);
     });
 
+    it("requests all purchase history when no date range is selected", async () => {
+        const { result } = mount();
+        await waitFor(() => expect(result.current.loading).toBe(false));
+
+        const args = listPurchases.mock.calls[0][1] as Record<string, unknown>;
+        expect(args.period).toBe("all");
+        expect(args.date_from).toBeUndefined();
+        expect(args.date_to).toBeUndefined();
+    });
+
+    it("does not mix period=all with an explicit purchase range", async () => {
+        const { result } = mount();
+        await waitFor(() => expect(result.current.loading).toBe(false));
+
+        act(() => result.current.setFilters({ from: "2026-01-01", to: "2026-01-31" }));
+        await waitFor(() => expect(listPurchases).toHaveBeenCalledTimes(2));
+
+        const args = listPurchases.mock.calls[1][1] as Record<string, unknown>;
+        expect(args.period).toBeUndefined();
+        expect(args.date_from).toBe("2026-01-01");
+        expect(args.date_to).toBe("2026-01-31");
+    });
+
     it("takes pagination from the server", async () => {
         const { result } = mount();
         await waitFor(() => expect(result.current.loading).toBe(false));
@@ -93,6 +116,17 @@ describe("usePurchases", () => {
         expect(args.date_to).toBe("2026-02-01");
     });
 
+    it("resolves purchase statuses case-insensitively to the API option", async () => {
+        const { result } = mount();
+        await waitFor(() => expect(result.current.options.statuses).toEqual(["Credito"]));
+
+        act(() => result.current.setFilters({ status: "  cRÉdItO  " }));
+        await waitFor(() => expect(listPurchases).toHaveBeenCalledTimes(2));
+
+        const args = listPurchases.mock.calls[1][1] as Record<string, unknown>;
+        expect(args.status).toBe("Credito");
+    });
+
     it("returns to page 1 when a filter changes", async () => {
         const { result } = mount();
         await waitFor(() => expect(result.current.loading).toBe(false));
@@ -107,6 +141,7 @@ describe("usePurchases", () => {
     it("exposes dropdown options and filtered totals from the API", async () => {
         const { result } = mount();
         await waitFor(() => expect(result.current.options.suppliers).toEqual(["Acme"]));
+        expect(result.current.options.statuses).toEqual(["Credito"]);
         await waitFor(() => expect(result.current.totalFiltrado).toBe(800));
         expect(result.current.balanceFiltrado).toBe(200);
     });

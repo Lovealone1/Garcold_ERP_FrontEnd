@@ -45,7 +45,7 @@ describe("useTransactions", () => {
             banks: ["Nequi", "Bancolombia"],
             types: ["Ingreso", "Retiro"],
         });
-        summarizeTransactions.mockResolvedValue({ Ingreso: 500, Retiro: 200 });
+        summarizeTransactions.mockResolvedValue({ amounts: { Ingreso: 500, Retiro: 200 } });
     });
 
     function mount(client = makeTestQueryClient()) {
@@ -116,6 +116,15 @@ describe("useTransactions", () => {
             expect(callArgs(0).q).toBeUndefined();
         });
 
+        it("requests all transaction history when no date range is selected", async () => {
+            const { result } = mount();
+            await waitFor(() => expect(result.current.loading).toBe(false));
+
+            expect(callArgs(0).period).toBe("all");
+            expect(callArgs(0).date_from).toBeUndefined();
+            expect(callArgs(0).date_to).toBeUndefined();
+        });
+
         it("sends bank and type", async () => {
             const { result } = mount();
             await waitFor(() => expect(result.current.loading).toBe(false));
@@ -168,6 +177,7 @@ describe("useTransactions", () => {
 
             expect(callArgs(1).date_from).toBe("2026-01-01");
             expect(callArgs(1).date_to).toBe("2026-02-01");
+            expect(callArgs(1).period).toBeUndefined();
         });
 
         // Page 4 of an unfiltered list is meaningless against a filtered one.

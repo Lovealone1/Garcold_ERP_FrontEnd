@@ -1,37 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { useQueryClient, type InfiniteData } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { deletePurchasePayment } from "@/services/sales/purchase.api";
 import { invalidateMovement } from "@/lib/query/invalidateMovement";
-import type { Purchase } from "@/types/purchase";
-
-type Page = {
-    items: Purchase[];
-    page: number;
-    page_size: number;
-    total?: number;
-    total_pages?: number;
-    has_next?: boolean;
-};
+import { queryKeys } from "@/lib/query/queryKeys";
+import type { Purchase, PurchasePage } from "@/types/purchase";
 
 function patchPurchaseById(
-    data: InfiniteData<Page> | undefined,
+    data: PurchasePage | undefined,
     purchaseId: number,
     updater: (p: Purchase) => Purchase
-): InfiniteData<Page> | undefined {
-    // setQueriesData matches every query under the prefix, including any that
-    // is not an infinite list. Bail out instead of throwing past the mutation.
-    if (!data || !Array.isArray(data.pages)) return data;
-
-    const pages = data.pages.map((p) => ({
-        ...p,
-        items: (p.items ?? []).map((purchase) =>
+): PurchasePage | undefined {
+    if (!data || !Array.isArray(data.items)) return data;
+    return {
+        ...data,
+        items: data.items.map((purchase) =>
             purchase.id === purchaseId ? updater(purchase) : purchase
         ),
-    }));
-
-    return { ...data, pages, pageParams: data.pageParams } as InfiniteData<Page>;
+    };
 }
 
 export function useDeletePurchasePayment() {
@@ -49,8 +36,8 @@ export function useDeletePurchasePayment() {
         try {
             const ok = await deletePurchasePayment(paymentId);
 
-            qc.setQueriesData<InfiniteData<Page>>(
-                { queryKey: ["purchases"] },
+            qc.setQueriesData<PurchasePage>(
+                { queryKey: queryKeys.purchases.all },
                 (curr) =>
                     patchPurchaseById(curr, purchaseId, (p) => {
                         const prev = Number(p.balance ?? 0);
@@ -58,8 +45,7 @@ export function useDeletePurchasePayment() {
 
                         return {
                             ...p,
-                            remaining_balance: newRem,
-                            status: newRem > 0 ? "Compra credito" : p.status,
+                            balance: newRem,
                         };
                     })
             );

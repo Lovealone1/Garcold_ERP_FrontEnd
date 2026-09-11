@@ -40,6 +40,9 @@ function toQueryParams(filters: TransactionFilters) {
         // day of the range -- a movement at 20:00 on the 30th fell outside it.
         date_from: toApiDate(filters.dateRange?.from) ?? undefined,
         date_to: toApiDate(filters.dateRange?.to ?? filters.dateRange?.from) ?? undefined,
+        // This screen has no header period selector. Without a range it should
+        // show the complete ledger instead of the API's current-month default.
+        ...(!filters.dateRange?.from && !filters.dateRange?.to ? { period: "all" as const } : {}),
     };
 }
 
@@ -127,7 +130,8 @@ export function useTransactions(initialPage = 1, pageSize = 8) {
         },
 
         /** Total amount per transaction type across the whole filtered set. */
-        summaryByType: summaryQuery.data ?? {},
+        summaryByType: summaryQuery.data?.amounts ?? {},
+        summaryPeriod: summaryQuery.data?.period,
 
         hasNextPage: page < totalPages,
         hasPrevPage: page > 1,

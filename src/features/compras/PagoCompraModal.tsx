@@ -94,7 +94,7 @@ export default function PagoCompraModal({ open, onClose, compra, onPaid }: Props
             await remove(
                 pago.id,
                 Number(pago.purchase_id),
-                Number(pago.balance) || 0
+                Number(pago.amount_paid) || 0
             );
 
             success("Pago eliminado");

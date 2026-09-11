@@ -77,6 +77,7 @@ export function usePurchases(initialFilters: Filters = {}, pageSize = 8) {
     () => qc.invalidateQueries({ queryKey: queryKeys.purchases.all }),
     [qc]
   );
+  const retryOptions = useCallback(() => optionsQuery.refetch(), [optionsQuery]);
 
   return {
     items: data?.items ?? [],
@@ -98,6 +99,11 @@ export function usePurchases(initialFilters: Filters = {}, pageSize = 8) {
       statuses: optionsQuery.data?.statuses ?? [],
       suppliers: optionsQuery.data?.suppliers ?? [],
     },
+    optionsLoading: optionsQuery.isPending,
+    optionsError: optionsQuery.isError
+      ? (optionsQuery.error as Error)?.message ?? "No fue posible cargar los filtros"
+      : null,
+    retryOptions,
     /** Totals across the whole filtered set, not the visible page. */
     totalFiltrado: summaryQuery.data?.total ?? 0,
     balanceFiltrado: summaryQuery.data?.balance ?? 0,

@@ -130,6 +130,7 @@ describe("usePurchases", () => {
     it("exposes dropdown options and filtered totals from the API", async () => {
         const { result } = mount();
         await waitFor(() => expect(result.current.options.suppliers).toEqual(["Acme"]));
+        expect(result.current.options.statuses).toEqual(["Credito"]);
         await waitFor(() => expect(result.current.totalFiltrado).toBe(800));
         expect(result.current.balanceFiltrado).toBe(200);
     });

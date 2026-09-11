@@ -1,7 +1,6 @@
 // components/DateInput.tsx
 "use client";
-import { useEffect, useId, useState } from "react";
-import { useCallback, useLayoutEffect, useRef } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
@@ -66,9 +65,18 @@ export default function DateInput({
     const panelRef = useRef<HTMLDivElement>(null);
     const [mounted, setMounted] = useState(false);
     const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
+    const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
     const asSheet = !useMediaQuery("(min-width: 640px)");
 
     useEffect(() => setMounted(true), []);
+    useLayoutEffect(() => {
+        if (!mounted) return;
+        // Keep a calendar opened from an MUI Dialog in that modal's stacking
+        // context. Standalone forms still use body as their portal host.
+        setPortalTarget(
+            anchorRef.current?.closest<HTMLElement>(".MuiDialog-root") ?? document.body
+        );
+    }, [mounted]);
 
     useEffect(() => {
         const d = fromBackendString(value);
@@ -187,7 +195,7 @@ export default function DateInput({
 
             {open && mounted && createPortal(
                 <>
-                {asSheet && <div aria-hidden className="fixed inset-0 z-[59] bg-black/50" />}
+                {asSheet && <div aria-hidden className="fixed inset-0 z-[1399] bg-black/50" />}
                 <div
                     id={id}
                     role="dialog"
@@ -200,8 +208,8 @@ export default function DateInput({
                         width: pos?.width ?? PANEL_W,
                     }}
                     className={asSheet
-                        ? "fixed inset-x-0 bottom-0 z-[60] max-h-[85dvh] overflow-y-auto overscroll-contain rounded-t-2xl border-t border-tg bg-[var(--panel-bg,white)] p-3 shadow-2xl pb-[max(0.75rem,env(safe-area-inset-bottom))]"
-                        : "fixed z-[60] max-h-[min(85dvh,32rem)] overflow-y-auto overscroll-contain rounded-xl border border-tg bg-[var(--panel-bg,white)] p-3 shadow-xl"}
+                        ? "fixed inset-x-0 bottom-0 z-[1400] max-h-[85dvh] overflow-y-auto overscroll-contain rounded-t-2xl border-t border-tg bg-[var(--panel-bg,white)] p-3 shadow-2xl pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+                        : "fixed z-[1400] max-h-[min(85dvh,32rem)] overflow-y-auto overscroll-contain rounded-xl border border-tg bg-[var(--panel-bg,white)] p-3 shadow-xl"}
                 >
                     {asSheet && <div aria-hidden className="mx-auto mb-2 h-1 w-10 rounded-full bg-[var(--tg-muted)] opacity-40" />}
                     <DayPicker
@@ -262,7 +270,7 @@ export default function DateInput({
                     </div>
                 </div>
                 </>,
-                document.body
+                portalTarget ?? document.body
             )}
         </div>
     );

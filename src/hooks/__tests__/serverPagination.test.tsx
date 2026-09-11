@@ -116,6 +116,17 @@ describe("usePurchases", () => {
         expect(args.date_to).toBe("2026-02-01");
     });
 
+    it("resolves purchase statuses case-insensitively to the API option", async () => {
+        const { result } = mount();
+        await waitFor(() => expect(result.current.options.statuses).toEqual(["Credito"]));
+
+        act(() => result.current.setFilters({ status: "  cRÉdItO  " }));
+        await waitFor(() => expect(listPurchases).toHaveBeenCalledTimes(2));
+
+        const args = listPurchases.mock.calls[1][1] as Record<string, unknown>;
+        expect(args.status).toBe("Credito");
+    });
+
     it("returns to page 1 when a filter changes", async () => {
         const { result } = mount();
         await waitFor(() => expect(result.current.loading).toBe(false));

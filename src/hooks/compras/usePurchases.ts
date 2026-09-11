@@ -19,10 +19,35 @@ type Filters = {
   to?: string;
 };
 
-function toQueryParams(filters: Filters) {
+const EMPTY_STATUS_OPTIONS: readonly string[] = [];
+
+/**
+ * Status names are labels supplied by the API. Resolve user input without
+ * changing the canonical value sent to the exact-match endpoint.
+ */
+export function normalizePurchaseStatus(status: string | undefined): string {
+  return (status ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLocaleLowerCase("es-CO");
+}
+
+function canonicalPurchaseStatus(
+  status: string | undefined,
+  options: readonly string[]
+): string | undefined {
+  const candidate = status?.trim();
+  if (!candidate) return undefined;
+
+  const key = normalizePurchaseStatus(candidate);
+  return options.find((option) => normalizePurchaseStatus(option) === key)?.trim() ?? candidate;
+}
+
+function toQueryParams(filters: Filters, statusOptions: readonly string[] = []) {
   return {
     q: filters.q?.trim() || undefined,
-    status: filters.status || undefined,
+    status: canonicalPurchaseStatus(filters.status, statusOptions),
     bank: filters.bank || undefined,
     supplier: filters.supplier || undefined,
     date_from: filters.from || undefined,
@@ -46,7 +71,16 @@ export function usePurchases(initialFilters: Filters = {}, pageSize = 8) {
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<Filters>(initialFilters);
 
-  const params = useMemo(() => toQueryParams(filters), [filters]);
+  const optionsQuery = useQuery({
+    queryKey: queryKeys.purchases.filterOptions(),
+    queryFn: ({ signal }) => listPurchaseFilterOptions({ signal }),
+  });
+
+  const statusOptions = optionsQuery.data?.statuses ?? EMPTY_STATUS_OPTIONS;
+  const params = useMemo(
+    () => toQueryParams(filters, statusOptions),
+    [filters, statusOptions]
+  );
 
   useEffect(() => {
     setPage(1);
@@ -57,11 +91,6 @@ export function usePurchases(initialFilters: Filters = {}, pageSize = 8) {
     queryFn: ({ signal }) =>
       listPurchases(page, { signal, page_size: pageSize, ...params }),
     placeholderData: keepPreviousData,
-  });
-
-  const optionsQuery = useQuery({
-    queryKey: queryKeys.purchases.filterOptions(),
-    queryFn: ({ signal }) => listPurchaseFilterOptions({ signal }),
   });
 
   const summaryQuery = useQuery({

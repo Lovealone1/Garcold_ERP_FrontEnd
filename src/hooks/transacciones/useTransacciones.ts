@@ -130,7 +130,8 @@ export function useTransactions(initialPage = 1, pageSize = 8) {
         },
 
         /** Total amount per transaction type across the whole filtered set. */
-        summaryByType: summaryQuery.data ?? {},
+        summaryByType: summaryQuery.data?.amounts ?? {},
+        summaryPeriod: summaryQuery.data?.period,
 
         hasNextPage: page < totalPages,
         hasPrevPage: page > 1,

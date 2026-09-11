@@ -42,3 +42,16 @@ export interface TransactionCreate {
 }
 
 export type TransactionUpdate = Omit<Transaction, "id">;
+
+/** Period echoed by list and summary endpoints after server-side resolution. */
+export interface ResolvedPeriod {
+  date_from: string | null;
+  date_to: string | null;
+  resolved_from: "default" | "calendar" | "range" | "all";
+}
+
+/** Normalized summary payload: numeric amounts are kept separate from metadata. */
+export interface TransactionSummary {
+  amounts: Record<string, number>;
+  period?: ResolvedPeriod;
+}

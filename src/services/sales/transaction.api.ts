@@ -4,6 +4,8 @@ import type {
     TransactionPageDTO,
     TransactionCreate,
     TransactionCreated,
+    TransactionSummary,
+    ResolvedPeriod,
 } from "@/types/transaction";
 import type { OriginFilter } from "@/hooks/transacciones/useTransacciones";
 
@@ -54,12 +56,24 @@ export async function listTransactionFilterOptions(
 /** Total amount per type across the whole filtered set, not just one page. */
 export async function summarizeTransactions(
     opts: FilterOpts = {}
-): Promise<Record<string, number>> {
+): Promise<TransactionSummary> {
     const { data } = await salesApi.get("/transactions/summary", {
         params: filterParams(opts),
         signal: opts.signal,
     });
-    return data as Record<string, number>;
+    // The API echoes a `period` object next to the numeric type totals. Keep
+    // that metadata available without making consumers treat it as an amount.
+    const raw = (data ?? {}) as Record<string, unknown>;
+    const amounts: Record<string, number> = {};
+    for (const [key, value] of Object.entries(raw)) {
+        if (key !== "period" && typeof value === "number" && Number.isFinite(value)) {
+            amounts[key] = value;
+        }
+    }
+    const period = raw.period && typeof raw.period === "object"
+        ? raw.period as ResolvedPeriod
+        : undefined;
+    return period ? { amounts, period } : { amounts };
 }
 
 export async function createTransaction(

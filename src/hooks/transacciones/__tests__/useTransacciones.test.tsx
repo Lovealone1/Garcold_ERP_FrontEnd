@@ -45,7 +45,7 @@ describe("useTransactions", () => {
             banks: ["Nequi", "Bancolombia"],
             types: ["Ingreso", "Retiro"],
         });
-        summarizeTransactions.mockResolvedValue({ Ingreso: 500, Retiro: 200 });
+        summarizeTransactions.mockResolvedValue({ amounts: { Ingreso: 500, Retiro: 200 } });
     });
 
     function mount(client = makeTestQueryClient()) {

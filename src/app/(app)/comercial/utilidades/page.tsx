@@ -1,5 +1,6 @@
 // app/(comercial)/utilidades/page.tsx
 "use client";
+import MobilePagination from "@/components/ui/MobilePagination";
 import Dropdown, { DropdownOption } from "@/components/ui/Dropdown";
 
 
@@ -213,7 +214,7 @@ export default function UtilidadesPage() {
                     </div>
 
                     {/* Paginación */}
-                    <div className="shrink-0 px-3 pb-2 pt-1 flex flex-wrap gap-3 items-center justify-between">
+                    <div className="list-pagination shrink-0 px-3 pb-2 pt-1 flex flex-wrap gap-3 items-center justify-between">
                         <div className="flex items-center gap-2">
                             <span className="text-sm">Líneas por página</span>
                             <Dropdown aria-label="Líneas por página" value={pageSize} disabled className="h-9 rounded-md border border-tg bg-[var(--panel-bg)] px-2 text-sm text-tg-muted">
@@ -221,7 +222,8 @@ export default function UtilidadesPage() {
                             </Dropdown>
                         </div>
 
-                        <nav className="flex items-center gap-1">
+                        <MobilePagination page={page} totalPages={totalPages} onPageChange={setPage} />
+                        <nav className="hidden sm:flex items-center gap-1">
                             <button disabled={page <= 1} onClick={() => setPage(1)} className="tap-target h-8 w-8 rounded grid place-items-center disabled:opacity-40 hover:bg-black/10 dark:hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-primary" aria-label="Primera página">
                                 <MaterialIcon name="first_page" size={18} />
                             </button>

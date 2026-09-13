@@ -65,8 +65,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <div className="app-shell__frame flex-1 min-w-0 flex flex-col min-h-0">
           {/* Topbar */}
           <header
-            className="shrink-0 z-30 border-b border-tg py-1 sm:py-1.5
-                       pt-[env(safe-area-inset-top)]"
+            className="shrink-0 z-30 border-b border-tg pb-1 pt-[calc(env(safe-area-inset-top)+4px)] sm:py-1.5
+                       sm:pt-[env(safe-area-inset-top)]"
             style={{ background: "var(--tg-bg)" }}
           >
             {/* Mismo inset que el <main>: el selector de periodo vive aquí y
@@ -76,9 +76,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               {/* Hamburguesa móvil */}
               <button
                 onClick={() => setIsSidebarOpen(true)}
-                className="lg:hidden inline-flex h-11 w-11 items-center justify-center rounded-md
-             bg-[rgba(255,255,255,0.04)]
-             border border-[rgba(255,255,255,0.18)]
+                className="tap-target lg:hidden inline-flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-md
+             bg-tg-card sm:bg-[rgba(255,255,255,0.04)]
+             border border-tg sm:border-[rgba(255,255,255,0.18)]
              hover:bg-[rgba(255,255,255,0.08)]
              focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tg-primary)]"
                 aria-label="Abrir menú lateral"
@@ -86,7 +86,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 <MaterialIcon
                   name="menu"
                   size={22}
-                  className="text-[rgba(255,255,255,0.9)]"
+                  className="text-tg-fg sm:text-[rgba(255,255,255,0.9)]"
                   fill={0}
                   weight={600}
                 />
@@ -95,7 +95,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               {/* Back móvil */}
               <button
                 onClick={() => (history.length > 1 ? history.back() : null)}
-                className="lg:hidden inline-flex h-11 w-11 items-center justify-center rounded-md
+                className="tap-target lg:hidden inline-flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-md
              bg-transparent
              hover:bg-[rgba(255,255,255,0.06)]
              focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tg-primary)]"
@@ -104,7 +104,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 <MaterialIcon
                   name="arrow_back"
                   size={22}
-                  className="text-[rgba(255,255,255,0.85)]"
+                  className="text-tg-fg sm:text-[rgba(255,255,255,0.85)]"
                 />
               </button>
 

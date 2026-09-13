@@ -1,4 +1,5 @@
 "use client";
+import MobilePagination from "@/components/ui/MobilePagination";
 import Dropdown, { DropdownOption } from "@/components/ui/Dropdown";
 
 
@@ -164,25 +165,25 @@ function SaleRow({
             </div>
 
             {/* Mobile */}
-            <div className="sm:hidden mx-2.5 my-3 rounded-md px-3 py-2 min-h-[84px]" style={{ background: INNER_BG }}>
-                <div className="flex items-start gap-2">
-                    <Dot color={dotColor} />
+            <div className="mobile-record-card sm:hidden mx-2.5 my-3 rounded-md px-3 py-3" style={{ background: INNER_BG }}>
+                <div className="relative flex flex-col gap-3">
+                    <span className="absolute left-0 top-1"><Dot color={dotColor} /></span>
 
-                    <div className="min-w-0 flex-1">
-                        <div className="flex items-baseline gap-2 min-w-0">
+                    <div className="w-full min-w-0">
+                        <div className="flex flex-wrap items-baseline gap-2 min-w-0 pl-5">
                             <span
                                 className={`${pill} !h-6 !min-w-[64px] !text-[12px]`}
                                 style={{ background: PILL_BG, borderColor: BORDER }}
                             >
                                 {v.id}
                             </span>
-                            <span className="text-sm font-extrabold truncate">{v.customer}</span>
+                            <span className="text-base leading-6 font-extrabold [overflow-wrap:anywhere]">{v.customer}</span>
                         </div>
 
-                        <div className="mt-1 grid grid-cols-3 gap-2">
+                        <div className="mobile-record-details mt-3 grid grid-cols-2 gap-2">
                             <div className={`${pill} !h-auto px-2 py-1 text-center`} style={{ background: PILL_BG, borderColor: BORDER }}>
                                 <div className="uppercase opacity-70 text-[11px]">Método</div>
-                                <div className="font-medium truncate">{clip(v.bank, 16)}</div>
+                                <div className="font-medium truncate">{v.bank || "—"}</div>
                             </div>
 
                             <div className={`${pill} !h-auto px-2 py-1 text-center`} style={{ background: PILL_BG, borderColor: BORDER }}>
@@ -201,7 +202,7 @@ function SaleRow({
                         </div>
                     </div>
 
-                    <div className="ml-2 flex items-center gap-2 shrink-0">
+                    <div className="mobile-record-actions w-full flex flex-wrap items-center justify-end gap-2 border-t border-tg pt-3">
                         <button className={actionBtn} style={{ background: ACTION_BG }} onClick={() => onView(v)}>
                             <MaterialIcon name="visibility" size={18} />
                         </button>
@@ -320,7 +321,7 @@ export default function VentasPage() {
     }
 
     return (
-        <div className="h-full flex flex-col min-h-0">
+        <div className="mobile-list-page h-full flex flex-col min-h-0">
             {/* DESKTOP TOOLBAR */}
             <div className="hidden sm:flex mb-3 items-center justify-between gap-3">
                 <div className="flex items-center gap-3 w-full max-w-[440px]">
@@ -495,12 +496,12 @@ export default function VentasPage() {
             </div>
 
             {/* LISTA */}
-            <div className="rounded-xl border flex-1 min-h-0 flex flex-col overflow-hidden mb-1" style={{ background: FRAME_BG, borderColor: BORDER }}>
+            <div className="mobile-list-frame rounded-xl border flex-1 min-h-0 flex flex-col overflow-hidden mb-1" style={{ background: FRAME_BG, borderColor: BORDER }}>
                 <div className="px-3 pt-3">
                     <HeaderRow />
                 </div>
 
-                <div className="flex-1 min-h-0 overflow-auto px-3 pb-1 space-y-4 sm:space-y-3.5">
+                <div className="mobile-list-items flex-1 min-h-0 overflow-auto px-3 pb-1 space-y-4 sm:space-y-3.5">
                     {loading ? (
                         Array.from({ length: 8 }).map((_, i) => (
                             <div key={`sk-${i}`} className="h-[60px] rounded-xl border bg-black/10 animate-pulse" />
@@ -541,7 +542,7 @@ export default function VentasPage() {
                 </div>
 
                 {/* PAGINACIÓN */}
-                <div className="shrink-0 px-3 pt-1 pb-2 flex flex-wrap gap-3 items-center justify-between">
+                <div className="list-pagination shrink-0 px-3 pt-1 pb-2 flex flex-wrap gap-3 items-center justify-between">
                     <div className="flex items-center gap-2">
                         <span className="text-sm">Líneas por página</span>
                         <Dropdown aria-label="Líneas por página"
@@ -553,7 +554,9 @@ export default function VentasPage() {
                         </Dropdown>
                     </div>
 
-                    <nav className="flex items-center gap-1">
+                    <MobilePagination page={page} totalPages={totalPages} onPageChange={handlePageChange} />
+                    <div className="w-full text-center text-sm text-tg-muted sm:hidden">{fromRow} - {toRow} de {total ?? 0}</div>
+                    <nav className="hidden sm:flex items-center gap-1">
                         <button
                             disabled={page <= 1}
                             onClick={() => handlePageChange(1)}

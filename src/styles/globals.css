@@ -468,6 +468,71 @@ html:not(.dark) .tg-country-item:hover {
 input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }
 input[type="search"]::-ms-clear { display: none; width: 0; height: 0; }
 
+/* Mobile lists grow inside the shell's scroll region instead of squeezing
+   cards between a tall toolbar and pagination in a fixed-height viewport. */
+@media (max-width: 639px) {
+  .mobile-list-page {
+    height: auto;
+    min-height: 100%;
+  }
+
+  .mobile-list-frame,
+  .mobile-list-items {
+    flex: none;
+    overflow: visible;
+  }
+
+  .mobile-record-card {
+    color: var(--tg-fg);
+  }
+
+  .mobile-record-details > div {
+    min-width: 0;
+    max-width: 100%;
+    color: var(--tg-fg);
+    overflow-wrap: anywhere;
+  }
+
+  .mobile-record-details > div:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .mobile-record-details > div > div {
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+    overflow: visible;
+  }
+
+  .mobile-record-actions > button {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+  }
+
+  .list-pagination {
+    width: 100%;
+    min-width: 0;
+    padding-top: 12px;
+    row-gap: 12px;
+  }
+
+  .list-pagination > div:first-child {
+    width: 100%;
+    min-width: 0;
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  .list-pagination > div:first-child > div {
+    flex-basis: 100%;
+  }
+
+  .list-pagination > div:first-child button {
+    min-height: 44px;
+  }
+}
+
 /* Safari en iOS hace zoom al enfocar cualquier campo con menos de 16px, y
    después no vuelve solo: la pantalla queda desplazada. Esto afectaba también
    a los iPad, donde los campos `size="small"` de MUI son de 14px, así que la

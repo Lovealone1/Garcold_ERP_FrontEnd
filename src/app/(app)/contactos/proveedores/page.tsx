@@ -1,4 +1,5 @@
 "use client";
+import MobilePagination from "@/components/ui/MobilePagination";
 import Dropdown, { DropdownOption } from "@/components/ui/Dropdown";
 
 
@@ -457,7 +458,7 @@ export default function ProveedoresPage() {
               ))}
         </div>
 
-        <div className="shrink-0 px-3 pt-1 pb-2 flex flex-wrap gap-3 items-center justify-between">
+        <div className="list-pagination shrink-0 px-3 pt-1 pb-2 flex flex-wrap gap-3 items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <span className="text-sm">Líneas por página</span>
@@ -482,7 +483,9 @@ export default function ProveedoresPage() {
             </button>
           </div>
 
-          <nav className="flex items-center gap-1">
+          <MobilePagination page={page} totalPages={totalPages} onPageChange={setPage} />
+          <div className="w-full text-center text-sm text-tg-muted sm:hidden">{from} - {to} de {total ?? 0}</div>
+          <nav className="hidden sm:flex items-center gap-1">
             <button
               disabled={!hasPrev}
               onClick={() => setPage(1)}

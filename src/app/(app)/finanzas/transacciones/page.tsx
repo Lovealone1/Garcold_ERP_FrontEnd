@@ -1,5 +1,6 @@
 // hooks/transactions/TransactionsPage.tsx (o tu ruta actual)
 "use client";
+import MobilePagination from "@/components/ui/MobilePagination";
 import Dropdown, { DropdownOption } from "@/components/ui/Dropdown";
 
 
@@ -454,7 +455,7 @@ export default function TransactionsPage() {
                 </div>
 
                 {/* paginación */}
-                <div className="shrink-0 px-3 pt-1 pb-2 flex flex-wrap gap-3 items-center justify-between">
+                <div className="list-pagination shrink-0 px-3 pt-1 pb-2 flex flex-wrap gap-3 items-center justify-between">
                     <div className="flex items-center gap-2">
                         <span className="text-sm">Líneas por página</span>
                         <Dropdown aria-label="Líneas por página"
@@ -467,7 +468,9 @@ export default function TransactionsPage() {
                         </Dropdown>
                     </div>
 
-                    <nav className="flex items-center gap-1">
+                    <MobilePagination page={page} totalPages={total_pages} onPageChange={goToPage} />
+                    <div className="w-full text-center text-sm text-tg-muted sm:hidden">{fromRow} - {toRow} de {total ?? 0}</div>
+                    <nav className="hidden sm:flex items-center gap-1">
                         <button disabled={page <= 1} onClick={() => setPage(1)}
                             className="tap-target h-9 w-9 grid place-items-center rounded bg-[color-mix(in_srgb,var(--tg-bg)_70%,#000)] border border-white/10 disabled:opacity-40">
                             <MaterialIcon name="first_page" size={16} />

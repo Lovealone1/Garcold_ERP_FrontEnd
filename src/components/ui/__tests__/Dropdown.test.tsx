@@ -63,6 +63,32 @@ describe("Dropdown", () => {
         expect(screen.getByRole("combobox")).toHaveTextContent("Caja");
     });
 
+    it("anchors below the full control and limits the menu to the space below it", async () => {
+        const { container } = render(<Dropdown aria-label="Estado" value="1">
+            <DropdownOption value="1">Contado</DropdownOption>
+            <DropdownOption value="2">Crédito</DropdownOption>
+        </Dropdown>);
+        const control = container.querySelector(".MuiInputBase-root") as HTMLElement;
+        const rect = vi.spyOn(control, "getBoundingClientRect").mockReturnValue({
+            top: window.innerHeight - 144,
+            bottom: window.innerHeight - 100,
+            left: 24, right: 224, width: 200, height: 44,
+            x: 24, y: window.innerHeight - 144, toJSON: () => ({}),
+        });
+        try {
+            fireEvent.mouseDown(screen.getByRole("combobox", { name: "Estado" }));
+            const listbox = await screen.findByRole("listbox");
+            const paper = listbox.closest(".MuiPaper-root") as HTMLElement;
+            expect(paper).toHaveStyle({ top: `${window.innerHeight - 96}px`, left: "24px", width: "200px", maxHeight: "84px" });
+
+            rect.mockReturnValue({ top: 100, bottom: 144, left: 24, right: 224, width: 200, height: 44, x: 24, y: 100, toJSON: () => ({}) });
+            fireEvent.scroll(window);
+            await waitFor(() => expect(paper).toHaveStyle({ top: "148px", maxHeight: "360px" }));
+        } finally {
+            rect.mockRestore();
+        }
+    });
+
     it("keeps the multi-selection limit and still allows removing selected items", async () => {
         const user = userEvent.setup();
         function Multi() {

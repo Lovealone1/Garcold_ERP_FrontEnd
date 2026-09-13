@@ -1,11 +1,12 @@
 "use client";
 
-import { Children, cloneElement, forwardRef, isValidElement, useCallback, useState, type ReactElement, type ReactNode, type CSSProperties } from "react";
+import { Children, cloneElement, forwardRef, isValidElement, useCallback, useLayoutEffect, useRef, useState, type ReactElement, type ReactNode, type CSSProperties } from "react";
 import Select, { type SelectChangeEvent } from "@mui/material/Select";
 import MenuItem, { type MenuItemProps } from "@mui/material/MenuItem";
 import Autocomplete, { type AutocompleteProps } from "@mui/material/Autocomplete";
 import Paper, { type PaperProps } from "@mui/material/Paper";
-import Popper from "@mui/material/Popper";
+import Popper, { type PopperProps } from "@mui/material/Popper";
+import type { PopoverActions } from "@mui/material/Popover";
 import TextField from "@mui/material/TextField";
 import { styled } from "@mui/material/styles";
 
@@ -43,7 +44,35 @@ const DropdownSurface = forwardRef<HTMLDivElement, PaperProps>(function Dropdown
     }} />;
 });
 
-const DropdownPaper = styled(DropdownSurface)(surfaceStyles);
+const MENU_GAP = 4;
+const VIEWPORT_MARGIN = 12;
+const MAX_MENU_HEIGHT = 360;
+
+function belowTrigger(rect: DOMRect, view: Window) {
+    const viewport = view.visualViewport;
+    const leftEdge = (viewport?.offsetLeft ?? 0) + VIEWPORT_MARGIN;
+    const rightEdge = (viewport?.offsetLeft ?? 0) + (viewport?.width ?? view.innerWidth) - VIEWPORT_MARGIN;
+    const bottomEdge = (viewport?.offsetTop ?? 0) + (viewport?.height ?? view.innerHeight) - VIEWPORT_MARGIN;
+    const width = Math.min(rect.width, Math.max(0, rightEdge - leftEdge));
+    const top = rect.bottom + MENU_GAP;
+    return {
+        top,
+        left: Math.max(leftEdge, Math.min(rect.left, rightEdge - width)),
+        width,
+        maxHeight: Math.max(0, Math.min(MAX_MENU_HEIGHT, bottomEdge - top)),
+    };
+}
+
+const DropdownPaper = styled(DropdownSurface)({
+    ...surfaceStyles,
+    boxSizing: "border-box",
+    maxHeight: "var(--dropdown-max-height, 360px)",
+    overflow: "auto",
+    "& .MuiAutocomplete-listbox": {
+        boxSizing: "border-box",
+        maxHeight: "var(--dropdown-max-height, 360px)",
+    },
+});
 const DropdownMenuPaper = styled(DropdownSurface)({
     ...surfaceStyles,
     boxSizing: "border-box",
@@ -51,12 +80,26 @@ const DropdownMenuPaper = styled(DropdownSurface)({
     overflowY: "auto",
     overflowX: "hidden",
     minWidth: 16,
-    minHeight: 16,
+    minHeight: 0,
     maxWidth: "calc(100% - 32px)",
     maxHeight: "calc(100% - 32px)",
     outline: 0,
 });
-const DropdownPopper = styled(Popper)({ zIndex: 1400, maxWidth: "calc(100vw - 24px)" });
+const DropdownPopper = styled(Popper)({ zIndex: 1500, maxWidth: "calc(100vw - 24px)" });
+
+// Recomputed by Popper on scroll/resize as well as when options change.
+const availableHeight: NonNullable<PopperProps["modifiers"]>[number] = {
+    name: "availableHeight",
+    enabled: true,
+    phase: "beforeWrite",
+    requires: ["computeStyles"],
+    fn({ state }) {
+        const view = state.elements.popper.ownerDocument.defaultView;
+        if (!view) return;
+        const bounds = belowTrigger(state.elements.reference.getBoundingClientRect(), view);
+        state.elements.popper.style.setProperty("--dropdown-max-height", `${bounds.maxHeight}px`);
+    },
+};
 
 export function DropdownOption(props: MenuItemProps) {
     return <MenuItem {...props} />;
@@ -81,24 +124,51 @@ type Props = {
 
 /** The application select: a themed, portalled listbox, never a native select. */
 export default function Dropdown({ children, value = "", onChange, ...props }: Props) {
-    const [menuWidth, setMenuWidth] = useState<number>();
+    const triggerRef = useRef<HTMLDivElement>(null);
+    const popoverRef = useRef<PopoverActions>(null);
+    const [open, setOpen] = useState(false);
+    const [bounds, setBounds] = useState({ top: 0, left: 0, width: 0, maxHeight: MAX_MENU_HEIGHT });
     const options = Children.toArray(children).filter(isValidElement) as ReactElement<MenuItemProps>[];
     const normalized = options.map(option => cloneElement(option, { value: String(option.props.value ?? "") }));
     // Options may arrive after the current value. Avoid an out-of-range control.
     const selected = normalized.find(option => option.props.value === String(value));
-    const handleOpen = useCallback((event: React.SyntheticEvent) => {
-        const trigger = event.currentTarget as HTMLElement;
-        const anchor = trigger.parentElement ?? trigger;
-        const width = anchor.getBoundingClientRect().width || trigger.getBoundingClientRect().width;
-        if (width > 0) setMenuWidth(Math.ceil(width));
+    const measure = useCallback(() => {
+        const trigger = triggerRef.current;
+        const view = trigger?.ownerDocument.defaultView;
+        if (trigger && view) setBounds(belowTrigger(trigger.getBoundingClientRect(), view));
     }, []);
+    useLayoutEffect(() => {
+        if (!open) return;
+        measure();
+        const view = triggerRef.current?.ownerDocument.defaultView;
+        if (!view) return;
+        const observer = typeof ResizeObserver === "undefined" ? undefined : new ResizeObserver(measure);
+        if (triggerRef.current) observer?.observe(triggerRef.current);
+        view.addEventListener("scroll", measure, true);
+        view.addEventListener("resize", measure);
+        view.visualViewport?.addEventListener("resize", measure);
+        view.visualViewport?.addEventListener("scroll", measure);
+        return () => {
+            observer?.disconnect();
+            view.removeEventListener("scroll", measure, true);
+            view.removeEventListener("resize", measure);
+            view.visualViewport?.removeEventListener("resize", measure);
+            view.visualViewport?.removeEventListener("scroll", measure);
+        };
+    }, [open, measure]);
+    useLayoutEffect(() => {
+        if (open) popoverRef.current?.updatePosition();
+    }, [open, bounds]);
     return (
         <Select<string>
             {...props}
+            ref={triggerRef}
             disabled={props.disabled || normalized.length === 0}
             value={selected ? String(value) : ""}
             onChange={onChange}
-            onOpen={handleOpen}
+            open={open}
+            onOpen={() => { measure(); setOpen(true); }}
+            onClose={() => setOpen(false)}
             native={false}
             variant="standard"
             disableUnderline
@@ -121,17 +191,21 @@ export default function Dropdown({ children, value = "", onChange, ...props }: P
             }}
             MenuProps={{
                 transitionDuration: 0,
-                marginThreshold: 12,
-                anchorOrigin: { vertical: "bottom", horizontal: "left" },
+                action: popoverRef,
+                // MUI's viewport correction otherwise slides a tall menu over
+                // its trigger. Keep the anchor fixed and scroll the options.
+                marginThreshold: null,
+                anchorPosition: { top: bounds.top, left: bounds.left },
                 transformOrigin: { vertical: "top", horizontal: "left" },
-                anchorReference: "anchorEl",
+                anchorReference: "anchorPosition",
+                sx: { zIndex: 1500 },
                 slots: { paper: DropdownMenuPaper },
                 slotProps: {
                     paper: {
+                        style: { minWidth: bounds.width },
                         sx: {
-                            width: menuWidth ? `${menuWidth}px` : undefined,
-                            minWidth: menuWidth ? `${menuWidth}px` : undefined,
-                            maxHeight: "min(360px, calc(100dvh - 24px))",
+                            width: `${bounds.width}px`,
+                            maxHeight: `${bounds.maxHeight}px`,
                             maxWidth: "calc(100vw - 24px)",
                         },
                     },
@@ -207,7 +281,9 @@ export function SearchDropdown<
                             ? props.slotProps.popper.modifiers
                             : []),
                         { name: "flip", enabled: false },
-                        { name: "preventOverflow", options: { padding: 8, altAxis: true } },
+                        { name: "offset", options: { offset: [0, MENU_GAP] } },
+                        { name: "preventOverflow", options: { padding: VIEWPORT_MARGIN, altAxis: false } },
+                        availableHeight,
                     ],
                 },
             }}
